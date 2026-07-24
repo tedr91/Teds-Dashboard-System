@@ -9,6 +9,10 @@ Install via HACS (custom repository, category **Integration**), restart, then ad
 
 ## Changelog
 
+### v1.0.79
+
+- **Device Type profiles.** Added `device_type` and `fullscreen_default` per-device setting defaults so Ted's Cards can store each device's profile (nightstand / tablet / handheld) and its default fullscreen state. Pairs with Ted's Cards v1.0.316+.
+
 ### v1.0.78
 
 - **Hardened announcement playback.** Some idle Alexa/cast speakers (e.g. an Echo Show) occasionally dropped the first play, so an announcement produced no sound. The backend now waits briefly for an idle target to become available, then verifies the clip actually started — re-issuing it up to twice if the device shows no sign of playing. Retries are gated so a dismissed announcement won't replay and devices that are merely slow to begin audio won't double-play.
