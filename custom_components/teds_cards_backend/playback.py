@@ -162,6 +162,14 @@ class PlaybackEngine:
     _STEP_GAP = 0.2
     # Pause between the spoken preface/title and the message body.
     _MSG_GAP = 0.5
+    # Announcement play hardening: some cast/Alexa devices silently drop the first
+    # play when idle/asleep. After issuing the clip we verify (in the background) that
+    # the target actually started, and re-issue up to _PLAY_RETRIES times if not.
+    _PLAY_RETRIES = 2
+    _VERIFY_STEP = 0.5
+    _VERIFY_WINDOW = 3.0
+    # Give an idle/asleep player a brief moment to come available before playing.
+    _AVAIL_WAIT = 2.0
 
     async def prepare_announcement(self, message, title=None, areas=None, devices=None,
                                    volume=None):
@@ -291,7 +299,7 @@ class PlaybackEngine:
         # Preferred: a single stitched clip.
         if combined_url:
             t = self.hass.loop.time()
-            await self._play_media_all(plays, combined_url, vol)
+            await self._play_media_all(plays, combined_url, vol, _live)
             self._dlog("combined play issued in %.2fs" % (self.hass.loop.time() - t))
             if _live() and loop_chime and notif_id:
                 # The stitched clip ends on its baked-in finishing chime; start the
@@ -341,13 +349,70 @@ class PlaybackEngine:
             if notif_id:
                 self._active.pop(notif_id, None)
 
-    async def _play_media_all(self, plays, url, volume) -> None:
-        """Play one media URL on every target (announce-ducked when supported)."""
+    async def _play_media_all(self, plays, url, volume, live=None) -> None:
+        """Play one media URL on every target (announce-ducked when supported).
+
+        Each play is verified in the background: if the target hasn't started within a
+        few seconds (an intermittent drop on some idle Alexa/cast devices) the clip is
+        re-issued up to `_PLAY_RETRIES` times. `live` (optional) gates the retries so a
+        dismissed announcement isn't replayed.
+        """
         for p in plays:
-            if p["announce"]:
-                await self._announce(p["mp"], url, volume)
-            else:
-                await self._play_once(p["mp"], url, volume)
+            await self._await_available(p["mp"])
+            prev = self.hass.states.get(p["mp"])
+            prev_state = prev.state if prev else None
+            await self._issue_media(p["mp"], url, volume, p["announce"])
+            self.hass.async_create_task(
+                self._verify_and_retry(p["mp"], url, volume, p["announce"], prev_state, live)
+            )
+
+    async def _await_available(self, mp) -> None:
+        """Wait briefly for an idle/asleep player to come available before playing."""
+        waited = 0.0
+        while waited < self._AVAIL_WAIT:
+            st = self.hass.states.get(mp)
+            if st is not None and st.state not in ("unavailable", "unknown"):
+                return
+            await asyncio.sleep(self._VERIFY_STEP)
+            waited += self._VERIFY_STEP
+
+    async def _issue_media(self, mp, url, volume, announce) -> None:
+        """Issue a single media play (announce-ducked or direct)."""
+        if announce:
+            await self._announce(mp, url, volume)
+        else:
+            await self._play_once(mp, url, volume)
+
+    def _media_started(self, mp, url, prev_state) -> bool:
+        """Heuristic: did `mp` actually start playing `url`?
+
+        True when the player now reports our media id, or it transitioned INTO active
+        playback from a non-playing prior state (so pre-existing music isn't mistaken
+        for a successful announcement).
+        """
+        st = self.hass.states.get(mp)
+        if st is None:
+            return False
+        cid = st.attributes.get("media_content_id")
+        if isinstance(cid, str) and cid and (cid == url or url.rsplit("/", 1)[-1] in cid):
+            return True
+        return st.state in ("playing", "buffering") and prev_state not in ("playing", "buffering")
+
+    async def _verify_and_retry(self, mp, url, volume, announce, prev_state, live=None) -> None:
+        """Poll for the play to start; re-issue up to `_PLAY_RETRIES` times if it didn't."""
+        for attempt in range(self._PLAY_RETRIES):
+            waited = 0.0
+            while waited < self._VERIFY_WINDOW:
+                await asyncio.sleep(self._VERIFY_STEP)
+                waited += self._VERIFY_STEP
+                if self._media_started(mp, url, prev_state):
+                    if attempt:
+                        self._dlog("announce started on %s after retry %d" % (mp, attempt))
+                    return
+            if live is not None and not live():
+                return  # dismissed mid-verify — don't replay
+            self._dlog("announce didn't start on %s; re-issuing (retry %d)" % (mp, attempt + 1))
+            await self._issue_media(mp, url, volume, announce)
 
     def _dlog(self, msg) -> None:
         """Announcement timing diagnostics (INFO when Debug mode is on, else DEBUG)."""
