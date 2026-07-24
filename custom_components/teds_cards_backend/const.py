@@ -170,6 +170,12 @@ SETTINGS_DEFAULTS = {
     # Internal: per-device saved maximized state of Fullscreen cards, keyed by each card's
     # `state_key`. Shape: { <state_key>: bool }. Not a user-facing field.
     "fullscreen_states": {},
+    # Per-device profile: None | "nightstand" | "tablet-landscape" | "tablet-portrait" | "handheld".
+    # Picking one cascades a preset of navbar/home/fullscreen device settings (frontend applies it).
+    "device_type": None,
+    # Internal: default maximized state for content Fullscreen cards on this device, seeded by the
+    # device type. Whitelisted for writes.
+    "fullscreen_default": False,
     # Background Wallpaper — applied by the invisible ted-background-card.
     # mode: solid | image | slideshow | theme (theme = defer to the HA theme's background).
     "background_mode": "slideshow",
