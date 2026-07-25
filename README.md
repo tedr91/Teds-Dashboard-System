@@ -9,6 +9,10 @@ Install via HACS (custom repository, category **Integration**), restart, then ad
 
 ## Changelog
 
+### v1.0.80
+
+- **Photo import for the new Photo Viewer card.** Added `favorite_photo` and `store_background_photo` WebSocket commands that download the current photo (local file or URL), dedupe it by content hash, and store it in the `favorites` / `stored` background folders; plus `list_favorites` to enumerate favorited photos (powering the wallpaper **Slideshow → Favorites** album). Added the `photos_*` settings defaults (album folder, re-open-last, slideshow transition/crossfade). Pairs with Ted's Cards v1.0.319+.
+
 ### v1.0.79
 
 - **Device Type profiles.** Added `device_type` and `fullscreen_default` per-device setting defaults so Ted's Cards can store each device's profile (nightstand / tablet / handheld) and its default fullscreen state. Pairs with Ted's Cards v1.0.316+.
