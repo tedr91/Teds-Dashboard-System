@@ -9,6 +9,10 @@ Install via HACS (custom repository, category **Integration**), restart, then ad
 
 ## Changelog
 
+### v1.0.81
+
+- **Readable favorite / stored photo filenames.** Photos imported by the Photo Viewer card (Favorite / Set-as-background) are now saved as `<name>-<shorthash>.ext` (e.g. `oar2-3f9c1a2b4d.jpg`) instead of a bare hash, so they're recognizable on disk. Deduplication still works by the content hash, so the same image is never stored twice. Pairs with Ted's Cards v1.0.319+.
+
 ### v1.0.80
 
 - **Photo import for the new Photo Viewer card.** Added `favorite_photo` and `store_background_photo` WebSocket commands that download the current photo (local file or URL), dedupe it by content hash, and store it in the `favorites` / `stored` background folders; plus `list_favorites` to enumerate favorited photos (powering the wallpaper **Slideshow → Favorites** album). Added the `photos_*` settings defaults (album folder, re-open-last, slideshow transition/crossfade). Pairs with Ted's Cards v1.0.319+.

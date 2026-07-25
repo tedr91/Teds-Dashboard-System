@@ -372,24 +372,40 @@ def _import_ext(url: str, content_type: str | None) -> str:
     return ".jpg"
 
 
-def _write_import(dirname: str, filename: str, content: bytes) -> str | None:
-    """Write ``content`` into backgrounds/<dirname>/<filename> (dedup: skip if it
-    already exists). Blocking — run in the executor."""
+def _readable_stem(url: str) -> str:
+    """A short, filesystem-safe name derived from the source URL's basename
+    (e.g. ".../oar2.jpg?x=1" -> "oar2"). Falls back to "photo"."""
+    base = os.path.basename(urlparse(url).path)
+    stem = os.path.splitext(base)[0]
+    cleaned = "".join(c if (c.isalnum() or c in "-_") else "-" for c in stem)
+    cleaned = "-".join(part for part in cleaned.split("-") if part).strip("-_")
+    return cleaned[:40] or "photo"
+
+
+def _write_import(dirname: str, stem: str, short: str, ext: str, content: bytes) -> str | None:
+    """Write ``content`` into backgrounds/<dirname>/<stem>-<short><ext>. Deduped by
+    the ``short`` content hash: if any file already ends with ``-<short><ext>`` (any
+    readable prefix), reuse it. Blocking — run in the executor."""
     dest_dir = os.path.join(os.path.dirname(__file__), "backgrounds", dirname)
+    base = f"/teds_cards_backend/backgrounds/{dirname}"
+    suffix = f"-{short}{ext}"
     try:
         os.makedirs(dest_dir, exist_ok=True)
-        path = os.path.join(dest_dir, filename)
-        if not os.path.isfile(path):
-            with open(path, "wb") as fh:
-                fh.write(content)
-        return f"/teds_cards_backend/backgrounds/{dirname}/{filename}"
+        for existing in os.listdir(dest_dir):
+            if existing.endswith(suffix):
+                return f"{base}/{existing}"
+        filename = f"{stem}{suffix}"
+        with open(os.path.join(dest_dir, filename), "wb") as fh:
+            fh.write(content)
+        return f"{base}/{filename}"
     except OSError:
         return None
 
 
 async def import_photo(hass: HomeAssistant, ref: str, dest: str = "favorites") -> str | None:
     """Download the image at ``ref`` and store it under backgrounds/favorites (or
-    backgrounds/stored when ``dest == 'stored'``), deduped by SHA-1 content hash.
+    backgrounds/stored when ``dest == 'stored'``), named ``<name>-<shorthash><ext>``
+    and deduped by the content hash.
 
     ``ref`` may be an absolute http(s) URL or a HA-relative path (e.g. a resolved
     media-source or our own served wallpaper). Returns the served URL, or None.
@@ -421,10 +437,14 @@ async def import_photo(hass: HomeAssistant, ref: str, dest: str = "favorites") -
         return None
 
     # SHA-1 is used purely to dedupe identical images (not for security).
-    digest = hashlib.sha1(content, usedforsecurity=False).hexdigest()
-    filename = f"{digest}{_import_ext(url, content_type)}"
+    short = hashlib.sha1(content, usedforsecurity=False).hexdigest()[:10]
     return await hass.async_add_executor_job(
-        _write_import, _import_dirname(dest), filename, content
+        _write_import,
+        _import_dirname(dest),
+        _readable_stem(url),
+        short,
+        _import_ext(url, content_type),
+        content,
     )
 
 
