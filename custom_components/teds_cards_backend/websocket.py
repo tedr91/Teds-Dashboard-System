@@ -15,7 +15,14 @@ import voluptuous as vol
 from homeassistant.components import websocket_api
 from homeassistant.core import Event, HomeAssistant, callback
 
-from .bing_photos import clear_bing_cache, fetch_and_cache_bing, favorite_bing_photo, remove_bing_photo
+from .bing_photos import (
+    clear_bing_cache,
+    favorite_bing_photo,
+    fetch_and_cache_bing,
+    import_photo,
+    list_favorites,
+    remove_bing_photo,
+)
 from .const import DOMAIN, EVENT_NAVIGATE, EVENT_NOTIFICATION, EVENT_SETTINGS
 
 _REGISTERED = f"{DOMAIN}_ws_registered"
@@ -51,6 +58,9 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, handle_clear_bing_photos_cache)
     websocket_api.async_register_command(hass, handle_favorite_bing_photo)
     websocket_api.async_register_command(hass, handle_remove_bing_photo)
+    websocket_api.async_register_command(hass, handle_favorite_photo)
+    websocket_api.async_register_command(hass, handle_store_background_photo)
+    websocket_api.async_register_command(hass, handle_list_favorites)
     websocket_api.async_register_command(hass, handle_media_folder)
     hass.data[_REGISTERED] = True
 
@@ -274,6 +284,48 @@ async def handle_remove_bing_photo(
     """Delete a single cached Bing image from the cache."""
     ok = await remove_bing_photo(hass, msg["filename"])
     connection.send_result(msg["id"], {"success": ok})
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): f"{DOMAIN}/favorite_photo",
+        vol.Required("ref"): str,
+    }
+)
+@websocket_api.async_response
+async def handle_favorite_photo(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict
+) -> None:
+    """Import an arbitrary image into the favorites folder (deduped)."""
+    url = await import_photo(hass, msg["ref"], "favorites")
+    connection.send_result(msg["id"], {"success": url is not None, "url": url})
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): f"{DOMAIN}/store_background_photo",
+        vol.Required("ref"): str,
+    }
+)
+@websocket_api.async_response
+async def handle_store_background_photo(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict
+) -> None:
+    """Import an arbitrary image into the stored-background folder (deduped)."""
+    url = await import_photo(hass, msg["ref"], "stored")
+    connection.send_result(msg["id"], {"success": url is not None, "url": url})
+
+
+@websocket_api.websocket_command(
+    {vol.Required("type"): f"{DOMAIN}/list_favorites"}
+)
+@websocket_api.async_response
+async def handle_list_favorites(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict
+) -> None:
+    """Return the served URLs of every favorited photo."""
+    photos = await list_favorites(hass)
+    connection.send_result(msg["id"], {"photos": photos})
 
 
 @websocket_api.websocket_command(

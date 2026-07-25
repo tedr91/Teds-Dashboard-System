@@ -13,15 +13,18 @@ attribution survives restarts even for days no longer in Bing's 8-day archive.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 import os
 import shutil
+from urllib.parse import urlparse
 
 import aiohttp
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.network import NoURLAvailableError, get_url
 
 from .const import DOMAIN
 
@@ -31,6 +34,7 @@ _BING_HOST = "https://www.bing.com"
 _BING_ARCHIVE = "/HPImageArchive.aspx"
 _CACHE_DIRNAME = "bing_pod"
 _FAVORITES_DIRNAME = "favorites"
+_STORED_DIRNAME = "stored"
 _INDEX_NAME = "index.json"
 _REMOVED_NAME = "removed.json"
 _URL_BASE = f"/teds_cards_backend/backgrounds/{_CACHE_DIRNAME}"
@@ -333,3 +337,107 @@ async def remove_bing_photo(hass: HomeAssistant, name: str) -> bool:
     if not safe:
         return False
     return await hass.async_add_executor_job(_do_remove, safe)
+
+
+# ── import an arbitrary photo (favorite / set-as-background) ───────────────────
+_IMPORT_EXTS = (".webp", ".jpg", ".jpeg", ".png", ".gif", ".avif")
+_CT_EXT = {
+    "image/webp": ".webp",
+    "image/jpeg": ".jpg",
+    "image/jpg": ".jpg",
+    "image/png": ".png",
+    "image/gif": ".gif",
+    "image/avif": ".avif",
+}
+
+
+def _stored_dir() -> str:
+    return os.path.join(os.path.dirname(__file__), "backgrounds", _STORED_DIRNAME)
+
+
+def _import_dirname(dest: str) -> str:
+    return _STORED_DIRNAME if dest == "stored" else _FAVORITES_DIRNAME
+
+
+def _import_ext(url: str, content_type: str | None) -> str:
+    """Pick a file extension from the response Content-Type, else the URL path."""
+    ct = (content_type or "").split(";")[0].strip().lower()
+    if ct in _CT_EXT:
+        return _CT_EXT[ct]
+    _, ext = os.path.splitext(urlparse(url).path.lower())
+    if ext == ".jpeg":
+        return ".jpg"
+    if ext in _IMPORT_EXTS:
+        return ext
+    return ".jpg"
+
+
+def _write_import(dirname: str, filename: str, content: bytes) -> str | None:
+    """Write ``content`` into backgrounds/<dirname>/<filename> (dedup: skip if it
+    already exists). Blocking — run in the executor."""
+    dest_dir = os.path.join(os.path.dirname(__file__), "backgrounds", dirname)
+    try:
+        os.makedirs(dest_dir, exist_ok=True)
+        path = os.path.join(dest_dir, filename)
+        if not os.path.isfile(path):
+            with open(path, "wb") as fh:
+                fh.write(content)
+        return f"/teds_cards_backend/backgrounds/{dirname}/{filename}"
+    except OSError:
+        return None
+
+
+async def import_photo(hass: HomeAssistant, ref: str, dest: str = "favorites") -> str | None:
+    """Download the image at ``ref`` and store it under backgrounds/favorites (or
+    backgrounds/stored when ``dest == 'stored'``), deduped by SHA-1 content hash.
+
+    ``ref`` may be an absolute http(s) URL or a HA-relative path (e.g. a resolved
+    media-source or our own served wallpaper). Returns the served URL, or None.
+    """
+    if not ref or not isinstance(ref, str):
+        return None
+    url = ref
+    if url.startswith("/"):
+        try:
+            base = get_url(hass, prefer_external=False)
+        except NoURLAvailableError:
+            base = None
+        if not base:
+            return None
+        url = base.rstrip("/") + url
+    elif not url.startswith(("http://", "https://")):
+        return None
+
+    session = async_get_clientsession(hass)
+    try:
+        async with session.get(url) as resp:
+            if resp.status != 200:
+                return None
+            content = await resp.read()
+            content_type = resp.headers.get("Content-Type")
+    except (aiohttp.ClientError, TimeoutError):
+        return None
+    if not content:
+        return None
+
+    # SHA-1 is used purely to dedupe identical images (not for security).
+    digest = hashlib.sha1(content, usedforsecurity=False).hexdigest()
+    filename = f"{digest}{_import_ext(url, content_type)}"
+    return await hass.async_add_executor_job(
+        _write_import, _import_dirname(dest), filename, content
+    )
+
+
+def _list_favorites() -> list[str]:
+    try:
+        names = sorted(os.listdir(_favorites_dir()))
+    except OSError:
+        return []
+    base = f"/teds_cards_backend/backgrounds/{_FAVORITES_DIRNAME}"
+    return [f"{base}/{n}" for n in names if n.lower().endswith(_IMPORT_EXTS)]
+
+
+async def list_favorites(hass: HomeAssistant) -> list[str]:
+    """Return the served URLs of every favorited photo (newest-last)."""
+    return await hass.async_add_executor_job(_list_favorites)
+

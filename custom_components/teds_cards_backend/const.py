@@ -203,6 +203,12 @@ SETTINGS_DEFAULTS = {
     "background_readability_strength": 45,  # 0–100 (caps the scrim opacity)
     # Base background brightness (0–100). 100 = full brightness; lower dims the wallpaper at all times.
     "background_brightness": 75,
+    # Photos (Ted's Photo Viewer card + Photos view)
+    "photos_folder": None,               # media-source:// folder uri for the Photos view album
+    "photos_auto_open_last": True,       # re-open the last viewed photo when the Photos view loads
+    "photos_last_viewed": None,          # per-device: ref of the last opened photo (internal)
+    "photos_slideshow_transition": "crossfade",   # crossfade | none
+    "photos_slideshow_crossfade_seconds": 2,
     # Navigation
     "dashboard_root": "ted-dashboard",
     "home_dashboard": "[root]/home-welcome",
