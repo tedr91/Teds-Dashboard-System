@@ -9,6 +9,10 @@ Install via HACS (custom repository, category **Integration**), restart, then ad
 
 ## Changelog
 
+### v1.0.82
+
+- **Assist-Response service.** New `teds_cards_backend.assist_response` action pushes a title + message (and optional image) to targeted areas/devices for the new Ted's Cards Assist-Response view — the visual counterpart to a spoken Assist answer. It stores the latest answer per target (streamed via `subscribe_assist_responses`, exposed on `sensor.teds_assist_responses` for reload restore) and reuses the navigation signal to switch the targeted screens to the view (`navigate: false` to skip). Renamed the `info_dashboard` setting default to `assist_response_dashboard`. Pairs with Ted's Cards v1.0.333+.
+
 ### v1.0.81
 
 - **Readable favorite / stored photo filenames.** Photos imported by the Photo Viewer card (Favorite / Set-as-background) are now saved as `<name>-<shorthash>.ext` (e.g. `oar2-3f9c1a2b4d.jpg`) instead of a bare hash, so they're recognizable on disk. Deduplication still works by the content hash, so the same image is never stored twice. Pairs with Ted's Cards v1.0.319+.
