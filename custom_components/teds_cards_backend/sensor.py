@@ -12,7 +12,7 @@ from .const import DOMAIN
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, add: AddEntitiesCallback) -> None:
     manager = hass.data[DOMAIN][entry.entry_id]
-    add([TedsAlarmsSensor(manager), TedsTimersSensor(manager), TedsNotificationsSensor(manager), TedsAnnouncementsSensor(manager), TedsSettingsSensor(manager), TedsRequirementsSensor(manager)])
+    add([TedsAlarmsSensor(manager), TedsTimersSensor(manager), TedsNotificationsSensor(manager), TedsAnnouncementsSensor(manager), TedsAssistResponsesSensor(manager), TedsSettingsSensor(manager), TedsRequirementsSensor(manager)])
 
 
 class _Base(SensorEntity):
@@ -97,6 +97,23 @@ class TedsAnnouncementsSensor(_Base):
     @property
     def extra_state_attributes(self):
         return {"recent": [dict(r) for r in self._m.recent_announcements]}
+
+
+class TedsAssistResponsesSensor(_Base):
+    """Latest Assist-Response answer per target ("device:<id>"/"area:<id>"/"house").
+    Cards read their own target's entry to restore content after a reload."""
+
+    _attr_name = "Teds Assist Responses"
+    _attr_unique_id = "teds_assist_responses"
+    _attr_icon = "mdi:message-reply-text"
+
+    @property
+    def native_value(self):
+        return len(self._m.assist_responses)
+
+    @property
+    def extra_state_attributes(self):
+        return {"responses": {k: dict(v) for k, v in self._m.assist_responses.items()}}
 
 
 class TedsSettingsSensor(_Base):

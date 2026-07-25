@@ -23,7 +23,7 @@ from .bing_photos import (
     list_favorites,
     remove_bing_photo,
 )
-from .const import DOMAIN, EVENT_NAVIGATE, EVENT_NOTIFICATION, EVENT_SETTINGS
+from .const import DOMAIN, EVENT_ASSIST_RESPONSE, EVENT_NAVIGATE, EVENT_NOTIFICATION, EVENT_SETTINGS
 
 _REGISTERED = f"{DOMAIN}_ws_registered"
 
@@ -51,6 +51,7 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, handle_subscribe_notifications)
     websocket_api.async_register_command(hass, handle_subscribe_settings)
     websocket_api.async_register_command(hass, handle_subscribe_navigate)
+    websocket_api.async_register_command(hass, handle_subscribe_assist_responses)
     websocket_api.async_register_command(hass, handle_register_device)
     websocket_api.async_register_command(hass, handle_list_backgrounds)
     websocket_api.async_register_command(hass, handle_list_sounds)
@@ -124,6 +125,29 @@ def handle_subscribe_navigate(
         connection.send_message(websocket_api.event_message(msg["id"], event.data))
 
     connection.subscriptions[msg["id"]] = hass.bus.async_listen(EVENT_NAVIGATE, forward)
+    connection.send_result(msg["id"])
+
+
+@websocket_api.websocket_command(
+    {vol.Required("type"): f"{DOMAIN}/subscribe_assist_responses"}
+)
+@callback
+def handle_subscribe_assist_responses(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict
+) -> None:
+    """Forward Assist-Response pushes to the subscribing connection.
+
+    Each event is the answer item ``{id, title, message, image, areas, devices, ts}``;
+    the frontend card decides whether it targets this device (by area or device id).
+    """
+
+    @callback
+    def forward(event: Event) -> None:
+        connection.send_message(websocket_api.event_message(msg["id"], event.data))
+
+    connection.subscriptions[msg["id"]] = hass.bus.async_listen(
+        EVENT_ASSIST_RESPONSE, forward
+    )
     connection.send_result(msg["id"])
 
 

@@ -17,6 +17,8 @@ from .playback import PlaybackEngine
 from .const import (
     DEVICE_PRESENCE_TTL,
     EVENT_ALARM_RINGING,
+    EVENT_ASSIST_RESPONSE,
+    EVENT_NAVIGATE,
     EVENT_NOTIFICATION,
     EVENT_SETTINGS,
     EVENT_TIMER_FINISHED,
@@ -42,6 +44,9 @@ class TedsManager:
         self.notifications: list[dict] = []  # newest-first notification list
         # last N announcements (message + targets) for quick re-send, newest-first.
         self.recent_announcements: list[dict] = []
+        # Latest Assist-Response answer per target key ("device:<id>" / "area:<id>" /
+        # "house") so a reloaded / late-joining screen can restore its current content.
+        self.assist_responses: dict[str, dict] = {}
         # Settings: global baseline + per-device overrides (only overridden keys stored).
         self.settings: dict = {"global": {}, "devices": {}}
         # Devices that have registered themselves (device_id -> {area, name, last_seen}).
@@ -64,6 +69,7 @@ class TedsManager:
         self.recent = data.get("recent", [])
         self.notifications = data.get("notifications", [])
         self.recent_announcements = data.get("recent_announcements", [])
+        self.assist_responses = dict(data.get("assist_responses") or {})
         stored_settings = data.get("settings") or {}
         self.settings = {
             "global": dict(stored_settings.get("global") or {}),
@@ -79,6 +85,7 @@ class TedsManager:
             "recent": self.recent,
             "notifications": self.notifications,
             "recent_announcements": self.recent_announcements,
+            "assist_responses": self.assist_responses,
             "settings": self.settings,
             "devices": self.device_registry,
         })
@@ -516,6 +523,52 @@ class TedsManager:
         ]
         await self._save()
         self._notify()
+
+    # ── assist responses ────────────────────────────────────
+    async def assist_response(self, message, title=None, image=None, areas=None,
+                              devices=None, navigate=True):
+        """Push a text answer to the targeted Assist-Response screens.
+
+        Mirrors View Assist's "Info" view: an automation / voice pipeline calls this
+        with the answer text; the targeted devices display the title + message (+ an
+        optional background image) and — unless `navigate` is False — switch to the
+        Assist-Response view. The latest answer is stored per target so a reloaded
+        screen can restore it. No auto-revert: the content stays until replaced.
+        """
+        message = (message or "").strip()
+        if not message:
+            return None
+        areas = [a for a in (areas or []) if a]
+        devices = [d for d in (devices or []) if d]
+        item = {
+            "id": uuid.uuid4().hex,
+            "title": (title or "").strip() or None,
+            "message": message,
+            "image": image or None,
+            "areas": areas,
+            "devices": devices,
+            "ts": dt_util.utcnow().isoformat(),
+        }
+        # Store latest per target key (house-wide when no targets) for reload/late-join.
+        keys = [f"device:{d}" for d in devices] + [f"area:{a}" for a in areas] or ["house"]
+        for key in keys:
+            self.assist_responses[key] = item
+        # Live push — each subscribed card filters by its own device/area.
+        self.hass.bus.async_fire(EVENT_ASSIST_RESPONSE, item)
+        # Reuse the existing navigation signal to switch explicit targets to the view.
+        # House-wide (no targets) is content-only (never force every screen to jump).
+        if navigate:
+            for d in devices:
+                self.hass.bus.async_fire(EVENT_NAVIGATE, {
+                    "dashboard": "assist_response_dashboard", "area": None, "device_id": d,
+                })
+            for a in areas:
+                self.hass.bus.async_fire(EVENT_NAVIGATE, {
+                    "dashboard": "assist_response_dashboard", "area": a, "device_id": None,
+                })
+        await self._save()
+        self._notify()
+        return item["id"]
 
     # ── settings ────────────────────────────────────────────
     def effective_settings(self, device_id=None) -> dict:

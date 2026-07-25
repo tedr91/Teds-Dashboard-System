@@ -19,6 +19,7 @@ EVENT_TIMER_FINISHED = f"{DOMAIN}_timer_finished"
 EVENT_NOTIFICATION = f"{DOMAIN}_notification"
 EVENT_SETTINGS = f"{DOMAIN}_settings"
 EVENT_NAVIGATE = f"{DOMAIN}_navigate"
+EVENT_ASSIST_RESPONSE = f"{DOMAIN}_assist_response"
 
 # Custom Assist intent type names (registered in intents.py + sentences/en.yaml).
 INTENT_ADD_ALARM = "TedsAddAlarm"
@@ -220,7 +221,7 @@ SETTINGS_DEFAULTS = {
     "climate_dashboard": "[root]/climate",
     "music_dashboard": "[root]/music",
     "photos_dashboard": "[root]/photos",
-    "info_dashboard": "[root]/info",
+    "assist_response_dashboard": "[root]/assist-response",
     "announce_dashboard": "[root]/announce",
     "auto_return_home_after": 0,
     # When true, a voice-driven climate/music action nudges this device's screen to the

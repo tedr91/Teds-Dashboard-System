@@ -99,6 +99,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     async def remove_announcement(call: ServiceCall):
         await manager.remove_recent_announcement(call.data["id"])
 
+    async def assist_response(call: ServiceCall):
+        await manager.assist_response(
+            call.data["message"], title=call.data.get("title"),
+            image=call.data.get("image"), areas=call.data.get("areas"),
+            devices=call.data.get("devices"), navigate=call.data.get("navigate", True),
+        )
+
     async def _require_admin_for_global(call: ServiceCall) -> None:
         """Only admins may write Global settings; device-scope writes are open."""
         if call.data.get("scope", "global") != "global":
@@ -189,6 +196,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         vol.Optional("source_device"): vol.Any(None, cv.string)}))
     hass.services.async_register(DOMAIN, "remove_announcement", remove_announcement, schema=vol.Schema({
         vol.Required("id"): cv.string}))
+    hass.services.async_register(DOMAIN, "assist_response", assist_response, schema=vol.Schema({
+        vol.Required("message"): cv.string, vol.Optional("title"): vol.Any(None, cv.string),
+        vol.Optional("image"): vol.Any(None, cv.string),
+        vol.Optional("areas"): [cv.string], vol.Optional("devices"): [cv.string],
+        vol.Optional("navigate"): cv.boolean}))
     hass.services.async_register(DOMAIN, "set_setting", set_setting, schema=vol.Schema({
         vol.Required("key"): cv.string, vol.Optional("value"): vol.Any(None, bool, int, float, cv.string, list, dict),
         vol.Optional("scope"): vol.In(["global", "device"]), vol.Optional("device_id"): cv.string}))
