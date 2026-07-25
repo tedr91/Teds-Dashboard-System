@@ -1,0 +1,12 @@
+{
+  "domain": "teds_dashboard_system",
+  "name": "Ted's Dashboard System",
+  "codeowners": ["@tedr91"],
+  "config_flow": true,
+  "dependencies": ["conversation"],
+  "documentation": "https://github.com/tedr91/Teds-Dashboard-System",
+  "iot_class": "local_push",
+  "issue_tracker": "https://github.com/tedr91/Teds-Dashboard-System/issues",
+  "requirements": ["mutagen"],
+  "version": "1.0.83"
+}

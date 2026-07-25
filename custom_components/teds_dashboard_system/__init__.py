@@ -1,4 +1,4 @@
-"""Ted's Cards Backend integration."""
+"""Ted's Dashboard System integration."""
 
 from __future__ import annotations
 
@@ -349,12 +349,12 @@ async def _install_sentences(hass: HomeAssistant) -> None:
 
 
 async def _register_sound_path(hass: HomeAssistant) -> None:
-    """Serve bundled alert sounds at /teds_cards_backend/sounds/* (once)."""
+    """Serve bundled alert sounds at /teds_dashboard_system/sounds/* (once)."""
     flag = f"{DOMAIN}_sounds_registered"
     if hass.data.get(flag):
         return
     sounds_dir = os.path.join(os.path.dirname(__file__), "sounds")
-    url = "/teds_cards_backend/sounds"
+    url = "/teds_dashboard_system/sounds"
     try:
         from homeassistant.components.http import StaticPathConfig
 
@@ -371,7 +371,7 @@ async def _register_sound_path(hass: HomeAssistant) -> None:
 
 
 async def _register_announce_cache_path(hass: HomeAssistant) -> str | None:
-    """Serve stitched announcement clips at /teds_cards_backend/announce_cache/* and
+    """Serve stitched announcement clips at /teds_dashboard_system/announce_cache/* and
     return the writable cache directory (under the config dir, so it survives updates)."""
     cache_dir = hass.config.path(f"{DOMAIN}_cache")
     try:
@@ -380,7 +380,7 @@ async def _register_announce_cache_path(hass: HomeAssistant) -> str | None:
         return None
     flag = f"{DOMAIN}_announce_cache_registered"
     if not hass.data.get(flag):
-        url = "/teds_cards_backend/announce_cache"
+        url = "/teds_dashboard_system/announce_cache"
         try:
             from homeassistant.components.http import StaticPathConfig
 
@@ -398,12 +398,12 @@ async def _register_announce_cache_path(hass: HomeAssistant) -> str | None:
 
 
 async def _register_background_path(hass: HomeAssistant) -> None:
-    """Serve bundled wallpaper images at /teds_cards_backend/backgrounds/* (once)."""
+    """Serve bundled wallpaper images at /teds_dashboard_system/backgrounds/* (once)."""
     flag = f"{DOMAIN}_backgrounds_registered"
     if hass.data.get(flag):
         return
     backgrounds_dir = os.path.join(os.path.dirname(__file__), "backgrounds")
-    url = "/teds_cards_backend/backgrounds"
+    url = "/teds_dashboard_system/backgrounds"
     try:
         from homeassistant.components.http import StaticPathConfig
 

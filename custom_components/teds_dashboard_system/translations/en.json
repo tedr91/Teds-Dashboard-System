@@ -1,0 +1,6 @@
+{
+  "config": {
+    "step": { "user": { "title": "Ted's Dashboard System", "description": "Add the alarms & timers backend for Ted's Cards." } },
+    "abort": { "single_instance_allowed": "Already configured." }
+  }
+}

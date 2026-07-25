@@ -1,8 +1,8 @@
-"""WebSocket API for Ted's Cards Backend.
+"""WebSocket API for Ted's Dashboard System.
 
 Non-admin HA users (e.g. kiosk / Wallpanel users) are not allowed to
 `subscribe_events` for custom event types, so cards cannot listen to
-`teds_cards_backend_notification` directly. This command lets any authenticated
+`teds_dashboard_system_notification` directly. This command lets any authenticated
 user subscribe to notifications via a dedicated, non-admin command instead.
 """
 
@@ -30,10 +30,10 @@ _REGISTERED = f"{DOMAIN}_ws_registered"
 # Bundled wallpaper folders -> the category returned to the frontend.
 _BACKGROUND_DIRS = {"general": "general", "light": "light-mode", "dark": "dark-mode"}
 _BACKGROUND_EXTS = (".webp", ".jpg", ".jpeg", ".png", ".gif", ".avif")
-_BACKGROUND_URL = "/teds_cards_backend/backgrounds"
+_BACKGROUND_URL = "/teds_dashboard_system/backgrounds"
 
 # Bundled alert sounds live here and are served at this URL prefix.
-_SOUNDS_URL = "/teds_cards_backend/sounds"
+_SOUNDS_URL = "/teds_dashboard_system/sounds"
 # Filename prefix -> category label shown in the sound picker.
 _SOUND_CATEGORIES = (("alarm", "Alarm"), ("timer", "Timer"), ("notification", "Notification"))
 

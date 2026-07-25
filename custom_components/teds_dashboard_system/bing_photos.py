@@ -1,4 +1,4 @@
-"""Bing "Photo of the Day" wallpaper source for Ted's Cards Backend.
+"""Bing "Photo of the Day" wallpaper source for Ted's Dashboard System.
 
 Downloads Bing's daily images into an isolated ``backgrounds/bing_pod/`` cache
 (kept separate from the bundled Built-in wallpapers) and serves them from the
@@ -37,7 +37,7 @@ _FAVORITES_DIRNAME = "favorites"
 _STORED_DIRNAME = "stored"
 _INDEX_NAME = "index.json"
 _REMOVED_NAME = "removed.json"
-_URL_BASE = f"/teds_cards_backend/backgrounds/{_CACHE_DIRNAME}"
+_URL_BASE = f"/teds_dashboard_system/backgrounds/{_CACHE_DIRNAME}"
 _DEFAULT_CACHE_SIZE = 100
 _FETCH_DAYS = 8  # Bing's archive exposes up to the last 8 days.
 _RESOLUTIONS = ("_UHD.jpg", "_1920x1080.jpg")  # try UHD first, then 1080p.
@@ -387,7 +387,7 @@ def _write_import(dirname: str, stem: str, short: str, ext: str, content: bytes)
     the ``short`` content hash: if any file already ends with ``-<short><ext>`` (any
     readable prefix), reuse it. Blocking — run in the executor."""
     dest_dir = os.path.join(os.path.dirname(__file__), "backgrounds", dirname)
-    base = f"/teds_cards_backend/backgrounds/{dirname}"
+    base = f"/teds_dashboard_system/backgrounds/{dirname}"
     suffix = f"-{short}{ext}"
     try:
         os.makedirs(dest_dir, exist_ok=True)
@@ -453,7 +453,7 @@ def _list_favorites() -> list[str]:
         names = sorted(os.listdir(_favorites_dir()))
     except OSError:
         return []
-    base = f"/teds_cards_backend/backgrounds/{_FAVORITES_DIRNAME}"
+    base = f"/teds_dashboard_system/backgrounds/{_FAVORITES_DIRNAME}"
     return [f"{base}/{n}" for n in names if n.lower().endswith(_IMPORT_EXTS)]
 
 

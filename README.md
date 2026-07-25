@@ -1,17 +1,21 @@
-# Ted's Cards Backend
+# Ted's Dashboard System
 
 Home Assistant integration backing **Ted's Cards** alarms & timers — so the Alarm and Timer cards can add/manage them without you creating helpers by hand.
 
-- **Alarms** — label, description, time, repeat days, enabled; fires a `teds_cards_backend_alarm_ringing` event you can automate.
-- **Timers** — countdown (h/m/s) + name, pause/resume, edit (rename/change duration), view/cancel in-progress, last 5 recent for one-tap restart; fires `teds_cards_backend_timer_finished`.
+- **Alarms** — label, description, time, repeat days, enabled; fires a `teds_dashboard_system_alarm_ringing` event you can automate.
+- **Timers** — countdown (h/m/s) + name, pause/resume, edit (rename/change duration), view/cancel in-progress, last 5 recent for one-tap restart; fires `teds_dashboard_system_timer_finished`.
 
-Install via HACS (custom repository, category **Integration**), restart, then add **Ted's Cards Backend** from Settings → Devices & Services. Pair with the cards in [Teds-Cards](https://github.com/tedr91/Teds-Cards).
+Install via HACS (custom repository, category **Integration**), restart, then add **Ted's Dashboard System** from Settings → Devices & Services. Pair with the cards in [Teds-Cards](https://github.com/tedr91/Teds-Cards).
 
 ## Changelog
 
+### v1.0.83
+
+- **Renamed to Ted's Dashboard System.** The integration domain changed from `teds_cards_backend` to `teds_dashboard_system` — all services (e.g. `teds_dashboard_system.announce`), events (`teds_dashboard_system_alarm_ringing`, `_timer_finished`, `_notification`, …), WebSocket commands, and served static paths (`/teds_dashboard_system/sounds/*`, `/backgrounds/*`, `/announce_cache/*`) now use the new prefix. The custom component folder is now `custom_components/teds_dashboard_system/`. Remove the old **Ted's Cards Backend** integration and add **Ted's Dashboard System** from Settings → Devices & Services (stored settings/alarms/timers are not migrated). Pairs with Ted's Cards v1.0.341+.
+
 ### v1.0.82
 
-- **Assist-Response service.** New `teds_cards_backend.assist_response` action pushes a title + message (and optional image) to targeted areas/devices for the new Ted's Cards Assist-Response view — the visual counterpart to a spoken Assist answer. It stores the latest answer per target (streamed via `subscribe_assist_responses`, exposed on `sensor.teds_assist_responses` for reload restore) and reuses the navigation signal to switch the targeted screens to the view (`navigate: false` to skip). Renamed the `info_dashboard` setting default to `assist_response_dashboard`. Pairs with Ted's Cards v1.0.333+.
+- **Assist-Response service.** New `teds_dashboard_system.assist_response` action pushes a title + message (and optional image) to targeted areas/devices for the new Ted's Cards Assist-Response view — the visual counterpart to a spoken Assist answer. It stores the latest answer per target (streamed via `subscribe_assist_responses`, exposed on `sensor.teds_assist_responses` for reload restore) and reuses the navigation signal to switch the targeted screens to the view (`navigate: false` to skip). Renamed the `info_dashboard` setting default to `assist_response_dashboard`. Pairs with Ted's Cards v1.0.333+.
 
 ### v1.0.81
 
@@ -89,7 +93,7 @@ Install via HACS (custom repository, category **Integration**), restart, then ad
 
 ### v1.0.63
 
-- **Announcements** — a new `teds_cards_backend.announce` service (and the Ted's Announce card) speaks a message aloud on the targeted rooms/devices and shows a prominent, centered toast on their screens. Speech uses each speaker's best method — Music Assistant / Sonos / Alexa-style players duck and auto-resume; others play directly — via the TTS engine set in Settings → Announce. Persistent announcements can loop an alert chime until dismissed. Adds a global predefined-message list, per-announcement targeting by area and/or registered device, a `sensor.teds_announcements` recent list, and a `remove_announcement` service. Pairs with Ted's Cards v1.0.287+.
+- **Announcements** — a new `teds_dashboard_system.announce` service (and the Ted's Announce card) speaks a message aloud on the targeted rooms/devices and shows a prominent, centered toast on their screens. Speech uses each speaker's best method — Music Assistant / Sonos / Alexa-style players duck and auto-resume; others play directly — via the TTS engine set in Settings → Announce. Persistent announcements can loop an alert chime until dismissed. Adds a global predefined-message list, per-announcement targeting by area and/or registered device, a `sensor.teds_announcements` recent list, and a `remove_announcement` service. Pairs with Ted's Cards v1.0.287+.
 
 ### v1.0.62
 
@@ -217,7 +221,7 @@ Install via HACS (custom repository, category **Integration**), restart, then ad
 
 ### v1.0.31
 
-- **“Ted Dash System” media folder** — on setup the integration creates a `Ted Dash System` folder under Home Assistant's local **My media** source (the first configured `media_dirs` path) and exposes its media-source URI via a new `teds_cards_backend/media_folder` WebSocket command. Ted's Cards uses it so Background wallpaper uploads land in that folder and the image/folder pickers open into it. Pairs with Ted's Cards v1.0.146+.
+- **“Ted Dash System” media folder** — on setup the integration creates a `Ted Dash System` folder under Home Assistant's local **My media** source (the first configured `media_dirs` path) and exposes its media-source URI via a new `teds_dashboard_system/media_folder` WebSocket command. Ted's Cards uses it so Background wallpaper uploads land in that folder and the image/folder pickers open into it. Pairs with Ted's Cards v1.0.146+.
 
 ### v1.0.30
 
@@ -225,7 +229,7 @@ Install via HACS (custom repository, category **Integration**), restart, then ad
 
 ### v1.0.29
 
-- **Background Wallpapers** — added the `background_*` settings (mode, size, alignment, repeat, scroll, color + gradient, single image + recents, slideshow album/folder/type/shuffle/cycle) to the settings store. Serves the bundled wallpapers at `/teds_cards_backend/backgrounds/*` and adds a `list_backgrounds` WebSocket command that returns the built-in image catalogue grouped by general/light/dark. Pairs with Ted's Cards v1.0.131+.
+- **Background Wallpapers** — added the `background_*` settings (mode, size, alignment, repeat, scroll, color + gradient, single image + recents, slideshow album/folder/type/shuffle/cycle) to the settings store. Serves the bundled wallpapers at `/teds_dashboard_system/backgrounds/*` and adds a `list_backgrounds` WebSocket command that returns the built-in image catalogue grouped by general/light/dark. Pairs with Ted's Cards v1.0.131+.
 
 ### v1.0.28
 
@@ -233,7 +237,7 @@ Install via HACS (custom repository, category **Integration**), restart, then ad
 
 ### v1.0.27
 
-- **Weather entity setting** — added `weather_entity` to the settings store so the Clock Weather Card's opt-in (`backend_integration: true`) can source its weather entity from a single per-device/global setting. Pairs with Ted's Cards v1.0.110+.
+- **Weather entity setting** — added `weather_entity` to the settings store so the Clock Weather Card's opt-in (`dashboard_integration: true`) can source its weather entity from a single per-device/global setting. Pairs with Ted's Cards v1.0.110+.
 
 ### v1.0.26
 
@@ -299,7 +303,7 @@ Install via HACS (custom repository, category **Integration**), restart, then ad
 
 ### v1.0.11
 
-- **Settings system + sound playback** — a backend settings store (**global** baseline + **per-device** overrides) with services (`set_setting`, `clear_setting`, `register_device`), a `teds_cards_backend/subscribe_settings` WebSocket command, a device registry, and **`sensor.teds_settings`**. A server-side **playback engine** plays alert sounds for finished timers / ringing alarms / notifications on the firing area's devices' media players (deduped, DND-aware), repeating up to the configured max and cancelling on dismiss. Snooze is now a client-resolved payload on completion notifications (each device uses its own snooze settings). Bundled default sounds are served from `/teds_cards_backend/sounds/` (drop `timer.mp3` / `alarm.mp3` / `notification.mp3` in the `sounds/` folder, or set a custom URL in settings). Pairs with Ted's Cards v1.0.69+.
+- **Settings system + sound playback** — a backend settings store (**global** baseline + **per-device** overrides) with services (`set_setting`, `clear_setting`, `register_device`), a `teds_dashboard_system/subscribe_settings` WebSocket command, a device registry, and **`sensor.teds_settings`**. A server-side **playback engine** plays alert sounds for finished timers / ringing alarms / notifications on the firing area's devices' media players (deduped, DND-aware), repeating up to the configured max and cancelling on dismiss. Snooze is now a client-resolved payload on completion notifications (each device uses its own snooze settings). Bundled default sounds are served from `/teds_dashboard_system/sounds/` (drop `timer.mp3` / `alarm.mp3` / `notification.mp3` in the `sounds/` folder, or set a custom URL in settings). Pairs with Ted's Cards v1.0.69+.
 
 ### v1.0.10
 
@@ -307,7 +311,7 @@ Install via HACS (custom repository, category **Integration**), restart, then ad
 
 ### v1.0.9
 
-- **Dismissals sync across devices** — `mark_read`, `dismiss_notification`, and `clear_notifications` now broadcast a dismissal signal (a `teds_cards_backend_notification` event with `dismissed: true`) for each affected notification, so a toast dismissed on one device closes on every device showing it (e.g. a house-wide alarm cleared everywhere at once). Pairs with Ted's Cards v1.0.65+.
+- **Dismissals sync across devices** — `mark_read`, `dismiss_notification`, and `clear_notifications` now broadcast a dismissal signal (a `teds_dashboard_system_notification` event with `dismissed: true`) for each affected notification, so a toast dismissed on one device closes on every device showing it (e.g. a house-wide alarm cleared everywhere at once). Pairs with Ted's Cards v1.0.65+.
 
 ### v1.0.8
 
@@ -315,11 +319,11 @@ Install via HACS (custom repository, category **Integration**), restart, then ad
 
 ### v1.0.7
 
-- **Notifications work for non-admin users** — added a `teds_cards_backend/subscribe_notifications` WebSocket command so kiosk/Wallpanel (non-admin) dashboards can receive notifications. Home Assistant blocks non-admin users from subscribing to custom events via `subscribe_events`, which caused repeated "Unauthorized" errors; cards now use this command instead. The `teds_cards_backend_notification` event still fires, so event-triggered automations are unaffected. Pairs with Ted's Cards v1.0.49+.
+- **Notifications work for non-admin users** — added a `teds_dashboard_system/subscribe_notifications` WebSocket command so kiosk/Wallpanel (non-admin) dashboards can receive notifications. Home Assistant blocks non-admin users from subscribing to custom events via `subscribe_events`, which caused repeated "Unauthorized" errors; cards now use this command instead. The `teds_dashboard_system_notification` event still fires, so event-triggered automations are unaffected. Pairs with Ted's Cards v1.0.49+.
 
 ### v1.0.6
 
-- **Notifications (foundation)** — a new server-side notification store: a **`notify`** service (title, message, severity, icon, area, timeout, sticky) plus `dismiss_notification`, `mark_read`, and `clear_notifications`. Exposes **`sensor.teds_notifications`** (unread count + list) and fires a `teds_cards_backend_notification` event. Finished timers and ringing alarms now also create notifications, so they flow through one path. Pairs with Ted's Cards v1.0.34+.
+- **Notifications (foundation)** — a new server-side notification store: a **`notify`** service (title, message, severity, icon, area, timeout, sticky) plus `dismiss_notification`, `mark_read`, and `clear_notifications`. Exposes **`sensor.teds_notifications`** (unread count + list) and fires a `teds_dashboard_system_notification` event. Finished timers and ringing alarms now also create notifications, so they flow through one path. Pairs with Ted's Cards v1.0.34+.
 
 ### v1.0.5
 
@@ -328,11 +332,11 @@ Install via HACS (custom repository, category **Integration**), restart, then ad
 ### v1.0.4
 
 - **Finished timers are removed reliably** — the timer-finished handler now runs on the event loop (as a proper callback), so a completed timer is dropped from the active list and the sensor updates immediately instead of occasionally lingering at 0:00.
-- The `teds_cards_backend_timer_finished` event now also includes the timer's **`duration`** (seconds), so the cards can show how long the finished timer ran.
+- The `teds_dashboard_system_timer_finished` event now also includes the timer's **`duration`** (seconds), so the cards can show how long the finished timer ran.
 
 ### v1.0.3
 
-- **Location-aware alarms & timers** — `add_alarm` and `start_timer` now accept an optional **`location`** (an HA area) that is stored on each alarm/timer (and recent preset). The `teds_cards_backend_alarm_ringing` and `teds_cards_backend_timer_finished` events now include `location` (area id) and `area_name`, so automations can announce in the room the item belongs to. Unset `location` behaves as before (global).
+- **Location-aware alarms & timers** — `add_alarm` and `start_timer` now accept an optional **`location`** (an HA area) that is stored on each alarm/timer (and recent preset). The `teds_dashboard_system_alarm_ringing` and `teds_dashboard_system_timer_finished` events now include `location` (area id) and `area_name`, so automations can announce in the room the item belongs to. Unset `location` behaves as before (global).
 
 ### v1.0.2
 

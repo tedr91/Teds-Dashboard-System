@@ -1,6 +1,6 @@
-"""Ted's Cards Backend — alarms & timers for Ted's Cards."""
+"""Ted's Dashboard System — alarms & timers for Ted's Cards."""
 
-DOMAIN = "teds_cards_backend"
+DOMAIN = "teds_dashboard_system"
 
 STORAGE_VERSION = 1
 STORAGE_KEY = DOMAIN
@@ -106,7 +106,7 @@ SETTINGS_DEFAULTS = {
     "navbar_position": "bottom",
     "navbar_size": 48,
     # View Launcher — auto-discovered, Settings-driven navbar buttons that navigate to the
-    # dashboard's views (shown on navbars with `backend_integration: true`).
+    # dashboard's views (shown on navbars with `dashboard_integration: true`).
     "launcher_enabled": True,
     # Which of the five fixed navbar sections the launcher buttons are prepended into.
     "launcher_section": "center",  # left | mid-left | center | mid-right | right
@@ -148,7 +148,7 @@ SETTINGS_DEFAULTS = {
     # installed set by priority; otherwise force a specific set (falls back to mdi).
     "icon_set": "auto",
     # Default weather entity used by Ted's weather/clock cards that opt in via
-    # `backend_integration: true`. None = the card falls back to its own default.
+    # `dashboard_integration: true`. None = the card falls back to its own default.
     "weather_entity": None,
     # Automatic Night Mode — dims the background, lowers screen brightness, and switches to a
     # night font color on a nightly schedule, restoring day values in the morning.

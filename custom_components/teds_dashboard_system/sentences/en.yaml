@@ -1,6 +1,6 @@
-# Ted's Cards Backend — English Assist sentences.
+# Ted's Dashboard System — English Assist sentences.
 #
-# Installed into <config>/custom_sentences/en/teds_cards_backend.yaml at setup
+# Installed into <config>/custom_sentences/en/teds_dashboard_system.yaml at setup
 # (that's the only folder the default conversation agent auto-loads). Handlers
 # are registered in intents.py.
 language: en

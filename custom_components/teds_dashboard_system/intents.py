@@ -1,4 +1,4 @@
-"""Custom Assist intents for Ted's Cards Backend.
+"""Custom Assist intents for Ted's Dashboard System.
 
 Registers voice/conversation intents for managing alarms and notifications,
 backed by the existing :class:`TedsManager` services. Requests are scoped to the

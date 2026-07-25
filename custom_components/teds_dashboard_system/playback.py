@@ -42,7 +42,7 @@ MEDIA_ANNOUNCE = 1 << 20
 # Fallback sound length (seconds) when the real duration can't be determined.
 DEFAULT_DURATION = 5.0
 # Bundled sounds are served under this path; the files live in ./sounds/.
-SOUNDS_URL_PREFIX = "/teds_cards_backend/sounds/"
+SOUNDS_URL_PREFIX = "/teds_dashboard_system/sounds/"
 
 
 class PlaybackEngine:
@@ -425,7 +425,7 @@ class PlaybackEngine:
     # --- combined-clip stitching (ffmpeg) ----------------------------------
     def _combined_url(self, name) -> str:
         """Absolute (preferred) or relative URL for a stitched clip filename."""
-        path = f"/teds_cards_backend/announce_cache/{name}"
+        path = f"/teds_dashboard_system/announce_cache/{name}"
         try:
             return f"{get_url(self.hass)}{path}"
         except NoURLAvailableError:
