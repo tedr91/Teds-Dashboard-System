@@ -1,9 +1,9 @@
 {
   "schema": 1,
-  "dashboard": "1.0.0",
+  "dashboard": "1.0.1",
   "shared": "1.0.0",
   "views": {
-    "view-welcome": "1.0.0",
+    "view-welcome": "1.0.1",
     "view-alarms-timers": "1.0.0",
     "view-announce": "1.0.0",
     "view-assist-response": "1.0.0",
@@ -22,7 +22,6 @@
     "view-home-wallpanel-v": "1.0.0"
   },
   "layout": {
-    "kiosk_include": "shared/kiosk.yaml",
     "order": [
       "views/view-welcome.yaml",
       "views-home/view-home-nightstand.yaml",

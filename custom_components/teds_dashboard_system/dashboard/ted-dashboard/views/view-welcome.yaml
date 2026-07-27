@@ -6,8 +6,8 @@
 #
 # Effective view height = viewport - navbar - header, where the "header" term is
 #   var(--kiosk-header-height, var(--header-height, 56px))
-# kiosk-mode sets --kiosk-header-height:0 on #view (kiosk = viewport - navbar),
-# non-kiosk falls back to the real --header-height (viewport - navbar - header).
+# Ted's Cards sets --kiosk-header-height:0 when this device uses kiosk mode (kiosk =
+# viewport - navbar); non-kiosk falls back to the real --header-height.
 # Clock: min 100px, 25% of that height. Content: 75% of that height.
 type: custom:grid-layout
 path: home-welcome
@@ -96,7 +96,7 @@ cards:
         severity: warning
         icon: mdi:emoticon-outline
         title: Custom Icons not installed
-        message: The dashboard's icons may appear blank without the Custom Icons integration.
+        message: Install Custom Icons via HACS so the dashboard's icons render (they may otherwise appear blank).
         docs_url: https://github.com/thomasloven/hass-custom_icons
         docs_label: Learn more
         visibility:
@@ -104,6 +104,21 @@ cards:
             entity: sensor.teds_requirements
             attribute: custom_icons
             state: missing
+      - type: custom:ted-messagebox-card
+        severity: warning
+        icon: mdi:emoticon-outline
+        title: Custom Icons needs setup
+        message: >-
+          Custom Icons is downloaded in HACS but not set up yet. Go to Settings →
+          Devices & Services → Add Integration → Custom Icons, then open it, click
+          Configure, and Download the icon sets.
+        docs_url: https://github.com/thomasloven/hass-custom_icons
+        docs_label: Learn more
+        visibility:
+          - condition: state
+            entity: sensor.teds_requirements
+            attribute: custom_icons
+            state: setup
       - type: custom:ted-messagebox-card
         severity: warning
         icon: mdi:calendar-alert
@@ -120,7 +135,7 @@ cards:
         severity: warning
         icon: mdi:web
         title: browser_mod not installed
-        message: The Refresh button and some navigation rely on browser_mod.
+        message: Install browser_mod via HACS — the Refresh button and some navigation rely on it.
         docs_url: https://github.com/thomasloven/hass-browser_mod
         docs_label: Learn more
         visibility:
@@ -129,17 +144,19 @@ cards:
             attribute: browser_mod
             state: missing
       - type: custom:ted-messagebox-card
-        severity: tip
-        icon: mdi:monitor-shimmer
-        title: Kiosk-Mode not installed
-        message: The Home Assistant header won't auto-hide on wall panels without Kiosk-Mode.
-        docs_url: https://github.com/NemesisSoft/kiosk-mode
+        severity: warning
+        icon: mdi:web
+        title: browser_mod needs setup
+        message: >-
+          browser_mod is downloaded in HACS but not set up yet. Add it under
+          Settings → Devices & Services → Add Integration → Browser Mod.
+        docs_url: https://github.com/thomasloven/hass-browser_mod
         docs_label: Learn more
         visibility:
           - condition: state
             entity: sensor.teds_requirements
-            attribute: kiosk_mode
-            state: missing
+            attribute: browser_mod
+            state: setup
       - type: custom:ted-messagebox-card
         severity: tip
         icon: mdi:weather-partly-cloudy
