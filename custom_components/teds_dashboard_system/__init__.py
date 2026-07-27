@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import os
 import shutil
 from datetime import timedelta
@@ -23,9 +24,12 @@ from .cards import async_setup_cards, async_unload_cards
 from .const import DOMAIN, EVENT_NAVIGATE, MEDIA_FOLDER_NAME
 from .intents import async_register_intents
 from .store import TedsManager
+from .themes import async_install_bundled_themes
 from .websocket import async_register as async_register_ws
 
 PLATFORMS = [Platform.SENSOR]
+
+_LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -45,6 +49,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     manager.announce_cache_dir = await _register_announce_cache_path(hass)
     manager.media_folder = await _ensure_media_folder(hass)
     manager.cards_js_url = await async_setup_cards(hass, manager.version)
+    try:
+        await async_install_bundled_themes(hass)
+    except Exception:  # noqa: BLE001 - theme install must never block setup
+        _LOGGER.exception("Ted's Themes install failed")
 
     async def add_alarm(call: ServiceCall):
         await manager.add_alarm(

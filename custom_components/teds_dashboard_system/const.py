@@ -279,3 +279,6 @@ FRONTEND_DIR = "frontend"  # bundled asset dir inside the integration
 CARDS_JS_NAME = "ted-cards.js"
 CARDS_URL = f"/{DOMAIN}/frontend/{CARDS_JS_NAME}"
 
+# Bundled Ted's Themes yaml files (installed into <config>/themes/).
+THEMES_DIR = "themes"
+

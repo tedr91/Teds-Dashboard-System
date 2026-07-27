@@ -1,0 +1,484 @@
+# =============================================================================
+#  Microsoft Fluent 2 — Home Assistant Theme
+#
+#  The cross-platform Fluent 2 design system used in Microsoft 365, Teams and
+#  the web — NOT the Windows 11 desktop shell. Flat, solid neutral surfaces
+#  (no Mica/Acrylic), the Fluent brand blue (#0F6CBD light / #479EF5 dark),
+#  Segoe UI, a 4 px card / control radius, and Fluent elevation shadows.
+#
+#  Native HA 2026.x theme — no UIX or card-mod required.
+#  Single theme with `modes:` so HA's "Auto" theme mode follows the OS.
+#
+#  Token values are taken directly from the Fluent 2 design specification:
+#  - Brand ramp = Fluent default "communication blue" (shades 10–160).
+#  - Neutral surfaces, text and stroke = Fluent 2 light/dark alias tokens.
+#  - Radii (4/6/8 px) = borderRadiusMedium / Large / XLarge.
+#  - Shadows = Fluent shadow2 (cards) / shadow16 (menus) / shadow28 (dialogs).
+#
+#  Unlike the Microsoft Windows 11 theme, Fluent 2 surfaces are fully OPAQUE.
+#  Fluent 2 expresses hierarchy through neutral background steps and crisp
+#  elevation shadows rather than translucency, so there is intentionally no
+#  backdrop blur and no wallpaper here.
+# =============================================================================
+
+Microsoft Fluent 2:
+  # ---------------------------------------------------------------------------
+  # 1. Typography — Segoe UI (Fluent fontFamilyBase), graceful fallbacks
+  # ---------------------------------------------------------------------------
+  ha-font-family-body: '"Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif'
+  ha-font-family-heading: '"Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif'
+  ha-font-family-code: '"Cascadia Code", "Cascadia Mono", "Consolas", "Courier New", monospace'
+
+  # Legacy font vars (paper-elements / pre-2026 HA)
+  primary-font-family: 'var(--ha-font-family-heading)'
+  paper-font-common-base_-_font-family: 'var(--ha-font-family-body)'
+  paper-font-common-code_-_font-family: 'var(--ha-font-family-code)'
+  code-editor-font-family: 'var(--ha-font-family-code)'
+
+  paper-font-body1_-_font-family: 'var(--ha-font-family-body)'
+  paper-font-subhead_-_font-family: 'var(--ha-font-family-body)'
+  paper-font-headline_-_font-family: 'var(--ha-font-family-heading)'
+  paper-font-title_-_font-family: 'var(--ha-font-family-heading)'
+  paper-font-caption_-_font-family: 'var(--ha-font-family-body)'
+  paper-font-display1_-_font-family: 'var(--ha-font-family-heading)'
+  paper-font-display2_-_font-family: 'var(--ha-font-family-heading)'
+  paper-font-display3_-_font-family: 'var(--ha-font-family-heading)'
+  paper-font-display4_-_font-family: 'var(--ha-font-family-heading)'
+
+  # Fluent 2 type ramp — Body 1 = 14/20 @400, Subtitle 2 = 20/28 @600
+  paper-font-body1_-_font-weight: '400'
+  paper-font-body1_-_font-size: '14px'
+  paper-font-body1_-_line-height: '20px'
+  paper-font-subhead_-_font-weight: '600'
+  paper-font-subhead_-_font-size: '14px'
+  paper-font-subhead_-_line-height: '20px'
+  paper-font-headline_-_font-weight: '600'
+  paper-font-headline_-_font-size: '20px'
+  paper-font-headline_-_line-height: '28px'
+  paper-font-title_-_font-weight: '600'
+  paper-font-title_-_font-size: '20px'
+  paper-font-title_-_line-height: '28px'
+
+  # ---------------------------------------------------------------------------
+  # 2. Fluent 2 corner-radius system
+  #    borderRadiusMedium 4 (controls + cards) · Large 6 · XLarge 8 (dialogs)
+  # ---------------------------------------------------------------------------
+  ha-border-radius-sm:  '2px'   # borderRadiusSmall
+  ha-border-radius-md:  '4px'   # borderRadiusMedium (buttons, inputs, cards)
+  ha-border-radius-lg:  '6px'   # borderRadiusLarge
+  ha-border-radius-xl:  '8px'   # borderRadiusXLarge (panels, dialogs)
+  ha-border-radius-2xl: '8px'
+  ha-border-radius-3xl: '8px'
+  # Component-specific radius overrides
+  ha-card-border-radius:   '4px'
+  ha-dialog-border-radius: '8px'
+  # Legacy aliases
+  mdc-shape-small:    '4px'
+  mdc-shape-medium:   '6px'
+  mdc-shape-large:    '8px'
+  border-radius-card:   '4px'
+  border-radius-button: '4px'
+  border-radius-chip:   '4px'
+
+  # ---------------------------------------------------------------------------
+  # 3. Card geometry — FLAT, solid Fluent surface; thin neutral stroke;
+  #    Fluent shadow2 resting elevation. No Mica/Acrylic blur.
+  # ---------------------------------------------------------------------------
+  ha-card-backdrop-filter: 'none'
+  ha-card-border-width: '1px'
+  ha-card-box-shadow: '0 1px 2px rgba(0, 0, 0, 0.14), 0 0 2px rgba(0, 0, 0, 0.12)'  # shadow2
+  # (ha-card-border-color falls back to --divider-color, set per mode below.)
+
+  # ---------------------------------------------------------------------------
+  # 4. Dialogs & popovers — solid Fluent surfaces (no backdrop blur).
+  #    Backdrop scrim = rgba(0,0,0,0.4) per the Fluent dialog spec.
+  # ---------------------------------------------------------------------------
+  ha-dialog-surface-backdrop-filter: 'none'
+  ha-dialog-scrim-backdrop-filter: 'none'
+
+  # Fluent elevation — shadow16 for menus/dropdowns, shadow28 for dialogs.
+  wa-shadow-m: '0 8px 16px rgba(0, 0, 0, 0.14), 0 0 2px rgba(0, 0, 0, 0.12)'   # shadow16
+  wa-shadow-l: '0 14px 28px rgba(0, 0, 0, 0.24), 0 0 8px rgba(0, 0, 0, 0.20)'  # shadow28
+
+  # ---------------------------------------------------------------------------
+  # 5. App-header sizing
+  # ---------------------------------------------------------------------------
+  app-header-background-color: 'var(--primary-background-color)'
+  app-header-text-color: 'var(--primary-text-color)'
+  app-header-border-bottom: '1px solid var(--divider-color)'
+
+  # ---------------------------------------------------------------------------
+  # 6. Light / Dark token sets
+  # ---------------------------------------------------------------------------
+  modes:
+    # =========================================================================
+    #  LIGHT  (Fluent neutral #F5F5F5 canvas, #FFFFFF cards, #0F6CBD brand)
+    # =========================================================================
+    light:
+      # ── Default light wallpaper (neutral concrete gradient) ──
+      # Fluent is flat by design; for a solid canvas use '#F5F5F5' instead.
+      lovelace-background: 'center / cover no-repeat fixed url("https://cdn.jsdelivr.net/gh/tedr91/Teds-Themes@main/backgrounds/microsoft-fluent2/microsoft-fluent2-light.webp")'
+
+      # ── Fluent brand ramp (default communication blue, shades 10–160) ──
+      ha-color-primary-05: '#061724'
+      ha-color-primary-10: '#0A2E4A'
+      ha-color-primary-20: '#0E4775'
+      ha-color-primary-30: '#0F548C'
+      ha-color-primary-40: '#0F6CBD'   # colorBrandBackground (light)
+      ha-color-primary-50: '#2886DE'
+      ha-color-primary-60: '#479EF5'
+      ha-color-primary-70: '#62ABF5'
+      ha-color-primary-80: '#96C6FA'
+      ha-color-primary-90: '#CFE4FA'
+      ha-color-primary-95: '#EBF3FC'
+
+      # ── HA 2026.x surface tokens (Fluent neutral backgrounds) ──
+      ha-color-surface-default: '#F5F5F5'   # colorNeutralBackground2
+      ha-color-surface-low:     '#F0F0F0'   # colorNeutralBackground3
+      ha-color-surface-lower:   '#EBEBEB'   # colorNeutralBackground4
+
+      # ── HA 2026.x text tokens (Fluent neutral foregrounds) ──
+      ha-color-text-primary:    '#242424'   # colorNeutralForeground1
+      ha-color-text-secondary:  '#424242'   # colorNeutralForeground2
+      ha-color-text-disabled:   '#BDBDBD'   # colorNeutralForegroundDisabled
+      ha-color-text-link:       '#0F6CBD'
+
+      # ── HA 2026.x border tokens (Fluent neutral strokes) ──
+      ha-color-border-neutral-quiet:  '#E0E0E0'   # colorNeutralStroke2
+      ha-color-border-neutral-normal: '#D1D1D1'   # colorNeutralStroke1
+      ha-color-border-neutral-loud:   '#616161'   # colorNeutralStrokeAccessible
+
+      # ── HA 2026.x form/input background ──
+      ha-color-form-background:           '#FFFFFF'
+      ha-color-form-background-hover:     '#F5F5F5'
+      ha-color-form-background-disabled:  '#F0F0F0'
+
+      # ── HA 2026.x dialog surface (read by wa-dialog) — solid ──
+      ha-dialog-surface-background: '#FFFFFF'
+
+      # ── Web Awesome surface tokens (dropdowns + dialogs) — solid ──
+      wa-color-surface-raised:   '#FFFFFF'   # ← wa-popover (combo-box dropdowns)
+      wa-color-surface-default:  '#FFFFFF'
+      wa-color-surface-border:   '#D1D1D1'
+
+      # ── Brand / accent (legacy aliases) ──
+      primary-color: '#0F6CBD'        # Fluent colorBrandBackground
+      light-primary-color: '#2886DE'
+      dark-primary-color: '#0E4775'
+      accent-color: '#0F6CBD'
+      rgb-primary-color: '15, 108, 189'
+      rgb-accent-color: '15, 108, 189'
+
+      # ── Backgrounds — flat Fluent neutrals ──
+      primary-background-color:   '#F5F5F5'   # neutral canvas
+      secondary-background-color: '#EBEBEB'
+      card-background-color:           '#FFFFFF'   # colorNeutralBackground1
+      ha-card-background:              '#FFFFFF'
+      paper-card-background-color:     '#FFFFFF'
+      paper-listbox-background-color:  '#FFFFFF'
+      paper-dialog-background-color:   '#FFFFFF'
+      rgb-primary-background-color:   '245, 245, 245'
+      rgb-secondary-background-color: '235, 235, 235'
+      rgb-card-background-color:      '255, 255, 255'
+
+      # ── Text — Fluent neutral foregrounds ──
+      primary-text-color:    '#242424'
+      secondary-text-color:  '#424242'
+      text-primary-color:    '#FFFFFF'   # text on brand fills
+      disabled-text-color:   '#BDBDBD'
+      rgb-primary-text-color:   '36, 36, 36'
+      rgb-secondary-text-color: '66, 66, 66'
+
+      # ── Dividers / lines (also fallback for ha-card border) ──
+      divider-color: '#E0E0E0'
+      table-row-background-color: '#FFFFFF'
+      table-row-alternative-background-color: '#FAFAFA'
+
+      # Icons
+      state-icon-color:           '#424242'
+      state-icon-active-color:    '#0F6CBD'
+      state-icon-unavailable-color: '#BDBDBD'
+      paper-item-icon-color:        '#424242'
+      paper-item-icon-active-color: '#0F6CBD'
+      rgb-state-icon-color:        '66, 66, 66'
+      rgb-state-icon-active-color: '15, 108, 189'
+
+      # Sidebar
+      sidebar-background-color:           '#FFFFFF'
+      sidebar-icon-color:                 '#424242'
+      sidebar-text-color:                 '#242424'
+      sidebar-selected-background-color:  'rgba(15, 108, 189, 0.10)'
+      sidebar-selected-icon-color:        '#0F6CBD'
+      sidebar-selected-text-color:        '#0F6CBD'
+
+      # App header
+      app-header-background-color: '#F5F5F5'
+      app-header-text-color:       '#242424'
+      app-header-edit-background-color: '#EBEBEB'
+
+      # Inputs / form fields
+      input-background-color:     '#FFFFFF'
+      input-fill-color:           '#FFFFFF'
+      input-ink-color:            '#242424'
+      input-label-ink-color:      '#424242'
+      input-disabled-fill-color:  '#F0F0F0'
+      input-disabled-ink-color:   '#BDBDBD'
+      input-disabled-label-ink-color: '#BDBDBD'
+      input-dropdown-icon-color:  '#424242'
+      input-idle-line-color:      '#616161'
+      input-hover-line-color:     '#0F6CBD'
+      input-disabled-line-color:  '#E0E0E0'
+      input-outlined-idle-border-color:     '#D1D1D1'
+      input-outlined-hover-border-color:    '#0F6CBD'
+      input-outlined-disabled-border-color: '#E0E0E0'
+
+      # Material design (MDC) — buttons, chips, dialogs
+      mdc-theme-primary:    '#0F6CBD'
+      mdc-theme-secondary:  '#0F6CBD'
+      mdc-theme-on-primary: '#FFFFFF'
+      mdc-theme-on-secondary: '#FFFFFF'
+      mdc-theme-surface:    '#FFFFFF'
+      mdc-theme-on-surface: '#242424'
+      mdc-button-outline-color: '#D1D1D1'
+
+      # Switches — Fluent toggle
+      switch-checked-color:           '#0F6CBD'
+      switch-checked-button-color:    '#FFFFFF'
+      switch-checked-track-color:     '#0F6CBD'
+      switch-unchecked-button-color:  '#616161'
+      switch-unchecked-track-color:   '#FFFFFF'
+      paper-toggle-button-checked-button-color: '#FFFFFF'
+      paper-toggle-button-checked-bar-color:    '#0F6CBD'
+      paper-toggle-button-unchecked-button-color: '#FFFFFF'
+      paper-toggle-button-unchecked-bar-color:    '#616161'
+
+      # Sliders
+      slider-color:                       '#0F6CBD'
+      slider-bar-color:                   '#D1D1D1'
+      paper-slider-knob-color:            '#0F6CBD'
+      paper-slider-knob-start-color:      '#0F6CBD'
+      paper-slider-pin-color:             '#0F6CBD'
+      paper-slider-active-color:          '#0F6CBD'
+      paper-slider-secondary-color:       'rgba(15, 108, 189, 0.30)'
+      paper-slider-container-color:       '#D1D1D1'
+
+      # Tabs
+      paper-tabs-selection-bar-color: '#0F6CBD'
+
+      # Labels / badges
+      label-badge-background-color: '#FFFFFF'
+      label-badge-text-color:       '#242424'
+      label-badge-red:              '#BC2F32'
+      label-badge-green:            '#107C10'
+      label-badge-blue:             '#0F6CBD'
+      label-badge-yellow:           '#8A5B00'
+      label-badge-grey:             '#616161'
+
+      # Status colors (Fluent status foregrounds)
+      warning-color: '#8A5B00'   # colorStatusWarningForeground1
+      error-color:   '#BC2F32'   # colorStatusDangerForeground1
+      success-color: '#107C10'   # colorStatusSuccessForeground1
+      info-color:    '#0F6CBD'   # colorStatusInfoForeground1
+
+      # Code blocks
+      code-editor-background-color: '#FAFAFA'
+      markdown-code-background-color: '#F0F0F0'
+
+      # Calendar
+      calendar-background-color: '#FFFFFF'
+
+      # Energy dashboard
+      energy-grid-consumption-color: '#0F6CBD'
+      energy-grid-return-color:      '#107C10'
+      energy-solar-color:            '#F7CA5C'
+      energy-non-fossil-color:       '#10893E'
+      energy-battery-out-color:      '#8764B8'
+      energy-battery-in-color:       '#5C2E91'
+      energy-gas-color:              '#8A5B00'
+      energy-water-color:            '#038387'
+
+    # =========================================================================
+    #  DARK  (Fluent neutral #1F1F1F canvas, #292929 cards, #479EF5 brand)
+    # =========================================================================
+    dark:
+      # ── Default dark wallpaper (dark-grey brushstroke) ──
+      # For a solid canvas use '#1F1F1F' instead.
+      lovelace-background: 'center / cover no-repeat fixed url("https://cdn.jsdelivr.net/gh/tedr91/Teds-Themes@main/backgrounds/microsoft-fluent2/microsoft-fluent2-dark.webp")'
+
+      # ── Fluent brand ramp (shared absolute ramp; dark fill = shade 100) ──
+      ha-color-primary-05: '#061724'
+      ha-color-primary-10: '#0A2E4A'
+      ha-color-primary-20: '#0E4775'
+      ha-color-primary-30: '#0F548C'
+      ha-color-primary-40: '#0F6CBD'
+      ha-color-primary-50: '#2886DE'
+      ha-color-primary-60: '#479EF5'   # colorBrandBackground (dark)
+      ha-color-primary-70: '#62ABF5'
+      ha-color-primary-80: '#96C6FA'
+      ha-color-primary-90: '#CFE4FA'
+      ha-color-primary-95: '#EBF3FC'
+
+      # ── HA 2026.x surface tokens (Fluent dark neutrals) ──
+      ha-color-surface-default: '#1F1F1F'   # colorNeutralBackground2
+      ha-color-surface-low:     '#141414'   # colorNeutralBackground3
+      ha-color-surface-lower:   '#0A0A0A'   # colorNeutralBackground4
+
+      # ── HA 2026.x text tokens ──
+      ha-color-text-primary:    '#FFFFFF'   # colorNeutralForeground1
+      ha-color-text-secondary:  '#D6D6D6'   # colorNeutralForeground2
+      ha-color-text-disabled:   '#5C5C5C'   # colorNeutralForegroundDisabled
+      ha-color-text-link:       '#479EF5'
+
+      # ── HA 2026.x border tokens (Fluent dark strokes) ──
+      ha-color-border-neutral-quiet:  '#484848'   # colorNeutralStroke2
+      ha-color-border-neutral-normal: '#575757'   # colorNeutralStroke1
+      ha-color-border-neutral-loud:   '#ADADAD'   # colorNeutralStrokeAccessible
+
+      # ── HA 2026.x form/input background ──
+      ha-color-form-background:           '#292929'
+      ha-color-form-background-hover:     '#1F1F1F'
+      ha-color-form-background-disabled:  '#141414'
+
+      # ── HA 2026.x dialog surface (read by wa-dialog) — solid ──
+      ha-dialog-surface-background: '#292929'
+
+      # ── Web Awesome surface tokens (dropdowns + dialogs) — solid ──
+      wa-color-surface-raised:   '#292929'   # ← wa-popover (combo-box dropdowns)
+      wa-color-surface-default:  '#292929'
+      wa-color-surface-border:   '#575757'
+
+      # ── Brand / accent — Fluent dark brand skews lighter for contrast ──
+      primary-color: '#479EF5'
+      light-primary-color: '#62ABF5'
+      dark-primary-color: '#0F6CBD'
+      accent-color: '#479EF5'
+      rgb-primary-color: '71, 158, 245'
+      rgb-accent-color: '71, 158, 245'
+
+      # ── Backgrounds — flat Fluent dark neutrals ──
+      primary-background-color:   '#1F1F1F'   # neutral canvas
+      secondary-background-color: '#141414'
+      card-background-color:           '#292929'   # colorNeutralBackground1 (elevated)
+      ha-card-background:              '#292929'
+      paper-card-background-color:    '#292929'
+      paper-listbox-background-color: '#292929'
+      paper-dialog-background-color:  '#292929'
+      rgb-primary-background-color:   '31, 31, 31'
+      rgb-secondary-background-color: '20, 20, 20'
+      rgb-card-background-color:      '41, 41, 41'
+
+      # ── Text — Fluent dark neutral foregrounds ──
+      primary-text-color:    '#FFFFFF'
+      secondary-text-color:  '#D6D6D6'
+      text-primary-color:    '#FFFFFF'   # text on brand fills
+      disabled-text-color:   '#5C5C5C'
+      rgb-primary-text-color:   '255, 255, 255'
+      rgb-secondary-text-color: '214, 214, 214'
+
+      # ── Dividers / lines (also fallback for ha-card border) ──
+      divider-color: '#484848'
+      table-row-background-color: '#292929'
+      table-row-alternative-background-color: '#242424'
+
+      # Icons
+      state-icon-color:           '#D6D6D6'
+      state-icon-active-color:    '#479EF5'
+      state-icon-unavailable-color: '#5C5C5C'
+      paper-item-icon-color:        '#D6D6D6'
+      paper-item-icon-active-color: '#479EF5'
+      rgb-state-icon-color:        '214, 214, 214'
+      rgb-state-icon-active-color: '71, 158, 245'
+
+      # Sidebar
+      sidebar-background-color:           '#292929'
+      sidebar-icon-color:                 '#D6D6D6'
+      sidebar-text-color:                 '#FFFFFF'
+      sidebar-selected-background-color:  'rgba(71, 158, 245, 0.16)'
+      sidebar-selected-icon-color:        '#479EF5'
+      sidebar-selected-text-color:        '#479EF5'
+
+      # App header
+      app-header-background-color: '#1F1F1F'
+      app-header-text-color:       '#FFFFFF'
+      app-header-edit-background-color: '#141414'
+
+      # Inputs / form fields
+      input-background-color:     '#292929'
+      input-fill-color:           '#292929'
+      input-ink-color:            '#FFFFFF'
+      input-label-ink-color:      '#D6D6D6'
+      input-disabled-fill-color:  '#141414'
+      input-disabled-ink-color:   '#5C5C5C'
+      input-disabled-label-ink-color: '#5C5C5C'
+      input-dropdown-icon-color:  '#D6D6D6'
+      input-idle-line-color:      '#ADADAD'
+      input-hover-line-color:     '#479EF5'
+      input-disabled-line-color:  '#484848'
+      input-outlined-idle-border-color:     '#575757'
+      input-outlined-hover-border-color:    '#479EF5'
+      input-outlined-disabled-border-color: '#484848'
+
+      # Material design (MDC)
+      mdc-theme-primary:    '#479EF5'
+      mdc-theme-secondary:  '#479EF5'
+      mdc-theme-on-primary: '#FFFFFF'
+      mdc-theme-on-secondary: '#FFFFFF'
+      mdc-theme-surface:    '#292929'
+      mdc-theme-on-surface: '#FFFFFF'
+      mdc-button-outline-color: '#575757'
+
+      # Switches
+      switch-checked-color:           '#479EF5'
+      switch-checked-button-color:    '#FFFFFF'
+      switch-checked-track-color:     '#479EF5'
+      switch-unchecked-button-color:  '#D6D6D6'
+      switch-unchecked-track-color:   '#292929'
+      paper-toggle-button-checked-button-color: '#FFFFFF'
+      paper-toggle-button-checked-bar-color:    '#479EF5'
+      paper-toggle-button-unchecked-button-color: '#FFFFFF'
+      paper-toggle-button-unchecked-bar-color:    '#ADADAD'
+
+      # Sliders
+      slider-color:                       '#479EF5'
+      slider-bar-color:                   '#575757'
+      paper-slider-knob-color:            '#479EF5'
+      paper-slider-knob-start-color:      '#479EF5'
+      paper-slider-pin-color:             '#479EF5'
+      paper-slider-active-color:          '#479EF5'
+      paper-slider-secondary-color:       'rgba(71, 158, 245, 0.30)'
+      paper-slider-container-color:       '#575757'
+
+      # Tabs
+      paper-tabs-selection-bar-color: '#479EF5'
+
+      # Labels / badges
+      label-badge-background-color: '#292929'
+      label-badge-text-color:       '#FFFFFF'
+      label-badge-red:              '#E37D80'
+      label-badge-green:            '#6CCB5F'
+      label-badge-blue:             '#479EF5'
+      label-badge-yellow:           '#FCE100'
+      label-badge-grey:             '#ADADAD'
+
+      # Status colors (Fluent dark status foregrounds)
+      warning-color: '#FCE100'
+      error-color:   '#E37D80'
+      success-color: '#6CCB5F'
+      info-color:    '#479EF5'
+
+      # Code blocks
+      code-editor-background-color: '#141414'
+      markdown-code-background-color: '#0A0A0A'
+
+      # Calendar
+      calendar-background-color: '#292929'
+
+      # Energy dashboard
+      energy-grid-consumption-color: '#479EF5'
+      energy-grid-return-color:      '#6CCB5F'
+      energy-solar-color:            '#FCE100'
+      energy-non-fossil-color:       '#10893E'
+      energy-battery-out-color:      '#B4A0FF'
+      energy-battery-in-color:       '#8764B8'
+      energy-gas-color:              '#FFB900'
+      energy-water-color:            '#3AA0A4'

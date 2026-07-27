@@ -1,0 +1,515 @@
+# =============================================================================
+#  Microsoft Windows 11 — Home Assistant Theme
+#
+#  The Windows 11 desktop look: Mica/Acrylic translucency, Segoe UI Variable,
+#  8 px radius, and the Windows accent blue.
+#
+#  Native HA 2026.x theme — no UIX or card-mod required.
+#  Fluent Design: Mica/Acrylic translucency, Segoe UI Variable, 8 px radius.
+#  Single theme with `modes:` so HA's "Auto" theme mode follows the OS.
+#
+#  Architecture (source-of-truth: home-assistant/frontend):
+#  - Cards get real backdrop-filter blur via the built-in
+#    `--ha-card-backdrop-filter` variable on `<ha-card>`.
+#  - HA 2026.x `--ha-color-*` palette tokens drive the new Web Awesome
+#    component library used by buttons, dropdowns, dialogs, etc.
+#  - `--ha-dialog-surface-background` and `--wa-color-surface-raised` make
+#    dropdown menus and dialogs translucent (Mica fill).
+#  - All legacy `--paper-*`, `--mdc-*`, `--primary-*` tokens are kept so the
+#    theme still renders correctly on older HA versions.
+#
+#  Known limitation: HA exposes no `--ha-dropdown-backdrop-filter` or
+#  `--ha-dialog-backdrop-filter` variable, and Web Awesome's `wa-popup`
+#  positioning (static + floating-ui transform) breaks `backdrop-filter`
+#  even when applied directly. Menu/dialog surfaces therefore receive a
+#  translucent Mica-style fill but NOT a true frosted blur. Cards do.
+# =============================================================================
+
+Microsoft Windows 11:
+  # ---------------------------------------------------------------------------
+  # 1. Typography — Segoe UI Variable (Win11), graceful fallbacks elsewhere
+  # ---------------------------------------------------------------------------
+  # HA 2026.x native font tokens
+  ha-font-family-body: '"Segoe UI Variable Text", "Segoe UI Variable", "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif'
+  ha-font-family-heading: '"Segoe UI Variable Display", "Segoe UI Variable", "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif'
+  ha-font-family-code: '"Cascadia Mono", "Cascadia Code", "Consolas", "Courier New", monospace'
+
+  # Legacy font vars (paper-elements / pre-2026 HA)
+  primary-font-family: 'var(--ha-font-family-heading)'
+  paper-font-common-base_-_font-family: 'var(--ha-font-family-body)'
+  paper-font-common-code_-_font-family: 'var(--ha-font-family-code)'
+  code-editor-font-family: 'var(--ha-font-family-code)'
+
+  paper-font-body1_-_font-family: 'var(--ha-font-family-body)'
+  paper-font-subhead_-_font-family: 'var(--ha-font-family-body)'
+  paper-font-headline_-_font-family: 'var(--ha-font-family-heading)'
+  paper-font-title_-_font-family: 'var(--ha-font-family-heading)'
+  paper-font-caption_-_font-family: 'var(--ha-font-family-body)'
+  paper-font-display1_-_font-family: 'var(--ha-font-family-heading)'
+  paper-font-display2_-_font-family: 'var(--ha-font-family-heading)'
+  paper-font-display3_-_font-family: 'var(--ha-font-family-heading)'
+  paper-font-display4_-_font-family: 'var(--ha-font-family-heading)'
+
+  # Body / Subtitle weights match Win11 type ramp (Body 400, Subtitle 600)
+  paper-font-body1_-_font-weight: '400'
+  paper-font-body1_-_font-size: '14px'
+  paper-font-body1_-_line-height: '20px'
+  paper-font-subhead_-_font-weight: '600'
+  paper-font-subhead_-_font-size: '14px'
+  paper-font-subhead_-_line-height: '20px'
+  paper-font-headline_-_font-weight: '600'
+  paper-font-headline_-_font-size: '20px'
+  paper-font-headline_-_line-height: '28px'
+  paper-font-title_-_font-weight: '600'
+  paper-font-title_-_font-size: '20px'
+  paper-font-title_-_line-height: '28px'
+
+  # ---------------------------------------------------------------------------
+  # 2. Win11 corner-radius system (8 px overlay / 4 px control)
+  # ---------------------------------------------------------------------------
+  # HA 2026.x radius scale — components use these directly
+  ha-border-radius-sm:  '4px'
+  ha-border-radius-md:  '6px'
+  ha-border-radius-lg:  '8px'
+  ha-border-radius-xl:  '8px'
+  ha-border-radius-2xl: '8px'
+  ha-border-radius-3xl: '8px'
+  # Component-specific radius overrides
+  ha-card-border-radius:   '8px'
+  ha-dialog-border-radius: '8px'
+  # Legacy aliases
+  mdc-shape-small:    '4px'
+  mdc-shape-medium:   '8px'
+  mdc-shape-large:    '8px'
+  border-radius-card:   '8px'
+  border-radius-button: '4px'
+  border-radius-chip:   '4px'
+
+  # ---------------------------------------------------------------------------
+  # 3. Card geometry — TRUE Mica blur via HA's built-in
+  #    `--ha-card-backdrop-filter` (no UIX required); thin Win11 stroke;
+  #    soft Win11 elevation.
+  # ---------------------------------------------------------------------------
+  ha-card-backdrop-filter: 'blur(22px) saturate(125%)'
+  ha-card-border-width: '1px'
+  ha-card-box-shadow: '0 2px 4px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.04)'
+  # (ha-card-border-color is left unset so HA's default falls back to
+  #  --divider-color, which we set to the correct Win11 stroke value per mode.)
+
+  # ---------------------------------------------------------------------------
+  # 4. Dialogs & popovers — TRUE Mica blur via HA's built-in dialog vars
+  #    Wired into ha-dialog, ha-adaptive-dialog, ha-bottom-sheet, and
+  #    ha-adaptive-popover by the HA frontend (HA 2026.x+).
+  #    See: src/components/ha-dialog.ts (`wa-dialog::part(dialog)` rules).
+  # ---------------------------------------------------------------------------
+  ha-dialog-surface-backdrop-filter: 'blur(40px) saturate(125%)'
+  ha-dialog-scrim-backdrop-filter: 'blur(8px)'
+
+  # Stronger Win11-style elevation — applied to dropdowns, dialogs, popovers
+  # via Web Awesome's `--wa-shadow-m` / `--wa-shadow-l` tokens.
+  wa-shadow-m: '0 8px 24px rgba(0, 0, 0, 0.18), 0 2px 6px rgba(0, 0, 0, 0.10)'
+  wa-shadow-l: '0 16px 40px rgba(0, 0, 0, 0.28), 0 4px 12px rgba(0, 0, 0, 0.16)'
+
+  # ---------------------------------------------------------------------------
+  # 5. App-header sizing (subtle, not essential to Win11)
+  # ---------------------------------------------------------------------------
+  app-header-background-color: 'var(--primary-background-color)'
+  app-header-text-color: 'var(--primary-text-color)'
+  app-header-border-bottom: '1px solid var(--divider-color)'
+
+  # ---------------------------------------------------------------------------
+  # 6. Light / Dark token sets
+  # ---------------------------------------------------------------------------
+  modes:
+    # =========================================================================
+    #  LIGHT  (Mica Light — #F3F3F3 base, #0078D4 accent)
+    # =========================================================================
+    light:
+      # ── Default dashboard wallpaper (Win11-style radial blue gradient) ──
+      # HA reads `--lovelace-background` and uses it as the view background
+      # whenever no per-view `background:` is set. See
+      # https://github.com/home-assistant/frontend/blob/dev/src/panels/lovelace/views/hui-view-background.ts
+      #
+      # Images are served via jsDelivr CDN from this repo's `backgrounds/` folder.
+      # This theme's default light wallpaper lives in `backgrounds/microsoft-windows-11/`.
+      # The 8 original Win11-style wallpapers now live in `backgrounds/general/`
+      #   (e.g. general/RadialGradientBlue.webp | general/MountainStream.webp | …).
+      # Or point at any URL / /local/... path on your HA instance.
+      lovelace-background: 'center / cover no-repeat fixed url("https://cdn.jsdelivr.net/gh/tedr91/Teds-Themes@main/backgrounds/microsoft-windows-11/microsoft-windows-11-light.webp")'
+
+      # ── HA 2026.x primary color scale (Win11 default blue at -40) ──
+      ha-color-primary-05: '#001D2E'
+      ha-color-primary-10: '#003352'
+      ha-color-primary-20: '#004B79'
+      ha-color-primary-30: '#005FA0'
+      ha-color-primary-40: '#0078D4'   # Win11 default blue
+      ha-color-primary-50: '#1693E5'
+      ha-color-primary-60: '#4CC2FF'
+      ha-color-primary-70: '#7AD4FF'
+      ha-color-primary-80: '#A8E5FF'
+      ha-color-primary-90: '#D4F2FF'
+      ha-color-primary-95: '#EAF8FF'
+
+      # ── HA 2026.x surface tokens (Mica light) ──
+      ha-color-surface-default: '#F3F3F3'
+      ha-color-surface-low:     '#EAEAEA'
+      ha-color-surface-lower:   '#DEDEDE'
+
+      # ── HA 2026.x text tokens ──
+      ha-color-text-primary:    'rgba(0, 0, 0, 0.8956)'
+      ha-color-text-secondary:  'rgba(0, 0, 0, 0.6058)'
+      ha-color-text-disabled:   'rgba(0, 0, 0, 0.3614)'
+      ha-color-text-link:       '#0078D4'
+
+      # ── HA 2026.x border tokens (Win11 stroke opacities) ──
+      ha-color-border-neutral-quiet:  'rgba(0, 0, 0, 0.0578)'
+      ha-color-border-neutral-normal: 'rgba(0, 0, 0, 0.0837)'
+      ha-color-border-neutral-loud:   'rgba(0, 0, 0, 0.2400)'
+
+      # ── HA 2026.x form/input background (Win11 Mica input fill) ──
+      ha-color-form-background:           'rgba(255, 255, 255, 0.70)'
+      ha-color-form-background-hover:     'rgba(255, 255, 255, 0.85)'
+      ha-color-form-background-disabled:  'rgba(245, 245, 245, 0.50)'
+
+      # ── HA 2026.x dialog surface (read by wa-dialog) ──
+      ha-dialog-surface-background: 'rgba(249, 249, 249, 0.85)'
+
+      # ── Web Awesome surface tokens (drive dropdowns + dialogs Mica fill) ──
+      wa-color-surface-raised:   'rgba(249, 249, 249, 0.92)'   # ← wa-popover (combo-box dropdowns)
+      wa-color-surface-default:  'rgba(252, 252, 252, 0.70)'
+      wa-color-surface-border:   'rgba(0, 0, 0, 0.1200)'
+      wa-shadow-m: '0 8px 16px rgba(0, 0, 0, 0.14), 0 0 1px rgba(0, 0, 0, 0.12)'
+
+      # ── Brand / accent (legacy aliases — still used in many components) ──
+      primary-color: '#0078D4'      # Windows 11 accent (default blue)
+      light-primary-color: '#429CE3'
+      dark-primary-color: '#005A9E'
+      accent-color: '#0078D4'
+      rgb-primary-color: '0, 120, 212'
+      rgb-accent-color: '0, 120, 212'
+
+      # ── Backgrounds — Mica Light (legacy aliases) ──
+      # NOTE: --card-background-color is intentionally MORE OPAQUE than
+      # --ha-card-background. ha-card reads --ha-card-background first
+      # (translucent, with full Mica blur). ha-dropdown reads
+      # --card-background-color first via --wa-color-surface-raised, so
+      # menus get an opaque-enough fill to stay readable over busy content.
+      primary-background-color:   '#F3F3F3'
+      secondary-background-color: '#EAEAEA'
+      card-background-color:           'rgba(252, 252, 252, 0.92)'   # ← menus
+      ha-card-background:              'rgba(252, 252, 252, 0.55)'   # ← cards
+      paper-card-background-color:     'rgba(252, 252, 252, 0.55)'
+      paper-listbox-background-color:  '#FFFFFF'
+      paper-dialog-background-color:   'rgba(249, 249, 249, 0.85)'
+      rgb-primary-background-color:   '243, 243, 243'
+      rgb-secondary-background-color: '234, 234, 234'
+      rgb-card-background-color:      '252, 252, 252'
+
+      # ── Text — Win11 Fluent text-on-light opacities (legacy aliases) ──
+      primary-text-color:    'rgba(0, 0, 0, 0.8956)'   # ~#1A1A1A
+      secondary-text-color:  'rgba(0, 0, 0, 0.6058)'   # ~#5C5C5C
+      text-primary-color:    '#FFFFFF'                 # text on accent fills
+      disabled-text-color:   'rgba(0, 0, 0, 0.3614)'
+      rgb-primary-text-color:   '26, 26, 26'
+      rgb-secondary-text-color: '92, 92, 92'
+
+      # ── Dividers / lines (also used as fallback for ha-card border) ──
+      divider-color: 'rgba(0, 0, 0, 0.0578)'
+      table-row-background-color: '#FFFFFF'
+      table-row-alternative-background-color: '#FAFAFA'
+
+      # Icons
+      state-icon-color:           'rgba(0, 0, 0, 0.6058)'
+      state-icon-active-color:    '#0078D4'
+      state-icon-unavailable-color: 'rgba(0, 0, 0, 0.3614)'
+      paper-item-icon-color:        'rgba(0, 0, 0, 0.6058)'
+      paper-item-icon-active-color: '#0078D4'
+      rgb-state-icon-color:        '92, 92, 92'
+      rgb-state-icon-active-color: '0, 120, 212'
+
+      # Sidebar
+      sidebar-background-color:           'rgba(243, 243, 243, 0.85)'
+      sidebar-icon-color:                 'rgba(0, 0, 0, 0.6058)'
+      sidebar-text-color:                 'rgba(0, 0, 0, 0.8956)'
+      sidebar-selected-background-color:  'rgba(0, 120, 212, 0.10)'
+      sidebar-selected-icon-color:        '#0078D4'
+      sidebar-selected-text-color:        '#0078D4'
+
+      # App header
+      app-header-background-color: 'rgba(243, 243, 243, 0.85)'
+      app-header-text-color:       'rgba(0, 0, 0, 0.8956)'
+      app-header-edit-background-color: '#EAEAEA'
+
+      # Inputs / form fields
+      input-background-color:     '#FFFFFF'
+      input-fill-color:           '#FFFFFF'
+      input-ink-color:            'rgba(0, 0, 0, 0.8956)'
+      input-label-ink-color:      'rgba(0, 0, 0, 0.6058)'
+      input-disabled-fill-color:  '#F5F5F5'
+      input-disabled-ink-color:   'rgba(0, 0, 0, 0.3614)'
+      input-disabled-label-ink-color: 'rgba(0, 0, 0, 0.3614)'
+      input-dropdown-icon-color:  'rgba(0, 0, 0, 0.6058)'
+      input-idle-line-color:      'rgba(0, 0, 0, 0.4458)'
+      input-hover-line-color:     '#0078D4'
+      input-disabled-line-color:  'rgba(0, 0, 0, 0.0837)'
+      input-outlined-idle-border-color:     'rgba(0, 0, 0, 0.4458)'
+      input-outlined-hover-border-color:    '#0078D4'
+      input-outlined-disabled-border-color: 'rgba(0, 0, 0, 0.0837)'
+
+      # Material design (MDC) — buttons, chips, dialogs
+      mdc-theme-primary:    '#0078D4'
+      mdc-theme-secondary:  '#0078D4'
+      mdc-theme-on-primary: '#FFFFFF'
+      mdc-theme-on-secondary: '#FFFFFF'
+      mdc-theme-surface:    'rgba(252, 252, 252, 0.70)'
+      mdc-theme-on-surface: 'rgba(0, 0, 0, 0.8956)'
+      mdc-button-outline-color: 'rgba(0, 0, 0, 0.0837)'
+
+      # Switches — Win11 toggle look
+      switch-checked-color:           '#0078D4'
+      switch-checked-button-color:    '#FFFFFF'
+      switch-checked-track-color:     '#0078D4'
+      switch-unchecked-button-color:  'rgba(0, 0, 0, 0.6058)'
+      switch-unchecked-track-color:   'rgba(0, 0, 0, 0.0578)'
+      paper-toggle-button-checked-button-color: '#FFFFFF'
+      paper-toggle-button-checked-bar-color:    '#0078D4'
+      paper-toggle-button-unchecked-button-color: '#FFFFFF'
+      paper-toggle-button-unchecked-bar-color:    'rgba(0, 0, 0, 0.4458)'
+
+      # Sliders
+      slider-color:                       '#0078D4'
+      slider-bar-color:                   'rgba(0, 0, 0, 0.0837)'
+      paper-slider-knob-color:            '#0078D4'
+      paper-slider-knob-start-color:      '#0078D4'
+      paper-slider-pin-color:             '#0078D4'
+      paper-slider-active-color:          '#0078D4'
+      paper-slider-secondary-color:       'rgba(0, 120, 212, 0.30)'
+      paper-slider-container-color:       'rgba(0, 0, 0, 0.0837)'
+
+      # Tabs
+      paper-tabs-selection-bar-color: '#0078D4'
+
+      # Labels / badges
+      label-badge-background-color: '#FFFFFF'
+      label-badge-text-color:       'rgba(0, 0, 0, 0.8956)'
+      label-badge-red:              '#C42B1C'
+      label-badge-green:            '#0F7B0F'
+      label-badge-blue:             '#0078D4'
+      label-badge-yellow:           '#9D5D00'
+      label-badge-grey:             '#5C5C5C'
+
+      # Status colors (Fluent system fills)
+      warning-color: '#9D5D00'
+      error-color:   '#C42B1C'
+      success-color: '#0F7B0F'
+      info-color:    '#0078D4'
+
+      # Code blocks
+      code-editor-background-color: '#FAFAFA'
+      markdown-code-background-color: '#F5F5F5'
+
+      # Calendar
+      calendar-background-color: 'rgba(252, 252, 252, 0.70)'
+
+      # Energy dashboard
+      energy-grid-consumption-color: '#0078D4'
+      energy-grid-return-color:      '#107C10'
+      energy-solar-color:            '#FCE100'
+      energy-non-fossil-color:       '#10893E'
+      energy-battery-out-color:      '#8764B8'
+      energy-battery-in-color:       '#5C2E91'
+      energy-gas-color:              '#9D5D00'
+      energy-water-color:            '#038387'
+
+    # =========================================================================
+    #  DARK  (Mica Dark — #202020 base, #4CC2FF accent)
+    # =========================================================================
+    dark:
+      # ── Default dashboard wallpaper (deep-blue dark variant) ──
+      # Dark-mode wallpaper in `backgrounds/microsoft-windows-11/`.
+      # See the light-mode comment above for details on switching images.
+      lovelace-background: 'center / cover no-repeat fixed url("https://cdn.jsdelivr.net/gh/tedr91/Teds-Themes@main/backgrounds/microsoft-windows-11/microsoft-windows-11-dark.webp")'
+
+      # ── HA 2026.x primary color scale (Win11 dark accent at -60) ──
+      ha-color-primary-05: '#001D2E'
+      ha-color-primary-10: '#003352'
+      ha-color-primary-20: '#004B79'
+      ha-color-primary-30: '#005FA0'
+      ha-color-primary-40: '#0078D4'
+      ha-color-primary-50: '#1693E5'
+      ha-color-primary-60: '#4CC2FF'   # Win11 dark mode accent
+      ha-color-primary-70: '#7AD4FF'
+      ha-color-primary-80: '#A8E5FF'
+      ha-color-primary-90: '#D4F2FF'
+      ha-color-primary-95: '#EAF8FF'
+
+      # ── HA 2026.x surface tokens (Mica dark) ──
+      ha-color-surface-default: '#202020'
+      ha-color-surface-low:     '#1C1C1C'
+      ha-color-surface-lower:   '#161616'
+
+      # ── HA 2026.x text tokens ──
+      ha-color-text-primary:    '#FFFFFF'
+      ha-color-text-secondary:  'rgba(255, 255, 255, 0.7860)'
+      ha-color-text-disabled:   'rgba(255, 255, 255, 0.3628)'
+      ha-color-text-link:       '#4CC2FF'
+
+      # ── HA 2026.x border tokens (Win11 stroke opacities, dark) ──
+      ha-color-border-neutral-quiet:  'rgba(255, 255, 255, 0.0931)'
+      ha-color-border-neutral-normal: 'rgba(255, 255, 255, 0.0837)'
+      ha-color-border-neutral-loud:   'rgba(255, 255, 255, 0.2400)'
+
+      # ── HA 2026.x form/input background (Win11 Mica input fill, dark) ──
+      ha-color-form-background:           'rgba(45, 45, 45, 0.70)'
+      ha-color-form-background-hover:     'rgba(56, 56, 56, 0.85)'
+      ha-color-form-background-disabled:  'rgba(38, 38, 38, 0.50)'
+
+      # ── HA 2026.x dialog surface (read by wa-dialog) ──
+      ha-dialog-surface-background: 'rgba(44, 44, 44, 0.85)'
+
+      # ── Web Awesome surface tokens (drive dropdowns + dialogs Mica fill) ──
+      wa-color-surface-raised:   'rgba(44, 44, 44, 0.92)'      # ← wa-popover (combo-box dropdowns)
+      wa-color-surface-default:  'rgba(43, 43, 43, 0.60)'
+      wa-color-surface-border:   'rgba(255, 255, 255, 0.1800)'
+      wa-shadow-m: '0 8px 16px rgba(0, 0, 0, 0.35), 0 0 1px rgba(0, 0, 0, 0.30)'
+
+      # ── Brand / accent — Win11 dark accent skews lighter for AA contrast ──
+      primary-color: '#4CC2FF'
+      light-primary-color: '#99EBFF'
+      dark-primary-color: '#0078D4'
+      accent-color: '#4CC2FF'
+      rgb-primary-color: '76, 194, 255'
+      rgb-accent-color: '76, 194, 255'
+
+      # ── Backgrounds — Mica Dark (legacy aliases) ──
+      # NOTE: --card-background-color is intentionally MORE OPAQUE than
+      # --ha-card-background. ha-card reads --ha-card-background first
+      # (translucent, with full Mica blur). ha-dropdown reads
+      # --card-background-color first via --wa-color-surface-raised, so
+      # menus get an opaque-enough fill to stay readable over busy content.
+      primary-background-color:   '#202020'
+      secondary-background-color: '#1C1C1C'
+      card-background-color:           'rgba(43, 43, 43, 0.92)'      # ← menus
+      ha-card-background:              'rgba(43, 43, 43, 0.45)'      # ← cards
+      paper-card-background-color:    'rgba(43, 43, 43, 0.45)'
+      paper-listbox-background-color: '#2D2D2D'
+      paper-dialog-background-color:  'rgba(44, 44, 44, 0.85)'
+      rgb-primary-background-color:   '32, 32, 32'
+      rgb-secondary-background-color: '28, 28, 28'
+      rgb-card-background-color:      '43, 43, 43'
+
+      # ── Text — Win11 Fluent text-on-dark opacities (legacy aliases) ──
+      primary-text-color:    '#FFFFFF'
+      secondary-text-color:  'rgba(255, 255, 255, 0.7860)'   # ~#C8C8C8
+      text-primary-color:    '#000000'                       # text on accent
+      disabled-text-color:   'rgba(255, 255, 255, 0.3628)'
+      rgb-primary-text-color:   '255, 255, 255'
+      rgb-secondary-text-color: '200, 200, 200'
+
+      # ── Dividers / lines (also used as fallback for ha-card border) ──
+      divider-color: 'rgba(255, 255, 255, 0.0931)'
+      table-row-background-color: '#2B2B2B'
+      table-row-alternative-background-color: '#262626'
+
+      # Icons
+      state-icon-color:           'rgba(255, 255, 255, 0.7860)'
+      state-icon-active-color:    '#4CC2FF'
+      state-icon-unavailable-color: 'rgba(255, 255, 255, 0.3628)'
+      paper-item-icon-color:        'rgba(255, 255, 255, 0.7860)'
+      paper-item-icon-active-color: '#4CC2FF'
+      rgb-state-icon-color:        '200, 200, 200'
+      rgb-state-icon-active-color: '76, 194, 255'
+
+      # Sidebar
+      sidebar-background-color:           'rgba(32, 32, 32, 0.85)'
+      sidebar-icon-color:                 'rgba(255, 255, 255, 0.7860)'
+      sidebar-text-color:                 '#FFFFFF'
+      sidebar-selected-background-color:  'rgba(76, 194, 255, 0.16)'
+      sidebar-selected-icon-color:        '#4CC2FF'
+      sidebar-selected-text-color:        '#4CC2FF'
+
+      # App header
+      app-header-background-color: 'rgba(32, 32, 32, 0.85)'
+      app-header-text-color:       '#FFFFFF'
+      app-header-edit-background-color: '#1C1C1C'
+
+      # Inputs / form fields
+      input-background-color:     '#2D2D2D'
+      input-fill-color:           '#2D2D2D'
+      input-ink-color:            '#FFFFFF'
+      input-label-ink-color:      'rgba(255, 255, 255, 0.7860)'
+      input-disabled-fill-color:  '#262626'
+      input-disabled-ink-color:   'rgba(255, 255, 255, 0.3628)'
+      input-disabled-label-ink-color: 'rgba(255, 255, 255, 0.3628)'
+      input-dropdown-icon-color:  'rgba(255, 255, 255, 0.7860)'
+      input-idle-line-color:      'rgba(255, 255, 255, 0.5442)'
+      input-hover-line-color:     '#4CC2FF'
+      input-disabled-line-color:  'rgba(255, 255, 255, 0.0837)'
+      input-outlined-idle-border-color:     'rgba(255, 255, 255, 0.5442)'
+      input-outlined-hover-border-color:    '#4CC2FF'
+      input-outlined-disabled-border-color: 'rgba(255, 255, 255, 0.0837)'
+
+      # Material design (MDC)
+      mdc-theme-primary:    '#4CC2FF'
+      mdc-theme-secondary:  '#4CC2FF'
+      mdc-theme-on-primary: '#000000'
+      mdc-theme-on-secondary: '#000000'
+      mdc-theme-surface:    'rgba(43, 43, 43, 0.60)'
+      mdc-theme-on-surface: '#FFFFFF'
+      mdc-button-outline-color: 'rgba(255, 255, 255, 0.0931)'
+
+      # Switches
+      switch-checked-color:           '#4CC2FF'
+      switch-checked-button-color:    '#000000'
+      switch-checked-track-color:     '#4CC2FF'
+      switch-unchecked-button-color:  'rgba(255, 255, 255, 0.7860)'
+      switch-unchecked-track-color:   'rgba(255, 255, 255, 0.0931)'
+      paper-toggle-button-checked-button-color: '#000000'
+      paper-toggle-button-checked-bar-color:    '#4CC2FF'
+      paper-toggle-button-unchecked-button-color: 'rgba(255, 255, 255, 0.7860)'
+      paper-toggle-button-unchecked-bar-color:    'rgba(255, 255, 255, 0.5442)'
+
+      # Sliders
+      slider-color:                       '#4CC2FF'
+      slider-bar-color:                   'rgba(255, 255, 255, 0.0931)'
+      paper-slider-knob-color:            '#4CC2FF'
+      paper-slider-knob-start-color:      '#4CC2FF'
+      paper-slider-pin-color:             '#4CC2FF'
+      paper-slider-active-color:          '#4CC2FF'
+      paper-slider-secondary-color:       'rgba(76, 194, 255, 0.30)'
+      paper-slider-container-color:       'rgba(255, 255, 255, 0.0931)'
+
+      # Tabs
+      paper-tabs-selection-bar-color: '#4CC2FF'
+
+      # Labels / badges
+      label-badge-background-color: '#2B2B2B'
+      label-badge-text-color:       '#FFFFFF'
+      label-badge-red:              '#FF99A4'
+      label-badge-green:            '#6CCB5F'
+      label-badge-blue:             '#4CC2FF'
+      label-badge-yellow:           '#FCE100'
+      label-badge-grey:             '#C8C8C8'
+
+      # Status colors (Fluent dark system fills)
+      warning-color: '#FCE100'
+      error-color:   '#FF99A4'
+      success-color: '#6CCB5F'
+      info-color:    '#4CC2FF'
+
+      # Code blocks
+      code-editor-background-color: '#1C1C1C'
+      markdown-code-background-color: '#262626'
+
+      # Calendar
+      calendar-background-color: 'rgba(43, 43, 43, 0.60)'
+
+      # Energy dashboard
+      energy-grid-consumption-color: '#4CC2FF'
+      energy-grid-return-color:      '#6CCB5F'
+      energy-solar-color:            '#FCE100'
+      energy-non-fossil-color:       '#10893E'
+      energy-battery-out-color:      '#B4A0FF'
+      energy-battery-in-color:       '#8764B8'
+      energy-gas-color:              '#FFB900'
+      energy-water-color:            '#3AA0A4'
