@@ -235,3 +235,47 @@ SETTINGS_DEFAULTS = {
 # Only keys present in SETTINGS_DEFAULTS may be written (guards the services/WS).
 SETTINGS_KEYS = frozenset(SETTINGS_DEFAULTS)
 
+
+# ---------------------------------------------------------------------------
+# Installer / updater — Ted's Dashboard System as the ecosystem meta-installer.
+# ---------------------------------------------------------------------------
+
+# Storage for installer state (last-installed release tag + per-asset versions).
+INSTALLER_STORAGE_VERSION = 1
+INSTALLER_STORAGE_KEY = f"{DOMAIN}_installer"
+
+# GitHub content sources. Repo/branch are overridable via the config entry options.
+DEFAULT_DASHBOARD_REPO = "tedr91/Teds-Dashboard"
+DEFAULT_DASHBOARD_BRANCH = "main"
+DEFAULT_CARDS_REPO = "tedr91/Teds-Cards"
+DEFAULT_THEMES_REPO = "tedr91/Teds-Themes"
+
+# Config-entry option keys.
+CONF_DASHBOARD_REPO = "dashboard_repo"
+CONF_DASHBOARD_BRANCH = "dashboard_branch"
+
+# Asset classes tracked in versions.json / the installer store.
+ASSET_DASHBOARD = "dashboard"  # generated main file + shared includes
+ASSET_VIEWS = "views"  # per-view (name -> version)
+ASSET_THEMES = "themes"  # Ted's Themes yaml files
+ASSET_CARDS = "cards"  # Ted's Cards bundle (ted-cards.js)
+
+# How often the update coordinator polls the dashboard repo for a new release.
+UPDATE_POLL_INTERVAL_HOURS = 6
+
+# On-disk layout under <config>/dashboards/.
+DASHBOARDS_DIR = "dashboards"
+DASHBOARD_SLUG = "ted-dashboard"  # url_path + main file stem
+DASHBOARD_MAIN_FILE = f"{DASHBOARD_SLUG}.yaml"  # generated main include list
+DASHBOARD_MANAGED_DIR = DASHBOARD_SLUG  # overwritten wholesale on update
+DASHBOARD_USER_DIR = f"{DASHBOARD_SLUG}-user"  # never written by the integration
+
+# Lovelace panel registration.
+DASHBOARD_TITLE = "Ted's Dashboard"
+DASHBOARD_ICON = "mdi:view-dashboard"
+
+# Bundled/served frontend card assets.
+FRONTEND_DIR = "frontend"  # bundled asset dir inside the integration
+CARDS_JS_NAME = "ted-cards.js"
+CARDS_URL = f"/{DOMAIN}/frontend/{CARDS_JS_NAME}"
+

@@ -19,6 +19,7 @@ from homeassistant.helpers.start import async_at_started
 from homeassistant.loader import async_get_integration
 
 from .bing_photos import cache_has_images as bing_cache_has_images, fetch_and_cache_bing
+from .cards import async_setup_cards, async_unload_cards
 from .const import DOMAIN, EVENT_NAVIGATE, MEDIA_FOLDER_NAME
 from .intents import async_register_intents
 from .store import TedsManager
@@ -43,6 +44,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     await _register_background_path(hass)
     manager.announce_cache_dir = await _register_announce_cache_path(hass)
     manager.media_folder = await _ensure_media_folder(hass)
+    manager.cards_js_url = await async_setup_cards(hass, manager.version)
 
     async def add_alarm(call: ServiceCall):
         await manager.add_alarm(
@@ -442,5 +444,7 @@ async def _ensure_media_folder(hass: HomeAssistant) -> str | None:
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     unloaded = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unloaded:
-        hass.data[DOMAIN].pop(entry.entry_id).shutdown()
+        manager = hass.data[DOMAIN].pop(entry.entry_id)
+        async_unload_cards(hass, getattr(manager, "cards_js_url", None))
+        manager.shutdown()
     return unloaded

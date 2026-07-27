@@ -2,5 +2,17 @@
   "config": {
     "step": { "user": { "title": "Ted's Dashboard System", "description": "Add the alarms & timers backend for Ted's Cards." } },
     "abort": { "single_instance_allowed": "Already configured." }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Ted's Dashboard System",
+        "description": "Advanced: override where the Ted's Dashboard content is downloaded from. Leave the defaults unless you are testing a fork or branch.",
+        "data": {
+          "dashboard_repo": "Dashboard content repository (owner/repo)",
+          "dashboard_branch": "Branch"
+        }
+      }
+    }
   }
 }
