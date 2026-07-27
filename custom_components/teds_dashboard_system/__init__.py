@@ -6,6 +6,7 @@ import logging
 import os
 import shutil
 from datetime import timedelta
+from functools import partial
 
 import voluptuous as vol
 
@@ -22,13 +23,21 @@ from homeassistant.loader import async_get_integration
 from .bing_photos import cache_has_images as bing_cache_has_images, fetch_and_cache_bing
 from .cards import async_setup_cards, async_unload_cards
 from .dashboard import async_install_dashboard, async_unregister_dashboard
-from .const import DOMAIN, EVENT_NAVIGATE, MEDIA_FOLDER_NAME
+from .const import (
+    CONF_DASHBOARD_BRANCH,
+    CONF_DASHBOARD_REPO,
+    DEFAULT_DASHBOARD_BRANCH,
+    DEFAULT_DASHBOARD_REPO,
+    DOMAIN,
+    EVENT_NAVIGATE,
+    MEDIA_FOLDER_NAME,
+)
 from .intents import async_register_intents
 from .store import TedsManager
 from .themes import async_install_bundled_themes
 from .websocket import async_register as async_register_ws
 
-PLATFORMS = [Platform.SENSOR]
+PLATFORMS = [Platform.SENSOR, Platform.UPDATE]
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -58,6 +67,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         await async_install_dashboard(hass)
     except Exception:  # noqa: BLE001 - dashboard install must never block setup
         _LOGGER.exception("Ted's Dashboard install failed")
+    await _async_setup_updater(hass, entry, manager)
 
     async def add_alarm(call: ServiceCall):
         await manager.add_alarm(
@@ -462,3 +472,37 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         async_unregister_dashboard(hass)
         manager.shutdown()
     return unloaded
+
+
+async def _async_setup_updater(
+    hass: HomeAssistant, entry: ConfigEntry, manager: TedsManager
+) -> None:
+    """Create the update coordinator and start a background first refresh."""
+    from .github import GitHubClient
+    from .updater import DashboardUpdateCoordinator, async_load_installer_state
+
+    repo = entry.options.get(CONF_DASHBOARD_REPO, DEFAULT_DASHBOARD_REPO)
+    branch = entry.options.get(CONF_DASHBOARD_BRANCH, DEFAULT_DASHBOARD_BRANCH)
+    store, state = await async_load_installer_state(hass)
+    coordinator = DashboardUpdateCoordinator(
+        hass, GitHubClient(hass, repo, branch), store, state
+    )
+    manager.updater = coordinator
+    entry.async_on_unload(
+        coordinator.async_add_listener(
+            partial(_maybe_autoupdate, hass, manager, coordinator)
+        )
+    )
+    entry.async_create_background_task(
+        hass, coordinator.async_refresh(), f"{DOMAIN}_update_check"
+    )
+
+
+@callback
+def _maybe_autoupdate(hass: HomeAssistant, manager: TedsManager, coordinator) -> None:
+    """Auto-install a newer dashboard when the 'dashboard_auto_update' setting allows."""
+    if not coordinator.last_update_success or not coordinator.update_available:
+        return
+    if manager.effective_settings().get("dashboard_auto_update", True) is not True:
+        return
+    hass.async_create_task(coordinator.async_install_now())

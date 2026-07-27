@@ -19,6 +19,8 @@ import json
 import logging
 import os
 import shutil
+import tempfile
+from pathlib import Path
 from typing import Any
 
 from homeassistant.core import HomeAssistant, callback
@@ -246,3 +248,45 @@ async def async_install_dashboard(hass: HomeAssistant) -> None:
     if need_content:
         state.setdefault("versions", {})["dashboard"] = versions
         await store.async_save(state)
+
+
+def _mkdtemp() -> str:
+    return tempfile.mkdtemp(prefix="teds_dash_")
+
+
+def _rmtree_quiet(path: str) -> None:
+    shutil.rmtree(path, ignore_errors=True)
+
+
+def _install_downloaded(tmp: str, dashboards_dir: str, versions: dict) -> None:
+    _mirror_dir(tmp, os.path.join(dashboards_dir, DASHBOARD_MANAGED_DIR))
+    _scaffold_user_dir(dashboards_dir)
+    _write_text(
+        os.path.join(dashboards_dir, DASHBOARD_MAIN_FILE),
+        _compose_main(dashboards_dir, versions),
+    )
+
+
+async def async_download_and_install(
+    hass: HomeAssistant, github: Any, versions_remote: dict[str, Any]
+) -> dict[str, Any] | None:
+    """Download the managed dashboard content from GitHub and (re)install it.
+
+    Returns the remote versions on success, or ``None`` if nothing was
+    downloaded (e.g. the repo path was empty).
+    """
+    tmp = await hass.async_add_executor_job(_mkdtemp)
+    try:
+        count = await github.async_download_dir(
+            f"{DASHBOARDS_DIR}/{DASHBOARD_MANAGED_DIR}", Path(tmp)
+        )
+        if not count:
+            return None
+        dashboards_dir = os.path.join(hass.config.config_dir, DASHBOARDS_DIR)
+        await hass.async_add_executor_job(
+            _install_downloaded, tmp, dashboards_dir, versions_remote
+        )
+        _register_dashboard(hass)
+        return versions_remote
+    finally:
+        await hass.async_add_executor_job(_rmtree_quiet, tmp)

@@ -1,14 +1,14 @@
 """Update coordinator + persisted installer state for Ted's Dashboard System.
 
-The coordinator polls the public Ted's Dashboard content repo for its latest
-release (every ``UPDATE_POLL_INTERVAL_HOURS``) and, together with a small
-``Store``, tracks which release tag and per-asset versions are currently
-installed. The actual download/compose/register work lives in the installer
-(added in later phases); this module only handles *state* and *availability*.
+The coordinator polls the public Ted's Dashboard content repo's ``versions.json``
+(every ``UPDATE_POLL_INTERVAL_HOURS``) and, together with a small ``Store``,
+tracks the installed dashboard version so an ``update`` entity can report — and
+apply — updates.
 """
 
 from __future__ import annotations
 
+import json
 import logging
 from datetime import timedelta
 from typing import Any
@@ -22,6 +22,7 @@ from .const import (
     INSTALLER_STORAGE_KEY,
     INSTALLER_STORAGE_VERSION,
     UPDATE_POLL_INTERVAL_HOURS,
+    VERSIONS_FILE,
 )
 from .github import GitHubClient, GitHubError
 
@@ -38,15 +39,25 @@ async def async_load_installer_state(hass: HomeAssistant) -> tuple[Store, dict[s
     return store, data
 
 
+def _version_tuple(value: Any) -> tuple[int, ...]:
+    parts: list[int] = []
+    for part in str(value or "0").split("."):
+        try:
+            parts.append(int(part))
+        except ValueError:
+            parts.append(0)
+    return tuple(parts)
+
+
 class DashboardUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
-    """Poll the Ted's Dashboard repo for the latest release; track installed state."""
+    """Poll the Ted's Dashboard repo's versions.json; report & apply updates."""
 
     def __init__(
         self,
         hass: HomeAssistant,
         github: GitHubClient,
         store: Store,
-        data: dict[str, Any],
+        state: dict[str, Any],
     ) -> None:
         """Initialise with the GitHub client and previously-persisted state."""
         super().__init__(
@@ -57,45 +68,57 @@ class DashboardUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         )
         self.github = github
         self._store = store
-        self._installed_tag: str | None = data.get("installed_tag")
-        self._versions: dict[str, Any] = data.get("versions", {})
+        self._state = state
 
     @property
-    def installed_tag(self) -> str | None:
-        """Release tag currently installed on this system (None before first install)."""
-        return self._installed_tag
+    def _installed_versions(self) -> dict[str, Any]:
+        return self._state.get("versions", {}).get("dashboard", {})
 
     @property
-    def latest_tag(self) -> str | None:
-        """Latest release tag available in the repo (falls back to installed)."""
-        return (self.data or {}).get("tag") or self._installed_tag
+    def remote_versions(self) -> dict[str, Any]:
+        """The most-recently-fetched remote versions.json (empty until polled)."""
+        return self.data or {}
 
     @property
-    def release_notes(self) -> str | None:
-        """Body of the latest release, if any."""
-        return (self.data or {}).get("body") or None
+    def installed_version(self) -> str | None:
+        """Installed dashboard content version."""
+        value = self._installed_versions.get("dashboard")
+        return str(value) if value is not None else None
 
     @property
-    def versions(self) -> dict[str, Any]:
-        """Per-asset versions recorded at the last install (see ``versions.json``)."""
-        return self._versions
+    def latest_version(self) -> str | None:
+        """Latest available dashboard content version (falls back to installed)."""
+        value = self.remote_versions.get("dashboard")
+        return str(value) if value is not None else self.installed_version
+
+    @property
+    def update_available(self) -> bool:
+        """True when the remote dashboard version is newer than installed."""
+        return _version_tuple(self.latest_version) > _version_tuple(
+            self.installed_version
+        )
 
     async def _async_update_data(self) -> dict[str, Any]:
-        """Fetch the latest release metadata (tag + notes)."""
+        """Fetch the remote versions.json."""
         try:
-            latest = await self.github.async_latest_release()
+            text = await self.github.async_get_text(VERSIONS_FILE)
         except GitHubError as err:
             raise UpdateFailed(str(err)) from err
-        if latest is None:
-            return {"tag": self._installed_tag, "body": ""}
-        tag, body = latest
-        return {"tag": tag, "body": body}
+        try:
+            data = json.loads(text)
+        except ValueError as err:
+            raise UpdateFailed(f"Invalid versions.json: {err}") from err
+        return data if isinstance(data, dict) else {}
 
-    async def async_record_install(
-        self, tag: str | None, versions: dict[str, Any]
-    ) -> None:
-        """Persist the installed release tag + per-asset versions after an install."""
-        self._installed_tag = tag
-        self._versions = versions
-        await self._store.async_save({"installed_tag": tag, "versions": versions})
-        self.async_update_listeners()
+    async def async_install_now(self) -> None:
+        """Download the latest dashboard content and (re)install it."""
+        from . import dashboard  # lazy import to avoid a cycle
+
+        remote = self.remote_versions or await self._async_update_data()
+        installed = await dashboard.async_download_and_install(
+            self.hass, self.github, remote
+        )
+        if installed is not None:
+            self._state.setdefault("versions", {})["dashboard"] = installed
+            await self._store.async_save(self._state)
+            self.async_update_listeners()
