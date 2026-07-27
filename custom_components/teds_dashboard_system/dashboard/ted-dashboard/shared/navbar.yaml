@@ -1,0 +1,21 @@
+# Shared Ted's Navbar - the SINGLE source for the bar across every view.
+# Each view pulls it with: - !include ../shared/navbar.yaml  (views live one level down).
+# The bar is position:fixed, so each view's copy reads as one continuous navbar.
+# Contents live in navbar-sections.yaml (shared with the auto-hide variant).
+type: custom:ted-navbar-card
+theme: ted-style
+dashboard_integration: true
+# Our view layouts already reserve the bar's strip (they subtract
+# --ted-navbar-bottom-reserve from their height), so the bar must NOT reserve it again.
+reserve_content_space: false
+transparency: 50
+blur: 50
+menu_items: !include navbar-menu-items.yaml
+sections: !include navbar-sections.yaml
+# The bar is position:fixed, so its hui-card wrapper is only a placeholder. Without a
+# grid-area, custom:grid-layout auto-places it into an IMPLICIT row below the content,
+# adding a grid-gap (and a stray outline in Debug mode). Pin it to cell 1/1 at zero
+# size (place-self:start) so it takes no layout space and creates no extra row.
+view_layout:
+  grid-area: 1 / 1
+  place-self: start

@@ -21,6 +21,7 @@ from homeassistant.loader import async_get_integration
 
 from .bing_photos import cache_has_images as bing_cache_has_images, fetch_and_cache_bing
 from .cards import async_setup_cards, async_unload_cards
+from .dashboard import async_install_dashboard, async_unregister_dashboard
 from .const import DOMAIN, EVENT_NAVIGATE, MEDIA_FOLDER_NAME
 from .intents import async_register_intents
 from .store import TedsManager
@@ -53,6 +54,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         await async_install_bundled_themes(hass)
     except Exception:  # noqa: BLE001 - theme install must never block setup
         _LOGGER.exception("Ted's Themes install failed")
+    try:
+        await async_install_dashboard(hass)
+    except Exception:  # noqa: BLE001 - dashboard install must never block setup
+        _LOGGER.exception("Ted's Dashboard install failed")
 
     async def add_alarm(call: ServiceCall):
         await manager.add_alarm(
@@ -454,5 +459,6 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     if unloaded:
         manager = hass.data[DOMAIN].pop(entry.entry_id)
         async_unload_cards(hass, getattr(manager, "cards_js_url", None))
+        async_unregister_dashboard(hass)
         manager.shutdown()
     return unloaded

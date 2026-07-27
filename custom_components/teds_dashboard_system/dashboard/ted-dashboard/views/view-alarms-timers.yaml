@@ -1,0 +1,104 @@
+# View: Alarms-Timers (custom:grid-layout) — path: alarms-timers
+# A single full-height Ted's Tab Card holding the Alarms + Timers tabs. Each tab's content
+# starts with a centered "Add" button (custom:ted-button-card, horizontal orientation) that
+# fires an `ll-custom` DOM event (action: fire-dom-event); the alarm/timer card in the same
+# tab listens for it to open its add dialog. Deep-link a tab with `?tab=alarms` / `?tab=timers`.
+# Navbar is a plain card in `cards:` (`- !include ../shared/navbar.yaml`); it's position:fixed so
+# it needs no grid-area.
+type: custom:grid-layout
+path: alarms-timers
+title: Alarms-Timers
+icon: streamline-ultimate-color:time-clock-circle
+layout: !include ../shared/layout-content.yaml
+cards:
+  - type: custom:ted-fullscreen-card
+    view_layout:
+      grid-area: content
+    dashboard_integration: true
+    state_key: alarms-timers
+    fill: true
+    card:
+      type: custom:ted-tab-card
+      scale: 125
+      default_tab: 0
+      url_param: tab
+      tabs:
+        - label: Alarms
+          icon: mdi:alarm
+          slug: alarms
+          card:
+            type: vertical-stack
+            card_mod:
+              style: |
+                :host { height: 100%; }
+                #root {
+                  height: 100%;
+                  display: flex;
+                  flex-direction: column;
+                  gap: 8px;
+                  overflow: hidden;
+                }
+                #root > :last-child { flex: 1 1 auto; min-height: 0; overflow: auto; }
+            cards:
+              - type: custom:ted-button-card
+                name: + Add Alarm
+                show_name: true
+                icon: mdi:alarm-plus
+                icon_color: none
+                width: 200
+                height: 48
+                theme: ha
+                tap_action:
+                  action: fire-dom-event
+                  ted_add: alarm
+                element_order:
+                  - icon
+                  - name
+                  - state
+                orientation: horizontal
+                show_icon: false
+              - type: custom:ted-alarm-card
+                show_add: false
+                show_header_icon: false
+                show_header_name: false
+        - label: Timers
+          icon: mdi:timer-outline
+          slug: timers
+          card:
+            type: vertical-stack
+            card_mod:
+              style: |
+                :host { height: 100%; }
+                #root {
+                  height: 100%;
+                  display: flex;
+                  flex-direction: column;
+                  gap: 8px;
+                  overflow: hidden;
+                }
+                #root > :last-child { flex: 1 1 auto; min-height: 0; overflow: auto; }
+            cards:
+              - type: custom:ted-button-card
+                name: + Add Timer
+                show_name: true
+                show_icon: false
+                orientation: horizontal
+                icon: mdi:timer-plus-outline
+                icon_scale: 100
+                icon_color: none
+                width: 200
+                height: 48
+                theme: ha
+                element_order:
+                  - icon
+                  - name
+                  - state
+                tap_action:
+                  action: fire-dom-event
+                  ted_add: timer
+              - type: custom:ted-timer-card
+                show_add: false
+                show_header_icon: false
+                show_header_name: false
+  - !include ../shared/navbar.yaml
+  - !include ../shared/background.yaml

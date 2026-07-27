@@ -1,0 +1,50 @@
+{
+  "schema": 1,
+  "dashboard": "1.0.0",
+  "shared": "1.0.0",
+  "views": {
+    "view-welcome": "1.0.0",
+    "view-alarms-timers": "1.0.0",
+    "view-announce": "1.0.0",
+    "view-assist-response": "1.0.0",
+    "view-calendar-month": "1.0.0",
+    "view-calendar-week": "1.0.0",
+    "view-cameras": "1.0.0",
+    "view-climate": "1.0.0",
+    "view-music": "1.0.0",
+    "view-notifications": "1.0.0",
+    "view-photos": "1.0.0",
+    "view-settings": "1.0.0",
+    "view-weather": "1.0.0",
+    "view-home-handheld": "1.0.0",
+    "view-home-nightstand": "1.0.0",
+    "view-home-wallpanel-h": "1.0.0",
+    "view-home-wallpanel-v": "1.0.0"
+  },
+  "layout": {
+    "kiosk_include": "shared/kiosk.yaml",
+    "order": [
+      "views/view-welcome.yaml",
+      "views-home/view-home-nightstand.yaml",
+      "views-home/view-home-wallpanel-h.yaml",
+      "views-home/view-home-wallpanel-v.yaml",
+      "views-home/view-home-handheld.yaml",
+      "views/view-cameras.yaml",
+      "views/view-climate.yaml",
+      "views/view-weather.yaml",
+      "views/view-music.yaml",
+      "views/view-photos.yaml",
+      "views/view-calendar-month.yaml",
+      "views/view-calendar-week.yaml",
+      "views/view-alarms-timers.yaml",
+      "views/view-assist-response.yaml",
+      "views/view-announce.yaml",
+      "views/view-notifications.yaml",
+      "views/view-settings.yaml"
+    ]
+  },
+  "compat": {
+    "cards_min": "1.0.341",
+    "themes_min": "0.0.0"
+  }
+}

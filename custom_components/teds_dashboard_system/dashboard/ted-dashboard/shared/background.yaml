@@ -1,0 +1,15 @@
+# Shared invisible Background Wallpaper card — the SINGLE source across every view.
+# Pull it with: - !include ../shared/background.yaml  (views live one level down).
+# It renders nothing; it injects the dashboard background from Settings → General →
+# Background Wallpaper into HA's hui-root. Included on every view (like the navbar) so
+# the wallpaper persists — and the Slideshow keeps cycling — as you navigate.
+type: custom:ted-background-card
+# This dashboard drives the wallpaper from Ted's Dashboard System (Settings → General →
+# Background Wallpaper) with per-device overrides, so opt into the settings store.
+dashboard_integration: true
+# Invisible card (renders nothing). Without a grid-area, custom:grid-layout auto-places
+# its hui-card wrapper into an implicit row below the content, adding a grid-gap. Pin it
+# to cell 1/1 at zero size so it takes no layout space.
+view_layout:
+  grid-area: 1 / 1
+  place-self: start

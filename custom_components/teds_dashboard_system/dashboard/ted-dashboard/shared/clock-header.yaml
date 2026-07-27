@@ -1,0 +1,36 @@
+# Shared clock/weather header — the SINGLE source for the "clock" grid area
+# across every standard view. Each view pulls it with:
+#   - !include ../shared/clock-header.yaml   (views live one level down)
+# It positions itself into the view's `clock` grid area, so any consuming view
+# must define a `clock` row in its `grid-template-areas`.
+# (home-nightstand keeps its own bespoke split layout and does NOT use this.)
+type: custom:ted-clock-weather-card
+# `ted-style` theme. Automatic Night Mode recolors the text via the overridable
+# `--ted-night-text` token (Ted's Cards v1.0.236+), so the self-contained style works at night.
+theme: ted-style
+transparency: 100
+# Source the weather entity from the global `weather_entity` setting (Settings →
+# General) rather than hardcoding it. Falls back to the first weather.* entity when
+# the setting is unset or the backend isn't installed.
+dashboard_integration: true
+clock_size: custom
+clock_size_custom: 95
+weather_size: custom
+weather_size_custom: 95
+date_size: custom
+date_size_custom: 95
+# `hug_content` sizes the card to the clock's real (width-driven) height, and
+# `max_height` caps it at 25% of the view — so the `auto` "clock" row shrinks with
+# the clock (shorter on a narrow handheld) but NEVER grows past 25% (the clock
+# scales down to fit when it would). The row still collapses to 0 when a view
+# omits the clock, letting `content` take the full height.
+hug_content: true
+max_height: >-
+  calc((100dvh - var(--kiosk-header-height, var(--header-height, 56px)) - var(--safe-area-inset-top, 0px) - var(--ted-navbar-bottom-reserve, 48px)) * 0.25)
+view_layout:
+  grid-area: clock
+card_mod:
+  style: |
+    .cwc {
+      padding: 8px !important;
+    }

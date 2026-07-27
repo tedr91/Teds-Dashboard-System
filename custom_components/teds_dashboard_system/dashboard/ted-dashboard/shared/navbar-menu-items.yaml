@@ -1,0 +1,11 @@
+# Shared debug/utility items for the navbar's long-press menu (Refresh).
+# Referenced by navbar.yaml (normal) and navbar-autohide.yaml (auto-hide) via
+#   menu_items: !include navbar-menu-items.yaml
+# They appear in their own section of the hold-menu, just above Dashboard Settings.
+- name: Refresh
+  icon: mdi:refresh
+  tap_action:
+    action: call-service
+    service: browser_mod.refresh
+    data:
+      browser_id: this

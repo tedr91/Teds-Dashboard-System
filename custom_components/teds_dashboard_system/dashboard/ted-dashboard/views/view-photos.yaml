@@ -1,0 +1,26 @@
+# View: Photos — Ted's Photo Viewer inside a Fullscreen card (custom:grid-layout). path: photos
+# Content-only layout: a Fullscreen card fills the content area and houses the Photo
+# Viewer (so it can expand edge-to-edge via the top-right toggle; the viewer's own
+# controls sit bottom-right to stay clear of it). The album folder + re-open-last come
+# from Settings → Photos. Navbar + background are shared position:fixed includes.
+type: custom:grid-layout
+path: photos
+title: Photos
+icon: streamline-ultimate-color:picture-sun
+layout: !include ../shared/layout-content.yaml
+cards:
+  - type: custom:ted-fullscreen-card
+    view_layout:
+      grid-area: content
+    dashboard_integration: true
+    state_key: photos
+    fill: true
+    card:
+      type: custom:ted-photo-viewer-card
+      source: album
+      fill: true
+      open_last_on_load: true
+      dashboard_integration: true
+      theme: ted-style
+  - !include ../shared/navbar.yaml
+  - !include ../shared/background.yaml

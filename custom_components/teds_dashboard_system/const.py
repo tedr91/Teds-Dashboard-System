@@ -282,3 +282,8 @@ CARDS_URL = f"/{DOMAIN}/frontend/{CARDS_JS_NAME}"
 # Bundled Ted's Themes yaml files (installed into <config>/themes/).
 THEMES_DIR = "themes"
 
+# Bundled Ted's Dashboard content (baseline). Contains ``ted-dashboard/`` (managed
+# shared/views) + ``versions.json``; installed into <config>/dashboards/.
+DASHBOARD_BUNDLE_DIR = "dashboard"
+VERSIONS_FILE = "versions.json"
+

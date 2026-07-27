@@ -1,0 +1,13 @@
+# kiosk_mode body (consumed by the kiosk-mode HACS plugin via the dashboard config).
+# Included by ted-dashboard.yaml as: kiosk_mode: !include ted-dashboard/shared/kiosk.yaml
+#
+# This list is normally managed for you: Ted's Dashboard System injects the
+# "Kiosk users" you configure under Settings → General when it (re)generates the
+# dashboard. Until that runs — or if you deploy these files by hand — no accounts
+# are locked into kiosk mode. Add Home Assistant usernames to hide the header and
+# sidebar for those kiosk accounts, e.g.:
+#   user_settings:
+#     - users: [wallpanel, nightstand]
+#       kiosk: true
+user_settings: []
+

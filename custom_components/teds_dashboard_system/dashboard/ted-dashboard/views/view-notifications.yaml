@@ -1,0 +1,19 @@
+# View: Notifications (custom:grid-layout) — path: notifications
+# A single full-height Ted's Notifications card fills the content area.
+# Navbar is a plain card (`- !include ../shared/navbar.yaml`); position:fixed, no grid-area.
+type: custom:grid-layout
+path: notifications
+title: Notifications
+icon: streamline-ultimate-color:alarm-bell-ring
+layout: !include ../shared/layout-content.yaml
+cards:
+  - type: custom:ted-fullscreen-card
+    view_layout:
+      grid-area: content
+    dashboard_integration: true
+    state_key: notifications
+    fill: true
+    card:
+      type: custom:ted-notification-card
+  - !include ../shared/navbar.yaml
+  - !include ../shared/background.yaml

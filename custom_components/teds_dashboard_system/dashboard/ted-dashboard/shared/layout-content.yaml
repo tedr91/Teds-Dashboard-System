@@ -1,0 +1,15 @@
+# Shared view layout — the single full-height "content" grid, the SINGLE source
+# for every view that fills the whole content area with one card (no clock header).
+# Consume it as the value of a view's `layout:` key:
+#   layout: !include ../shared/layout-content.yaml
+# The consuming card targets `grid-area: content`.
+# grid-layout's #root is content-box (it drops any non-`grid*` layout key, incl. our
+# box-sizing), so its `padding` is added OUTSIDE this height. Subtract the vertical
+# padding (2 x 12px = 24px) so the padded #root still lands on the intended height.
+height: calc(100dvh - var(--ted-navbar-header-reserve, var(--kiosk-header-height, var(--header-height, 56px))) - var(--safe-area-inset-top, 0px) - var(--ted-navbar-bottom-reserve, 48px) - 24px)
+grid-template-columns: minmax(0, 1fr)
+grid-template-rows: minmax(0, 1fr)
+grid-template-areas: |
+  "content"
+grid-gap: 12px
+padding: 12px

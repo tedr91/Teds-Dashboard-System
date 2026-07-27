@@ -1,0 +1,205 @@
+# View: Home-Welcome (custom:grid-layout) — path: home-welcome
+# The dashboard's DEFAULT landing page (first view). Reuses the calendar-week
+# layout: the top "clock" section stays; the bottom "content" section is an
+# informational panel that guides setup (e.g. installing Ted's Dashboard System)
+# and points to the right home view.
+#
+# Effective view height = viewport - navbar - header, where the "header" term is
+#   var(--kiosk-header-height, var(--header-height, 56px))
+# kiosk-mode sets --kiosk-header-height:0 on #view (kiosk = viewport - navbar),
+# non-kiosk falls back to the real --header-height (viewport - navbar - header).
+# Clock: min 100px, 25% of that height. Content: 75% of that height.
+type: custom:grid-layout
+path: home-welcome
+title: Home-Welcome
+icon: streamline-ultimate-color:house-chimney
+layout: !include ../shared/layout-clock-content.yaml
+cards:
+  # Clock section — kept identical to the calendar-week view.
+  # - !include ../shared/clock-header.yaml
+  # Content section — dependency checks + home-view tip. Detection is done
+  # server-side by Ted's Dashboard System (sensor.teds_requirements); each box is
+  # gated by a state/attribute condition so it only appears when that dependency
+  # is missing. MDI icons are used here so the boxes render even when the
+  # custom-icons pack is the thing that's missing.
+  - type: vertical-stack
+    view_layout:
+      grid-area: content
+    card_mod:
+      style: |
+        :host { height: 100%; }
+        #root { height: 100%; overflow-y: auto; box-sizing: border-box; }
+    cards:
+      # Always-on header + core fallback for the two blockers (layout-card /
+      # Ted's Cards) — these can't be MessageBoxes because the view won't render
+      # without them, so a core markdown card carries the warning.
+      - type: markdown
+        content: |
+          ## Welcome to the Ted Dashboard system!
+
+          {% set lc = state_attr('sensor.teds_requirements','layout_card') %}
+          {% set tc = state_attr('sensor.teds_requirements','ted_cards') %}
+          {% if lc == 'missing' %}
+          🟥 **Layout Card isn't loaded** — install `layout-card` via HACS, or the views can't render.
+          {% endif %}
+          {% if tc == 'missing' %}
+          🟥 **Ted's Cards (frontend) isn't loaded** — install Ted's Cards via HACS and refresh.
+          {% endif %}
+      # Device status at a glance — dependency/integration counts, this browser's
+      # Browser Mod registration + id, backend connection/version, weather and the
+      # media-player playback target. Client-side card (reads window.browser_mod);
+      # only renders when Ted's Cards frontend is loaded, which the markdown
+      # blocker above already covers when it isn't.
+      - type: custom:ted-status-card
+      # Backend integration — the funnel; shows only when it's absent (which is
+      # also what unlocks every other check below).
+      - type: custom:ted-messagebox-card
+        theme: ted-style
+        severity: danger
+        icon: mdi:alert-octagon
+        title: Ted's Dashboard System not installed
+        message: >-
+          Install it to unlock alarms, timers, notifications, and per-device
+          settings — and to power these dependency checks.
+        docs_url: https://github.com/tedr91/Teds-Dashboard-System
+        docs_label: Install guide
+        visibility:
+          - condition: state
+            entity: sensor.teds_settings
+            state: [unknown, unavailable]
+      # HACS — shown first among the reported checks (everything else installs through it).
+      - type: custom:ted-messagebox-card
+        severity: danger
+        icon: mdi:storefront-outline
+        title: HACS not detected
+        message: HACS is how you install the plugins the dashboard needs.
+        docs_url: https://hacs.xyz/
+        docs_label: Get HACS
+        visibility:
+          - condition: state
+            entity: sensor.teds_requirements
+            attribute: hacs
+            state: missing
+      - type: custom:ted-messagebox-card
+        severity: warning
+        icon: mdi:palette-outline
+        title: Card-mod (or UIX) not installed
+        message: Without card-mod or UIX, some card styling across the dashboard won't apply.
+        docs_url: https://github.com/thomasloven/lovelace-card-mod
+        docs_label: Learn more
+        visibility:
+          - condition: state
+            entity: sensor.teds_requirements
+            attribute: card_mod
+            state: missing
+      - type: custom:ted-messagebox-card
+        severity: warning
+        icon: mdi:emoticon-outline
+        title: Custom Icons not installed
+        message: The dashboard's icons may appear blank without the Custom Icons integration.
+        docs_url: https://github.com/thomasloven/hass-custom_icons
+        docs_label: Learn more
+        visibility:
+          - condition: state
+            entity: sensor.teds_requirements
+            attribute: custom_icons
+            state: missing
+      - type: custom:ted-messagebox-card
+        severity: warning
+        icon: mdi:calendar-alert
+        title: Daylight Calendar Card not installed
+        message: The Calendar views won't render without the Daylight Calendar Card.
+        docs_url: https://github.com/superdingo101/daylight-calendar-card
+        docs_label: Learn more
+        visibility:
+          - condition: state
+            entity: sensor.teds_requirements
+            attribute: daylight_calendar
+            state: missing
+      - type: custom:ted-messagebox-card
+        severity: warning
+        icon: mdi:web
+        title: browser_mod not installed
+        message: The Refresh button and some navigation rely on browser_mod.
+        docs_url: https://github.com/thomasloven/hass-browser_mod
+        docs_label: Learn more
+        visibility:
+          - condition: state
+            entity: sensor.teds_requirements
+            attribute: browser_mod
+            state: missing
+      - type: custom:ted-messagebox-card
+        severity: tip
+        icon: mdi:monitor-shimmer
+        title: Kiosk-Mode not installed
+        message: The Home Assistant header won't auto-hide on wall panels without Kiosk-Mode.
+        docs_url: https://github.com/NemesisSoft/kiosk-mode
+        docs_label: Learn more
+        visibility:
+          - condition: state
+            entity: sensor.teds_requirements
+            attribute: kiosk_mode
+            state: missing
+      - type: custom:ted-messagebox-card
+        severity: tip
+        icon: mdi:weather-partly-cloudy
+        title: No weather entity found
+        message: Add a weather integration so the clock/weather card can show a forecast.
+        visibility:
+          - condition: state
+            entity: sensor.teds_requirements
+            attribute: weather
+            state: missing
+      # Per-device home-view suggestion (dismissible; each per device). Nightstand
+      # uses the small-landscape bucket as an interim match — to be folded into a
+      # smarter auto-detection later.
+      - type: custom:ted-messagebox-card
+        severity: tip
+        icon: mdi:cellphone
+        title: A better layout for this screen
+        message: You appear to be on a phone — the Home (Handheld) view is a better fit.
+        dismiss_key: ted-home-tip-handheld
+        visibility:
+          - condition: screen
+            media_query: "(orientation: portrait) and (max-width: 600px)"
+        actions:
+          - { label: Use Home (Handheld), icon: mdi:cellphone, action: set-device-type, device_type: handheld, navigation_path: /ted-dashboard/home-handheld, variant: primary }
+          - { label: Not now, action: dismiss-session }
+      - type: custom:ted-messagebox-card
+        severity: tip
+        icon: mdi:monitor
+        title: A better layout for this screen
+        message: This looks like a large landscape display — the Home (Wall Panel Landscape) view is a better fit.
+        dismiss_key: ted-home-tip-wallpanel-h
+        visibility:
+          - condition: screen
+            media_query: "(orientation: landscape) and (min-height: 601px)"
+        actions:
+          - { label: Use Home (Wall Panel), icon: mdi:monitor, action: set-device-type, device_type: tablet-landscape, navigation_path: /ted-dashboard/home-wallpanel-h, variant: primary }
+          - { label: Not now, action: dismiss-session }
+      - type: custom:ted-messagebox-card
+        severity: tip
+        icon: mdi:tablet
+        title: A better layout for this screen
+        message: This looks like a large portrait tablet — the Home (Wall Panel Portrait) view is a better fit.
+        dismiss_key: ted-home-tip-wallpanel-v
+        visibility:
+          - condition: screen
+            media_query: "(orientation: portrait) and (min-width: 601px)"
+        actions:
+          - { label: Use Home (Wall Panel Portrait), icon: mdi:tablet, action: set-device-type, device_type: tablet-portrait, navigation_path: /ted-dashboard/home-wallpanel-v, variant: primary }
+          - { label: Not now, action: dismiss-session }
+      - type: custom:ted-messagebox-card
+        severity: tip
+        icon: mdi:bed-clock
+        title: On a nightstand?
+        message: Small bedside displays work well with the Home (Nightstand) view.
+        dismiss_key: ted-home-tip-nightstand
+        visibility:
+          - condition: screen
+            media_query: "(orientation: landscape) and (max-height: 600px)"
+        actions:
+          - { label: Use Home (Nightstand), icon: mdi:bed-clock, action: set-device-type, device_type: nightstand, navigation_path: /ted-dashboard/home-nightstand, variant: primary }
+          - { label: Not now, action: dismiss-session }
+  - !include ../shared/navbar.yaml
+  - !include ../shared/background.yaml

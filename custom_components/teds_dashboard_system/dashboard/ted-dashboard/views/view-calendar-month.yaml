@@ -1,0 +1,24 @@
+# View: Calendar Month (custom:grid-layout) — path: calendar-month
+# Full-height month calendar in the "content" grid-area, rendered by
+# custom:ted-calendar-card (wraps daylight-calendar-card; fill:true sizes it to the
+# content cell). Calendars come from Settings → Calendars (falling back to Ted's
+# baked-in defaults). Navbar is a plain card; it's position:fixed so it needs no grid-area.
+type: custom:grid-layout
+path: calendar-month
+title: Calendar
+icon: streamline-ultimate-color:calendar-1
+layout: !include ../shared/layout-content.yaml
+cards:
+  - type: custom:ted-fullscreen-card
+    view_layout:
+      grid-area: content
+    dashboard_integration: true
+    state_key: calendar-month
+    fill: true
+    card:
+      type: custom:ted-calendar-card
+      calendar_source: settings
+      default_view: month
+      fill: true
+  - !include ../shared/navbar.yaml
+  - !include ../shared/background.yaml

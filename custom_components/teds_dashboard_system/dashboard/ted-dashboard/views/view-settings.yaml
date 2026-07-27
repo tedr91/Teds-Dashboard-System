@@ -1,0 +1,23 @@
+# View: Settings (custom:grid-layout) — path: settings
+# A single Ted's Cards Settings card with built-in section tabs (one tab per settings
+# category) and its own Global / This-device toggle. Honours `?tab=<category>` deep links
+# (e.g. the Climate card's "Settings" button → ?tab=temperatures). Requires the Ted's Dashboard System.
+# Navbar is a plain card (`- !include ../shared/navbar.yaml`); position:fixed, no grid-area.
+type: custom:grid-layout
+path: settings
+title: Settings
+icon: streamline-ultimate-color:cog
+layout: !include ../shared/layout-content.yaml
+cards:
+  - type: custom:ted-fullscreen-card
+    view_layout:
+      grid-area: content
+    dashboard_integration: true
+    state_key: settings
+    fill: true
+    card:
+      type: custom:ted-settings-card
+      section_tabs: true
+      title: Ted's Cards Settings
+  - !include ../shared/navbar.yaml
+  - !include ../shared/background.yaml

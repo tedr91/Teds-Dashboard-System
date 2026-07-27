@@ -1,0 +1,19 @@
+# View: Home (Wall Panel — Landscape) — placeholder (custom:grid-layout). path: home-wallpanel-h
+# Uses the Welcome view's clock + content layout. The content area holds a
+# MessageBox card as the placeholder. Navbar is a plain card (position:fixed).
+type: custom:grid-layout
+path: home-wallpanel-h
+title: Home (Wall Panel Landscape)
+icon: streamline-ultimate-color:e-commerce-touch-buy
+layout: !include ../shared/layout-clock-content.yaml
+cards:
+  - !include ../shared/clock-header.yaml
+  - type: custom:ted-messagebox-card
+    view_layout:
+      grid-area: content
+    severity: info
+    icon: streamline-ultimate-color:e-commerce-touch-buy
+    title: Home (Wall Panel — Landscape)
+    message: This is a placeholder view. Content coming soon.
+  - !include ../shared/navbar.yaml
+  - !include ../shared/background.yaml

@@ -1,0 +1,37 @@
+# View: Calendar-WeekView (custom:grid-layout) — path: calendar-week
+# Navbar is a plain card in `cards:` (`- !include ../shared/navbar.yaml`); it's position:fixed so it
+# needs no grid-area.
+#
+# Layout is the shared clock + content grid (../shared/layout-clock-content.yaml):
+# an `auto` clock row (capped at 25% by the clock-header) over a `1fr` content row.
+# The ted-calendar-card (wraps daylight-calendar-card) sits in the `content` cell with
+# fill:true, so it tracks the actual remaining height instead of a hardcoded 75%.
+type: custom:grid-layout
+path: calendar-week
+title: Calendar-WeekView
+icon: streamline-ultimate-color:calendar-date
+layout: !include ../shared/layout-clock-content.yaml
+cards:
+  - !include ../shared/clock-header.yaml
+  # Full-height week calendar in the "content" grid-area, rendered by
+  # custom:ted-calendar-card (wraps daylight-calendar-card; fill:true sizes it to the
+  # content cell). Calendars come from Settings → Calendars (falling back to Ted's
+  # baked-in defaults). Per-view overrides (chrome-less week layout) go in calendar_config.
+  - type: custom:ted-fullscreen-card
+    view_layout:
+      grid-area: content
+    dashboard_integration: true
+    state_key: calendar-week
+    fill: true
+    card:
+      type: custom:ted-calendar-card
+      calendar_source: settings
+      default_view: week
+      fill: true
+      calendar_config:
+        hide_header: true
+        hide_calendars: true
+        hide_controls: true
+        rolling_days_week_compact: 5
+  - !include ../shared/navbar.yaml
+  - !include ../shared/background.yaml

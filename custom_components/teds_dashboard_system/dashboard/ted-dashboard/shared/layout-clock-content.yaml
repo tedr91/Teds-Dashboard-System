@@ -1,0 +1,21 @@
+# Shared view layout — the "clock" + "content" two-row grid, the SINGLE source
+# for every standard view that stacks a clock header over a single content area.
+# Consume it as the value of a view's `layout:` key:
+#   layout: !include ../shared/layout-clock-content.yaml
+# Views pair a `- !include ../shared/clock-header.yaml` card (grid-area: clock)
+# with their content card (grid-area: content). The `clock` row is `auto`, so it
+# collapses to 0 when a view omits the clock header (e.g. Cameras), letting the
+# content area take the full height.
+# grid-layout's #root is content-box (it drops any non-`grid*` layout key, incl. our
+# box-sizing), so its `padding` is added OUTSIDE this height. Subtract the vertical
+# padding (2 x 12px = 24px) so the padded #root still lands on the intended height.
+height: calc(100dvh - var(--ted-navbar-header-reserve, var(--kiosk-header-height, var(--header-height, 56px))) - var(--safe-area-inset-top, 0px) - var(--ted-navbar-bottom-reserve, 48px) - 24px)
+grid-template-columns: minmax(0, 1fr)
+grid-template-rows: >-
+  minmax(0, auto)
+  minmax(0, 1fr)
+grid-template-areas: |
+  "clock"
+  "content"
+grid-gap: 12px
+padding: 12px

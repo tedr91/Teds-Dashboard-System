@@ -1,0 +1,21 @@
+# View: Climate — Ted's Climate Card driven by the per-device Settings list. path: climate
+# Uses the clock + content layout: the clock header sits in the "clock" area and the
+# climate card fills the "content" grid-area. Thermostats are chosen per-device in
+# Settings → Temperatures; each climate entity renders as a native `thermostat` card.
+# When a device has none available the card shows its own empty-state prompt with a
+# "Settings" button. Navbar is a plain card (`- !include ../shared/navbar.yaml`),
+# position:fixed so it needs no grid-area.
+type: custom:grid-layout
+path: climate
+title: Climate
+icon: streamline-ultimate-color:temperature-thermometer-high
+layout: !include ../shared/layout-content.yaml
+cards:
+  - type: custom:ted-climate-card
+    view_layout:
+      grid-area: content
+    climate_source: settings
+    show_current_as_primary: true
+    fill: true
+  - !include ../shared/navbar.yaml
+  - !include ../shared/background.yaml

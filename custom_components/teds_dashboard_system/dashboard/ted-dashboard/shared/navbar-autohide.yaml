@@ -1,0 +1,23 @@
+# Auto-hiding Ted's Navbar - same contents as navbar.yaml, collapsed into the edge
+# (a small pill remains) until revealed. For views that want the bar out of the way
+# (e.g. the nightstand view). Shares navbar-sections.yaml with the normal bar.
+# Aligned to the LEFT edge (vertical bar) on the nightstand view.
+type: custom:ted-navbar-card
+theme: ted-style
+dashboard_integration: true
+# Our view layouts already reserve the bar's strip (they subtract
+# --ted-navbar-bottom-reserve from their height), so the bar must NOT reserve it again.
+reserve_content_space: false
+transparency: 50
+blur: 50
+auto_hide: true
+# Dock the bar to the left edge (vertical). A vertical bar publishes
+# --ted-navbar-bottom-reserve: 0, so the view layout fills the full height.
+alignment: left
+menu_items: !include navbar-menu-items.yaml
+sections: !include navbar-sections.yaml
+# See navbar.yaml: pin the fixed bar's placeholder to cell 1/1 at zero size so
+# grid-layout doesn't add an implicit row + gap below the content.
+view_layout:
+  grid-area: 1 / 1
+  place-self: start

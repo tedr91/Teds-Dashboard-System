@@ -1,0 +1,80 @@
+# View: Home (Nightstand) — placeholder (custom:grid-layout). path: home-nightstand
+# Content (left) + clock (right) side-by-side. Clock is at least 60% wide; the
+# content column uses fit-content(40%) so it caps at 40% when it holds a card but
+# COLLAPSES TO 0 when empty (letting the clock span the full width). The navbar
+# auto-hides on this view.
+type: custom:grid-layout
+path: home-nightstand
+title: Home (Nightstand)
+icon: mdi:bed
+layout:
+  height: calc(100dvh - var(--kiosk-header-height, var(--header-height, 56px)) - var(--safe-area-inset-top, 0px) - var(--ted-navbar-bottom-reserve, 48px))
+  grid-template-columns: fit-content(40%) minmax(60%, 1fr)
+  grid-template-rows: calc(100dvh - var(--kiosk-header-height, var(--header-height, 56px)) - var(--safe-area-inset-top, 0px) - var(--ted-navbar-bottom-reserve, 48px))
+  grid-template-areas: |
+    "content clock"
+  grid-gap: 12px
+  padding: 12px
+  box-sizing: border-box
+cards:
+  - type: vertical-stack
+    view_layout:
+      grid-area: clock
+    card_mod:
+      style: |
+        :host { height: 100%; }
+        /* Fill the full-height clock area; the weather card stays in normal flow
+           at the TOP, while the clock+date card is absolutely centered on the
+           whole area (= vertically centered on screen). */
+        #root {
+          height: 100%;
+          position: relative;
+        }
+        #root > *:nth-child(2) {
+          position: absolute;
+          top: 50%;
+          left: 0;
+          right: 0;
+          transform: translateY(-50%);
+        }
+        /* DEBUG: gated by the Ted's Cards "Debug mode" setting, which publishes
+           `--ted-debug: solid` on the document root (else unset -> outlines are
+           `none`). `outline` doesn't add to the box size, so it won't shift the
+           layout being debugged. Toggle it in Settings -> General. */
+        :host { outline: 2px var(--ted-debug, none) magenta !important; }
+        #root > * { outline: 2px var(--ted-debug, none) red !important; }
+    cards:
+      - type: custom:ted-clock-weather-card
+        theme: ted-style
+        transparency: 100
+        dashboard_integration: true
+        show_date: false
+        show_clock: false
+        card_mod:
+          style: |
+            .cwc { padding: 8px !important; }
+            /* DEBUG (gated by the "Debug mode" setting via --ted-debug) */
+            :host { outline: 3px var(--ted-debug, none) orange !important; }
+            ha-card { outline: 2px var(--ted-debug, none) cyan !important; }
+            .cwc { outline: 1px var(--ted-debug, none) lime !important; }
+      - type: custom:ted-clock-weather-card
+        theme: ted-style
+        transparency: 100
+        clock_offset: 50
+        clock_size: custom
+        clock_size_custom: 140
+        time_format: custom
+        time_format_custom: h:MM
+        date_offset: 50
+        date_size: custom
+        date_size_custom: 140
+        show_weather: false
+        card_mod:
+          style: |
+            .cwc { padding: 8px !important; }
+            /* DEBUG (gated by the "Debug mode" setting via --ted-debug) */
+            :host { outline: 3px var(--ted-debug, none) orange !important; }
+            ha-card { outline: 2px var(--ted-debug, none) cyan !important; }
+            .cwc { outline: 1px var(--ted-debug, none) lime !important; }
+  - !include ../shared/navbar.yaml
+  - !include ../shared/background.yaml

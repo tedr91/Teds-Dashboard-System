@@ -1,0 +1,54 @@
+# View: Weather (custom:grid-layout) — path: weather
+# A single full-height Ted's Tab Card fills the content area with two tabs:
+#   • Forecast — pkissling/clock-weather-card (custom:clock-weather-card), animated iOS-style
+#     forecast for weather.forecast_home.
+#   • Radar — jpettitt/weather-radar-card (custom:weather-radar-card), animated RainViewer loop.
+# Both cards are referenced directly (assumed installed via HACS). Deep-link a tab with
+# `?tab=forecast` / `?tab=radar`. Navbar is a plain card in `cards:`
+# (`- !include ../shared/navbar.yaml`); it's position:fixed so it needs no grid-area.
+type: custom:grid-layout
+path: weather
+title: Weather
+icon: streamline-ultimate-color:rain-umbrella-sun
+layout: !include ../shared/layout-content.yaml
+cards:
+  - type: custom:ted-fullscreen-card
+    view_layout:
+      grid-area: content
+    dashboard_integration: true
+    state_key: weather
+    fill: true
+    card:
+      type: custom:ted-tab-card
+      default_tab: 0
+      url_param: tab
+      tabs:
+        - label: Forecast
+          icon: mdi:weather-partly-cloudy
+          slug: forecast
+          card:
+            type: custom:clock-weather-card
+            entity: weather.forecast_home
+            animated_icon: true
+            forecast_rows: 7
+            card_mod:
+              style: |
+                :host { height: 100%; }
+                /* Opaque, theme-adaptive grey surface so the forecast reads well over the
+                   translucent dashboard in both light and dark mode (nudged toward grey). */
+                ha-card {
+                  height: 100%;
+                  background: color-mix(in srgb, var(--card-background-color, #fff) 88%, gray) !important;
+                  -webkit-backdrop-filter: none !important;
+                  backdrop-filter: none !important;
+                }
+        - label: Radar
+          icon: mdi:radar
+          slug: radar
+          card:
+            type: custom:weather-radar-card
+            card_mod:
+              style: |
+                :host { height: 100%; }
+  - !include ../shared/navbar.yaml
+  - !include ../shared/background.yaml
