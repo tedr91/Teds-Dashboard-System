@@ -8,7 +8,7 @@
 type: custom:grid-layout
 path: alarms-timers
 title: Alarms-Timers
-icon: streamline-ultimate-color:time-clock-circle
+icon: mdi:alarm-multiple
 layout: !include ../shared/layout-content.yaml
 cards:
   - type: custom:ted-fullscreen-card

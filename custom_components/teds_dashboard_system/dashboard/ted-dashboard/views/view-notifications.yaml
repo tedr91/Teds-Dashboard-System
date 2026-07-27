@@ -4,7 +4,7 @@
 type: custom:grid-layout
 path: notifications
 title: Notifications
-icon: streamline-ultimate-color:alarm-bell-ring
+icon: mdi:bell-ring
 layout: !include ../shared/layout-content.yaml
 cards:
   - type: custom:ted-fullscreen-card

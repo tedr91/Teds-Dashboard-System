@@ -4,7 +4,7 @@
 type: custom:grid-layout
 path: home-handheld
 title: Home (Handheld)
-icon: streamline-ultimate-color:kindle-hold
+icon: mdi:home
 layout: !include ../shared/layout-clock-content.yaml
 cards:
   - !include ../shared/clock-header.yaml
@@ -12,7 +12,7 @@ cards:
     view_layout:
       grid-area: content
     severity: info
-    icon: streamline-ultimate-color:kindle-hold
+    icon: mdi:home
     title: Home (Handheld)
     message: This is a placeholder view. Content coming soon.
   - !include ../shared/navbar.yaml

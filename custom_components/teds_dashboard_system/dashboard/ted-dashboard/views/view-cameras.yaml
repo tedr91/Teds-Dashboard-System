@@ -6,7 +6,7 @@
 type: custom:grid-layout
 path: cameras
 title: Cameras
-icon: streamline-ultimate-color:shield-monitor
+icon: mdi:cctv
 layout: !include ../shared/layout-content.yaml
 cards:
   - type: custom:ted-fullscreen-card

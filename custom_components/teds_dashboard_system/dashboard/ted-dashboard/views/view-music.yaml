@@ -6,7 +6,7 @@
 type: custom:grid-layout
 path: music
 title: Music
-icon: streamline-ultimate-color:music-note-1
+icon: mdi:music
 layout: !include ../shared/layout-content.yaml
 cards:
   - type: custom:ted-fullscreen-card

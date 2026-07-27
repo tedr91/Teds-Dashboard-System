@@ -8,7 +8,7 @@
 type: custom:grid-layout
 path: climate
 title: Climate
-icon: streamline-ultimate-color:temperature-thermometer-high
+icon: mdi:thermostat
 layout: !include ../shared/layout-content.yaml
 cards:
   - type: custom:ted-climate-card

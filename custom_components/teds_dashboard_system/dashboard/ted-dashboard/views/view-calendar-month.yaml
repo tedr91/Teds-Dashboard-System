@@ -6,7 +6,7 @@
 type: custom:grid-layout
 path: calendar-month
 title: Calendar
-icon: streamline-ultimate-color:calendar-1
+icon: mdi:calendar-month
 layout: !include ../shared/layout-content.yaml
 cards:
   - type: custom:ted-fullscreen-card

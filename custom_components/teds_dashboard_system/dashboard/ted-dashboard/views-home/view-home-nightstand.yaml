@@ -6,7 +6,7 @@
 type: custom:grid-layout
 path: home-nightstand
 title: Home (Nightstand)
-icon: mdi:bed
+icon: mdi:home
 layout:
   height: calc(100dvh - var(--kiosk-header-height, var(--header-height, 56px)) - var(--safe-area-inset-top, 0px) - var(--ted-navbar-bottom-reserve, 48px))
   grid-template-columns: fit-content(40%) minmax(60%, 1fr)

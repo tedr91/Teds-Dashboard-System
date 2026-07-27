@@ -6,7 +6,7 @@
 type: custom:grid-layout
 path: settings
 title: Settings
-icon: streamline-ultimate-color:cog
+icon: mdi:cog
 layout: !include ../shared/layout-content.yaml
 cards:
   - type: custom:ted-fullscreen-card

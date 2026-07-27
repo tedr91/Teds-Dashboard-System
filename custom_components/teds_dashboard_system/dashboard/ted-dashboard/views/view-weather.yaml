@@ -9,7 +9,7 @@
 type: custom:grid-layout
 path: weather
 title: Weather
-icon: streamline-ultimate-color:rain-umbrella-sun
+icon: mdi:weather-partly-cloudy
 layout: !include ../shared/layout-content.yaml
 cards:
   - type: custom:ted-fullscreen-card

@@ -6,7 +6,7 @@
 type: custom:grid-layout
 path: assist-response
 title: Assist-Response
-icon: streamline-ultimate-color:messages-bubble-text
+icon: mdi:message-text
 layout: !include ../shared/layout-content.yaml
 cards:
   - type: custom:ted-fullscreen-card

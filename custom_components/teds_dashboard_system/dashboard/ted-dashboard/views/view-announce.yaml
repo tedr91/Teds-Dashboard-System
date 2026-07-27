@@ -4,7 +4,7 @@
 type: custom:grid-layout
 path: announce
 title: Announce
-icon: streamline-ultimate-color:megaphone
+icon: mdi:bullhorn
 layout: !include ../shared/layout-content.yaml
 cards:
   - type: custom:ted-fullscreen-card

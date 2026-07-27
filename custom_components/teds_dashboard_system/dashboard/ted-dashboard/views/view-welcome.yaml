@@ -12,7 +12,7 @@
 type: custom:grid-layout
 path: home-welcome
 title: Home-Welcome
-icon: streamline-ultimate-color:house-chimney
+icon: mdi:home
 layout: !include ../shared/layout-clock-content.yaml
 cards:
   # Clock section — kept identical to the calendar-week view.

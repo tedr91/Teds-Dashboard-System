@@ -9,7 +9,7 @@
 type: custom:grid-layout
 path: calendar-week
 title: Calendar-WeekView
-icon: streamline-ultimate-color:calendar-date
+icon: mdi:calendar-week
 layout: !include ../shared/layout-clock-content.yaml
 cards:
   - !include ../shared/clock-header.yaml

@@ -6,7 +6,7 @@
 type: custom:grid-layout
 path: photos
 title: Photos
-icon: streamline-ultimate-color:picture-sun
+icon: mdi:image-multiple
 layout: !include ../shared/layout-content.yaml
 cards:
   - type: custom:ted-fullscreen-card
