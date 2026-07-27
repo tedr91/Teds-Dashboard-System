@@ -24,6 +24,7 @@ from .bing_photos import cache_has_images as bing_cache_has_images, fetch_and_ca
 from .cards import async_setup_cards, async_unload_cards
 from .dashboard import (
     async_install_dashboard,
+    async_remove_dashboard_files,
     async_unregister_dashboard,
 )
 from .overrides import async_register_services as async_register_override_services
@@ -477,6 +478,25 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         async_unregister_dashboard(hass)
         manager.shutdown()
     return unloaded
+
+
+async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Full cleanup on uninstall. Runtime registrations (panel, cards URL, static
+    path) are already removed by async_unload_entry; here we remove the on-disk
+    artifacts: the generated + managed dashboard files (the user overlay
+    ``ted-dashboard-user/`` is kept) and the installer state store. The settings /
+    alarms store is left intact so a reinstall keeps the user's data."""
+    try:
+        await async_remove_dashboard_files(hass)
+    except Exception:  # noqa: BLE001 - best-effort cleanup, never raise on uninstall
+        _LOGGER.exception("Failed to remove Ted's Dashboard files on uninstall")
+    try:
+        from .updater import async_load_installer_state
+
+        store, _ = await async_load_installer_state(hass)
+        await store.async_remove()
+    except Exception:  # noqa: BLE001
+        _LOGGER.exception("Failed to remove the installer state on uninstall")
 
 
 async def _async_setup_updater(

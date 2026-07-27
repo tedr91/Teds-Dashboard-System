@@ -216,6 +216,24 @@ def async_unregister_dashboard(hass: HomeAssistant) -> None:
         data.dashboards.pop(DASHBOARD_SLUG, None)
 
 
+def _remove_managed(dashboards_dir: str) -> None:
+    """Delete the generated main file + managed content, KEEPING the user overlay."""
+    main = os.path.join(dashboards_dir, DASHBOARD_MAIN_FILE)
+    if os.path.isfile(main):
+        os.remove(main)
+    managed = os.path.join(dashboards_dir, DASHBOARD_MANAGED_DIR)
+    if os.path.isdir(managed):
+        shutil.rmtree(managed, ignore_errors=True)
+    # ted-dashboard-user/ (the user's own views/overrides/shared) is intentionally kept.
+
+
+async def async_remove_dashboard_files(hass: HomeAssistant) -> None:
+    """On uninstall: remove the generated + managed dashboard files, keeping the
+    user overlay (``ted-dashboard-user/``) so hand-authored customizations survive."""
+    dashboards_dir = os.path.join(hass.config.config_dir, DASHBOARDS_DIR)
+    await hass.async_add_executor_job(_remove_managed, dashboards_dir)
+
+
 async def async_install_dashboard(hass: HomeAssistant) -> None:
     """Install the bundled dashboard, compose the main file, and register it.
 
