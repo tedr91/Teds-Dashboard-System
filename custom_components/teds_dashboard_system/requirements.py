@@ -76,16 +76,32 @@ def _extra_module_urls(hass: HomeAssistant) -> list[str]:
 
 
 async def compute_requirements(hass: HomeAssistant) -> dict[str, str]:
-    """Evaluate every requirement to ``ok`` / ``missing`` / ``unknown``."""
+    """Evaluate every requirement to ``ok`` / ``setup`` / ``missing`` / ``unknown``.
+
+    ``setup`` means an integration is downloaded (present in ``custom_components/``,
+    e.g. installed via HACS) but not yet added under Settings → Devices & Services,
+    so dashboards can tell the user to add it rather than to install it.
+    """
+    from homeassistant.loader import async_get_custom_components
+
     components = set(hass.config.components)
     urls = await _resource_urls(hass)
     extra_urls = _extra_module_urls(hass)
+    try:
+        downloaded = set(await async_get_custom_components(hass))
+    except Exception:  # noqa: BLE001 - loader shape varies; treat as none downloaded
+        downloaded = set()
 
     result: dict[str, str] = {}
     for req in REQUIREMENTS:
         rid, kind, match = req["id"], req["kind"], req["match"]
         if kind == "integration":
-            result[rid] = "ok" if any(m in components for m in match) else "missing"
+            if any(m in components for m in match):
+                result[rid] = "ok"
+            elif any(m in downloaded for m in match):
+                result[rid] = "setup"
+            else:
+                result[rid] = "missing"
         elif kind == "resource":
             # Ted's Cards may be served by this integration (add_extra_js_url)
             # rather than a HACS Lovelace resource — accept either source.
