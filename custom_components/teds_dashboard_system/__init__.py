@@ -22,7 +22,11 @@ from homeassistant.loader import async_get_integration
 
 from .bing_photos import cache_has_images as bing_cache_has_images, fetch_and_cache_bing
 from .cards import async_setup_cards, async_unload_cards
-from .dashboard import async_install_dashboard, async_unregister_dashboard
+from .dashboard import (
+    async_install_dashboard,
+    async_recompose,
+    async_unregister_dashboard,
+)
 from .overrides import async_register_services as async_register_override_services
 from .const import (
     CONF_DASHBOARD_BRANCH,
@@ -31,6 +35,7 @@ from .const import (
     DEFAULT_DASHBOARD_REPO,
     DOMAIN,
     EVENT_NAVIGATE,
+    EVENT_SETTINGS,
     MEDIA_FOLDER_NAME,
 )
 from .intents import async_register_intents
@@ -70,6 +75,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         _LOGGER.exception("Ted's Dashboard install failed")
     await _async_setup_updater(hass, entry, manager)
     async_register_override_services(hass)
+    _async_watch_kiosk_users(hass, entry, manager)
 
     async def add_alarm(call: ServiceCall):
         await manager.add_alarm(
@@ -508,3 +514,21 @@ def _maybe_autoupdate(hass: HomeAssistant, manager: TedsManager, coordinator) ->
     if manager.effective_settings().get("dashboard_auto_update", True) is not True:
         return
     hass.async_create_task(coordinator.async_install_now())
+
+
+@callback
+def _async_watch_kiosk_users(
+    hass: HomeAssistant, entry: ConfigEntry, manager: TedsManager
+) -> None:
+    """Recompose the dashboard when the 'kiosk_users' setting changes (no restart)."""
+    last = str(manager.effective_settings().get("kiosk_users", "") or "")
+
+    @callback
+    def _on_settings(_event: Event) -> None:
+        nonlocal last
+        current = str(manager.effective_settings().get("kiosk_users", "") or "")
+        if current != last:
+            last = current
+            hass.async_create_task(async_recompose(hass))
+
+    entry.async_on_unload(hass.bus.async_listen(EVENT_SETTINGS, _on_settings))
