@@ -34,7 +34,6 @@ from .const import (
     DASHBOARD_TITLE,
     DASHBOARD_USER_DIR,
     DASHBOARDS_DIR,
-    DOMAIN,
     VERSIONS_FILE,
 )
 from .updater import async_load_installer_state
@@ -89,13 +88,6 @@ def _version_gt(a: Any, b: Any) -> bool:
     return _version_tuple(a) > _version_tuple(b)
 
 
-def _current_kiosk_users(hass: HomeAssistant) -> str:
-    """Read the comma-separated 'kiosk_users' global setting (or empty)."""
-    for manager in hass.data.get(DOMAIN, {}).values():
-        return str(manager.effective_settings().get("kiosk_users", "") or "")
-    return ""
-
-
 def _mirror_dir(src: str, dest: str) -> None:
     """Replace ``dest`` with a fresh copy of ``src`` (managed content only)."""
     if os.path.isdir(dest):
@@ -114,25 +106,14 @@ def _scaffold_user_dir(dashboards_dir: str) -> None:
             fh.write(_USER_README)
 
 
-def _compose_main(
-    dashboards_dir: str, versions: dict[str, Any], kiosk_users: str = ""
-) -> str:
+def _compose_main(dashboards_dir: str, versions: dict[str, Any]) -> str:
     """Build the generated main dashboard yaml (an include list) as text."""
     layout = versions.get("layout", {})
-    kiosk_include = layout.get("kiosk_include")
     order = layout.get("order", [])
     user_overrides = os.path.join(dashboards_dir, DASHBOARD_USER_DIR, "overrides")
     user_views = os.path.join(dashboards_dir, DASHBOARD_USER_DIR, "views")
 
     lines = [_GENERATED_HEADER]
-    users = [u.strip() for u in (kiosk_users or "").split(",") if u.strip()]
-    if users:
-        lines.append("kiosk_mode:")
-        lines.append("  user_settings:")
-        lines.append(f"    - users: [{', '.join(users)}]")
-        lines.append("      kiosk: true")
-    elif kiosk_include:
-        lines.append(f"kiosk_mode: !include {DASHBOARD_MANAGED_DIR}/{kiosk_include}")
     lines.append("views:")
     for rel in order:
         name = os.path.basename(rel)
@@ -156,7 +137,7 @@ def _write_text(path: str, text: str) -> None:
 
 
 def _install_sync(
-    bundle_managed: str, versions: dict, config_dir: str, mirror: bool, kiosk_users: str
+    bundle_managed: str, versions: dict, config_dir: str, mirror: bool
 ) -> None:
     """Blocking filesystem work: (optionally) mirror managed, scaffold, compose."""
     dashboards_dir = os.path.join(config_dir, DASHBOARDS_DIR)
@@ -165,7 +146,7 @@ def _install_sync(
     _scaffold_user_dir(dashboards_dir)
     _write_text(
         os.path.join(dashboards_dir, DASHBOARD_MAIN_FILE),
-        _compose_main(dashboards_dir, versions, kiosk_users),
+        _compose_main(dashboards_dir, versions),
     )
 
 
@@ -256,9 +237,8 @@ async def async_install_dashboard(hass: HomeAssistant) -> None:
     need_content = installed is None or _version_gt(
         versions.get("dashboard", "0"), installed.get("dashboard", "0")
     )
-    kiosk = _current_kiosk_users(hass)
     await hass.async_add_executor_job(
-        _install_sync, bundle_managed, versions, hass.config.config_dir, need_content, kiosk
+        _install_sync, bundle_managed, versions, hass.config.config_dir, need_content
     )
     _register_dashboard(hass)
 
@@ -276,21 +256,21 @@ def _rmtree_quiet(path: str) -> None:
 
 
 def _install_downloaded(
-    tmp: str, dashboards_dir: str, versions: dict, kiosk_users: str
+    tmp: str, dashboards_dir: str, versions: dict
 ) -> None:
     _mirror_dir(tmp, os.path.join(dashboards_dir, DASHBOARD_MANAGED_DIR))
     _scaffold_user_dir(dashboards_dir)
     _write_text(
         os.path.join(dashboards_dir, DASHBOARD_MAIN_FILE),
-        _compose_main(dashboards_dir, versions, kiosk_users),
+        _compose_main(dashboards_dir, versions),
     )
 
 
-def _recompose_sync(dashboards_dir: str, versions: dict, kiosk_users: str) -> None:
+def _recompose_sync(dashboards_dir: str, versions: dict) -> None:
     _scaffold_user_dir(dashboards_dir)
     _write_text(
         os.path.join(dashboards_dir, DASHBOARD_MAIN_FILE),
-        _compose_main(dashboards_dir, versions, kiosk_users),
+        _compose_main(dashboards_dir, versions),
     )
 
 
@@ -307,8 +287,7 @@ async def async_recompose(hass: HomeAssistant) -> None:
             _read_json, os.path.join(_bundle_dir(), VERSIONS_FILE)
         )
     dashboards_dir = os.path.join(hass.config.config_dir, DASHBOARDS_DIR)
-    kiosk = _current_kiosk_users(hass)
-    await hass.async_add_executor_job(_recompose_sync, dashboards_dir, versions, kiosk)
+    await hass.async_add_executor_job(_recompose_sync, dashboards_dir, versions)
 
 
 async def async_download_and_install(
@@ -327,9 +306,8 @@ async def async_download_and_install(
         if not count:
             return None
         dashboards_dir = os.path.join(hass.config.config_dir, DASHBOARDS_DIR)
-        kiosk = _current_kiosk_users(hass)
         await hass.async_add_executor_job(
-            _install_downloaded, tmp, dashboards_dir, versions_remote, kiosk
+            _install_downloaded, tmp, dashboards_dir, versions_remote
         )
         _register_dashboard(hass)
         return versions_remote

@@ -34,7 +34,6 @@ REQUIREMENTS: list[dict] = [
     {"id": "ted_cards", "kind": "resource", "match": ["ted-cards"]},
     {"id": "card_mod", "kind": "resource", "match": ["card-mod", "/uix"]},
     {"id": "daylight_calendar", "kind": "resource", "match": ["daylight-calendar"]},
-    {"id": "kiosk_mode", "kind": "resource", "match": ["kiosk-mode", "kiosk_mode"]},
     # Entities
     {"id": "weather", "kind": "entity", "match": ["weather"]},
 ]

@@ -147,9 +147,10 @@ SETTINGS_DEFAULTS = {
     # When on, Ted's Dashboard System keeps the installed Ted's Dashboard files up to
     # date automatically; off pins the current version for manual management.
     "dashboard_auto_update": True,
-    # Comma-separated Home Assistant usernames locked into kiosk mode (header/sidebar
-    # hidden). Injected into the generated dashboard's kiosk_mode block on compose.
-    "kiosk_users": "",
+    # Per-device: use Home Assistant's built-in kiosk mode (2026.1+) on this device,
+    # hiding the sidebar/header/edit UI. Driven client-side by Ted's Cards; not composed
+    # into the dashboard yaml. Default on (turn off per device).
+    "use_kiosk_mode": True,
     # Icon set used by Ted's built-in icons (Status/Settings etc.). "auto" = the best
     # installed set by priority; otherwise force a specific set (falls back to mdi).
     "icon_set": "auto",
