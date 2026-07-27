@@ -144,6 +144,9 @@ SETTINGS_DEFAULTS = {
     # General
     "do_not_disturb": False,
     "debug_mode": False,
+    # When on, Ted's Dashboard System keeps the installed Ted's Dashboard files up to
+    # date automatically; off pins the current version for manual management.
+    "dashboard_auto_update": True,
     # Icon set used by Ted's built-in icons (Status/Settings etc.). "auto" = the best
     # installed set by priority; otherwise force a specific set (falls back to mdi).
     "icon_set": "auto",
