@@ -23,6 +23,7 @@ from homeassistant.loader import async_get_integration
 from .bing_photos import cache_has_images as bing_cache_has_images, fetch_and_cache_bing
 from .cards import async_setup_cards, async_unload_cards
 from .dashboard import async_install_dashboard, async_unregister_dashboard
+from .overrides import async_register_services as async_register_override_services
 from .const import (
     CONF_DASHBOARD_BRANCH,
     CONF_DASHBOARD_REPO,
@@ -68,6 +69,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     except Exception:  # noqa: BLE001 - dashboard install must never block setup
         _LOGGER.exception("Ted's Dashboard install failed")
     await _async_setup_updater(hass, entry, manager)
+    async_register_override_services(hass)
 
     async def add_alarm(call: ServiceCall):
         await manager.add_alarm(

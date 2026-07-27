@@ -131,3 +131,29 @@ register_device:
 check_requirements:
   name: Check requirements
   description: Re-run server-side detection of optional dependencies (updates sensor.teds_requirements).
+
+dashboard_customize_view:
+  name: Customize dashboard view
+  description: Fork a shipped Ted's Dashboard view into your overrides folder so you can edit it (it then stops receiving upstream updates).
+  fields:
+    view: { required: true, selector: { text: {} } }
+
+dashboard_revert_view:
+  name: Revert dashboard view
+  description: Drop a forked view override and return to the shipped version.
+  fields:
+    view: { required: true, selector: { text: {} } }
+
+dashboard_add_custom_view:
+  name: Add custom dashboard view
+  description: Scaffold a new user view in the Ted's Dashboard user overlay.
+  fields:
+    name: { required: true, selector: { text: {} } }
+    title: { selector: { text: {} } }
+    icon: { selector: { icon: {} } }
+
+dashboard_remove_custom_view:
+  name: Remove custom dashboard view
+  description: Delete a user view from the Ted's Dashboard user overlay.
+  fields:
+    name: { required: true, selector: { text: {} } }

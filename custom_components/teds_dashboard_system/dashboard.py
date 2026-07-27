@@ -267,6 +267,30 @@ def _install_downloaded(tmp: str, dashboards_dir: str, versions: dict) -> None:
     )
 
 
+def _recompose_sync(dashboards_dir: str, versions: dict) -> None:
+    _scaffold_user_dir(dashboards_dir)
+    _write_text(
+        os.path.join(dashboards_dir, DASHBOARD_MAIN_FILE),
+        _compose_main(dashboards_dir, versions),
+    )
+
+
+async def async_recompose(hass: HomeAssistant) -> None:
+    """Regenerate the main dashboard file from current managed + user overlays.
+
+    Called after a user override/custom-view change so the include list picks up
+    the new files (and HA hot-reloads via the bumped mtime).
+    """
+    _, state = await async_load_installer_state(hass)
+    versions = state.get("versions", {}).get("dashboard", {})
+    if not versions:
+        versions = await hass.async_add_executor_job(
+            _read_json, os.path.join(_bundle_dir(), VERSIONS_FILE)
+        )
+    dashboards_dir = os.path.join(hass.config.config_dir, DASHBOARDS_DIR)
+    await hass.async_add_executor_job(_recompose_sync, dashboards_dir, versions)
+
+
 async def async_download_and_install(
     hass: HomeAssistant, github: Any, versions_remote: dict[str, Any]
 ) -> dict[str, Any] | None:
