@@ -59,10 +59,27 @@ async def _resource_urls(hass: HomeAssistant) -> list[str] | None:
         return None
 
 
+def _extra_module_urls(hass: HomeAssistant) -> list[str]:
+    """Front-end extra-module URLs (lowercased) added via ``add_extra_js_url``.
+
+    This is how *this* integration auto-loads the bundled Ted's Cards, so it must
+    be checked in addition to Lovelace resources (how a HACS install loads them).
+    """
+    try:
+        from homeassistant.components.frontend import DATA_EXTRA_MODULE_URL
+
+        manager = hass.data.get(DATA_EXTRA_MODULE_URL)
+        urls = getattr(manager, "urls", None)
+        return [str(u).lower() for u in urls] if urls else []
+    except Exception:  # noqa: BLE001 - frontend internals vary across cores
+        return []
+
+
 async def compute_requirements(hass: HomeAssistant) -> dict[str, str]:
     """Evaluate every requirement to ``ok`` / ``missing`` / ``unknown``."""
     components = set(hass.config.components)
     urls = await _resource_urls(hass)
+    extra_urls = _extra_module_urls(hass)
 
     result: dict[str, str] = {}
     for req in REQUIREMENTS:
@@ -70,7 +87,11 @@ async def compute_requirements(hass: HomeAssistant) -> dict[str, str]:
         if kind == "integration":
             result[rid] = "ok" if any(m in components for m in match) else "missing"
         elif kind == "resource":
-            if urls is None:
+            # Ted's Cards may be served by this integration (add_extra_js_url)
+            # rather than a HACS Lovelace resource — accept either source.
+            if rid == "ted_cards" and any(m in u for m in match for u in extra_urls):
+                result[rid] = "ok"
+            elif urls is None:
                 result[rid] = "unknown"
             else:
                 result[rid] = (
