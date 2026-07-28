@@ -9431,12 +9431,14 @@ const e="ted",t="__tedDefineGuardInstalled__",i=`${e}-`;if("undefined"!=typeof c
             <span class="help">Managed on the “Global” tab.</span>
           </div>
         </div>
-      `;const t=this._isAdmin(),i=this._navMenuItems();return W`
+      `;const t=this._isAdmin(),i=this._navMenuItems(),a=i.filter(e=>!1!==e.enabled).length;return W`
       <ha-expansion-panel outlined class="sub-panel">
         <div slot="header" class="sub-head">
           <ha-icon icon="mdi:gesture-tap-hold"></ha-icon>
           <span class="sub-head-label">Custom menu items</span>
-          <span class="sub-head-value">${i.length||"None"}</span>
+          <span class="sub-head-value"
+            >${i.length?`${a} enabled (${i.length} total)`:"None"}</span
+          >
         </div>
         <div class="sub-body">
           <div class="help">

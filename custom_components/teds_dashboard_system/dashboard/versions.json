@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "dashboard": "1.0.1",
+  "dashboard": "1.0.2",
   "shared": "1.0.0",
   "views": {
     "view-welcome": "1.0.1",
