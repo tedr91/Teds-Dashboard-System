@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "dashboard": "1.0.4",
+  "dashboard": "0.9.0",
   "shared": "1.0.0",
   "views": {
     "view-welcome": "1.0.1",
@@ -43,7 +43,7 @@
     ]
   },
   "compat": {
-    "cards_min": "1.0.341",
+    "cards_min": "0.9.0",
     "themes_min": "0.0.0"
   }
 }
