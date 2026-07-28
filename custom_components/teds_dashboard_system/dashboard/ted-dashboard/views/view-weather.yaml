@@ -26,6 +26,10 @@ cards:
         - label: Forecast
           icon: mdi:weather-partly-cloudy
           slug: forecast
+          requires:
+            - element: clock-weather-card
+              name: Clock Weather Card
+              url: https://github.com/pkissling/clock-weather-card
           card:
             type: custom:clock-weather-card
             entity: weather.forecast_home
@@ -45,6 +49,10 @@ cards:
         - label: Radar
           icon: mdi:radar
           slug: radar
+          requires:
+            - element: weather-radar-card
+              name: Weather Radar Card
+              url: https://github.com/jpettitt/weather-radar-card
           card:
             type: custom:weather-radar-card
             card_mod:
