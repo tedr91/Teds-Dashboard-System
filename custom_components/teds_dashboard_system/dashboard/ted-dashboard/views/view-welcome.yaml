@@ -158,6 +158,50 @@ cards:
             attribute: browser_mod
             state: setup
       - type: custom:ted-messagebox-card
+        severity: warning
+        icon: mdi:music
+        title: Music Assistant integration not set up
+        message: >-
+          The Music view needs the Music Assistant integration — it's what exposes your
+          Music Assistant players to Home Assistant. The MA app/server alone isn't enough.
+          Add it under Settings → Devices & Services (it auto-discovers a running MA server).
+        docs_url: https://www.home-assistant.io/integrations/music_assistant/
+        docs_label: Learn more
+        visibility:
+          - condition: state
+            entity: sensor.teds_requirements
+            attribute: music_assistant
+            state: missing
+      - type: custom:ted-messagebox-card
+        severity: tip
+        icon: mdi:playlist-music
+        title: mass_queue not installed
+        message: >-
+          Install the Music Assistant Queue (mass_queue) integration via HACS for richer
+          Music card features — live queue, synced lyrics, and accurate player-provider
+          ranking.
+        docs_url: https://github.com/droans/mass_queue
+        docs_label: Learn more
+        visibility:
+          - condition: state
+            entity: sensor.teds_requirements
+            attribute: mass_queue
+            state: missing
+      - type: custom:ted-messagebox-card
+        severity: tip
+        icon: mdi:playlist-music
+        title: mass_queue needs setup
+        message: >-
+          mass_queue is downloaded in HACS but not set up yet. Add it under
+          Settings → Devices & Services → Add Integration → Music Assistant Queue.
+        docs_url: https://github.com/droans/mass_queue
+        docs_label: Learn more
+        visibility:
+          - condition: state
+            entity: sensor.teds_requirements
+            attribute: mass_queue
+            state: setup
+      - type: custom:ted-messagebox-card
         severity: tip
         icon: mdi:weather-partly-cloudy
         title: No weather entity found

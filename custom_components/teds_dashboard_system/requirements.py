@@ -28,6 +28,8 @@ REQUIREMENTS: list[dict] = [
     {"id": "hacs", "kind": "integration", "match": ["hacs"]},
     {"id": "browser_mod", "kind": "integration", "match": ["browser_mod"]},
     {"id": "custom_icons", "kind": "integration", "match": ["custom_icons"]},
+    {"id": "music_assistant", "kind": "integration", "match": ["music_assistant"]},
+    {"id": "mass_queue", "kind": "integration", "match": ["mass_queue"]},
     # Front-end plugins (Lovelace resources). card_mod passes if EITHER card-mod
     # or UIX (a superset replacement) is installed.
     {"id": "layout_card", "kind": "resource", "match": ["layout-card"]},
