@@ -75,6 +75,12 @@ SETTINGS_DEFAULTS = {
     "system_sound_player": None,
     "music_player": None,
     "music_volume": 5,
+    # Current-device-first music: proactively expose a registered device as a Music
+    # Assistant player so it can play music (only when MA runs as the HA add-on, where no
+    # user input is needed). Per-device overridable. `music_autoexpose_state` is an
+    # internal per-device marker (none/pending/done/failed) so it only runs once.
+    "music_auto_expose_device": True,
+    "music_autoexpose_state": None,
     # Cameras — ordered list of camera entity ids. Global = the available allow-list;
     # per-device = the curated subset that device shows (empty inherits the global list).
     "cameras_list": [],

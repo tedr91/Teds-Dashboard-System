@@ -50,6 +50,11 @@ _PLAYER_ICON = "mdi-television-speaker"
 _REGISTER_TIMEOUT_S = 15
 _POLL_INTERVAL_S = 0.5
 
+# Prefix on the user-facing error when the `hass` plugin provider can't be auto-added
+# (an external Music Assistant server needs a URL + token). The websocket handler turns
+# this into a distinct error code so the UI can show a *guided* step, not a hard failure.
+GUIDE_HASS_PLUGIN = "GUIDE_HASS_PLUGIN: "
+
 
 def _get_mass_client(hass: HomeAssistant) -> Any | None:
     """Return the live MusicAssistantClient from the HA music_assistant integration.
@@ -92,6 +97,52 @@ def _config_value(values: Any, key: str, default: Any = None) -> Any:
     return default if raw is None else raw
 
 
+async def _hass_plugin_enabled(mass: Any) -> bool:
+    """True when Music Assistant's `hass` plugin provider is set up and enabled."""
+    provs = await _command(mass, "config/providers", provider_domain=_HASS_PLUGIN_DOMAIN)
+    return any((p or {}).get("enabled", True) for p in (provs or []))
+
+
+async def _ensure_hass_plugin(mass: Any) -> None:
+    """Ensure the `hass` plugin provider exists (the player provider depends on it).
+
+    When Music Assistant runs as the Home Assistant **add-on**, that provider needs no
+    user input (URL = the supervisor API, token auto-retrieved), so an empty
+    ``config/providers/save`` instantiates it. On an **external** MA server the provider
+    requires a user-supplied URL + long-lived token, so the save is rejected during
+    validation — we surface a *guided* error instead (prefixed ``GUIDE_HASS_PLUGIN``) so
+    the caller can point the user at Music Assistant's own provider setup.
+
+    Trying the zero-input save (rather than pre-detecting add-on vs external) keeps this
+    robust to Music Assistant API differences: it only ever succeeds when no input is
+    needed, and validation cleanly rejects it (saving nothing) otherwise.
+    """
+    if await _hass_plugin_enabled(mass):
+        return
+    try:
+        await _command(
+            mass, "config/providers/save", provider_domain=_HASS_PLUGIN_DOMAIN, values={}
+        )
+    except HomeAssistantError:
+        raise
+    except Exception as err:  # noqa: BLE001 - save rejected = needs user input (external MA)
+        raise HomeAssistantError(
+            f"{GUIDE_HASS_PLUGIN}Music Assistant's Home Assistant connection isn't set up. "
+            "In Music Assistant, add the Home Assistant provider under Settings → "
+            "Providers, then try again."
+        ) from err
+    # Wait for the newly-added plugin to come online before adding the dependent player.
+    deadline = asyncio.get_running_loop().time() + _REGISTER_TIMEOUT_S
+    while asyncio.get_running_loop().time() < deadline:
+        if await _hass_plugin_enabled(mass):
+            return
+        await asyncio.sleep(_POLL_INTERVAL_S)
+    raise HomeAssistantError(
+        "Set up Music Assistant's Home Assistant connection, but it didn't come online in "
+        "time. It may still finish shortly — try again in a moment."
+    )
+
+
 async def async_create_music_player(hass: HomeAssistant, entity_id: str) -> dict[str, Any]:
     """Create/configure a Music Assistant player for a device's media_player entity.
 
@@ -108,12 +159,8 @@ async def async_create_music_player(hass: HomeAssistant, entity_id: str) -> dict
         )
 
     # 1) The player provider depends on the Home Assistant plugin provider being set up.
-    hass_provs = await _command(mass, "config/providers", provider_domain=_HASS_PLUGIN_DOMAIN)
-    if not any((p or {}).get("enabled", True) for p in (hass_provs or [])):
-        raise HomeAssistantError(
-            "Music Assistant's 'Home Assistant' plugin provider isn't set up. Add it in "
-            "Music Assistant → Settings → Providers, then try again."
-        )
+    #    Auto-add it when Music Assistant runs as the HA add-on; otherwise guide the user.
+    await _ensure_hass_plugin(mass)
 
     # 2) Ensure the hass_players provider exists and includes this entity.
     hp_provs = await _command(

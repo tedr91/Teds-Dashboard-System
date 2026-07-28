@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.1
+
+- **Auto-set-up music on a device.** The backend can now expose a device as a Music Assistant player on its own — it adds Music Assistant's Home Assistant player provider automatically when Music Assistant runs as the add-on (no manual provider setup), and serialises requests so several devices can't clash. Pairs with Ted's Cards v0.9.1+.
+
 ### v0.9.0
 
 - Initial public preview release — the baseline we are using for real-world testing ahead of a v1.0.0 release.

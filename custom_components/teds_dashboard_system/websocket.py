@@ -8,6 +8,7 @@ user subscribe to notifications via a dedicated, non-admin command instead.
 
 from __future__ import annotations
 
+import asyncio
 import os
 
 import voluptuous as vol
@@ -474,6 +475,11 @@ async def handle_list_dashboard_views(
     )
 
 
+# Serializes Music Assistant player creation so concurrent auto-expose calls from several
+# devices don't race the MA provider/player config saves.
+_CREATE_MA_LOCK = asyncio.Lock()
+
+
 @websocket_api.websocket_command(
     {
         vol.Required("type"): f"{DOMAIN}/create_ma_player",
@@ -490,13 +496,25 @@ async def handle_create_ma_player(
     Drives the Music Assistant server API (via the shared music_assistant client) to add
     the entity to the Home Assistant MediaPlayers provider and configure the resulting
     player. Admin-only, since it changes Music Assistant's configuration.
+
+    Serialized with a module-level lock so several devices auto-exposing at once don't
+    race Music Assistant's provider/player config saves. A `GUIDE_HASS_PLUGIN`-prefixed
+    error (external MA needs a URL + token) is reported as the distinct `needs_hass_setup`
+    code so the UI can show a guided step rather than a hard failure.
     """
-    from .music_assistant import async_create_music_player
+    from .music_assistant import GUIDE_HASS_PLUGIN, async_create_music_player
 
     try:
-        result = await async_create_music_player(hass, msg["entity_id"])
+        async with _CREATE_MA_LOCK:
+            result = await async_create_music_player(hass, msg["entity_id"])
     except HomeAssistantError as err:
-        connection.send_error(msg["id"], "create_failed", str(err))
+        message = str(err)
+        if message.startswith(GUIDE_HASS_PLUGIN):
+            connection.send_error(
+                msg["id"], "needs_hass_setup", message[len(GUIDE_HASS_PLUGIN) :]
+            )
+        else:
+            connection.send_error(msg["id"], "create_failed", message)
         return
     except Exception as err:  # noqa: BLE001 - surface any unexpected failure to the UI
         connection.send_error(msg["id"], "unknown_error", str(err))
