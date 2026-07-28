@@ -50,6 +50,22 @@ def _teds_cards_already_provided(hass: HomeAssistant) -> bool:
     return False
 
 
+async def _cards_resource_registered(hass: HomeAssistant) -> bool:
+    """True when a standalone Ted's Cards is registered as a Lovelace resource.
+
+    Covers a manual install added as a resource at a path outside ``www/community``;
+    our own served bundle (``CARDS_URL``) is excluded.
+    """
+    from .requirements import _resource_urls
+
+    urls = await _resource_urls(hass)
+    if not urls:
+        return False
+    ours = CARDS_URL.lower()
+    needle = CARDS_JS_NAME.lower()
+    return any(needle in u and ours not in u for u in urls)
+
+
 async def async_setup_cards(
     hass: HomeAssistant, fallback_version: str | None
 ) -> str | None:
@@ -80,7 +96,10 @@ async def async_setup_cards(
                 _LOGGER.warning("Could not register the Ted's Cards static path")
                 return None
 
-    if await hass.async_add_executor_job(_teds_cards_already_provided, hass):
+    provided = await hass.async_add_executor_job(_teds_cards_already_provided, hass)
+    if not provided:
+        provided = await _cards_resource_registered(hass)
+    if provided:
         _LOGGER.info(
             "A standalone Ted's Cards install was detected; deferring to it "
             "(not auto-loading the bundled copy)."

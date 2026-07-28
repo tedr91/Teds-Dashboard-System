@@ -105,6 +105,8 @@ SETTINGS_DEFAULTS = {
     "navbar_float": False,
     "navbar_position": "bottom",
     "navbar_size": 48,
+    # Custom navbar hold-menu items: list of {name, icon?, tap_action}.
+    "navbar_menu_items": [],
     # View Launcher — auto-discovered, Settings-driven navbar buttons that navigate to the
     # dashboard's views (shown on navbars with `dashboard_integration: true`).
     "launcher_enabled": True,
