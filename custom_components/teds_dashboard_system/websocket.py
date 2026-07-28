@@ -9,6 +9,7 @@ user subscribe to notifications via a dedicated, non-admin command instead.
 from __future__ import annotations
 
 import asyncio
+import logging
 import os
 
 import voluptuous as vol
@@ -478,6 +479,7 @@ async def handle_list_dashboard_views(
 # Serializes Music Assistant player creation so concurrent auto-expose calls from several
 # devices don't race the MA provider/player config saves.
 _CREATE_MA_LOCK = asyncio.Lock()
+_LOGGER = logging.getLogger(__name__)
 
 
 @websocket_api.websocket_command(
@@ -510,13 +512,16 @@ async def handle_create_ma_player(
     except HomeAssistantError as err:
         message = str(err)
         if message.startswith(GUIDE_HASS_PLUGIN):
+            _LOGGER.info("create_ma_player needs guided setup for %s: %s", msg["entity_id"], message)
             connection.send_error(
                 msg["id"], "needs_hass_setup", message[len(GUIDE_HASS_PLUGIN) :]
             )
         else:
+            _LOGGER.warning("create_ma_player failed for %s: %s", msg["entity_id"], message)
             connection.send_error(msg["id"], "create_failed", message)
         return
     except Exception as err:  # noqa: BLE001 - surface any unexpected failure to the UI
+        _LOGGER.exception("create_ma_player crashed for %s", msg["entity_id"])
         connection.send_error(msg["id"], "unknown_error", str(err))
         return
     connection.send_result(msg["id"], result)

@@ -118,7 +118,12 @@ async def _ensure_hass_plugin(mass: Any) -> None:
     needed, and validation cleanly rejects it (saving nothing) otherwise.
     """
     if await _hass_plugin_enabled(mass):
+        _LOGGER.info("teds MA auto-create: Home Assistant plugin provider already set up")
         return
+    _LOGGER.info(
+        "teds MA auto-create: Home Assistant plugin provider missing — trying to add it "
+        "(works when Music Assistant runs as the HA add-on)"
+    )
     try:
         await _command(
             mass, "config/providers/save", provider_domain=_HASS_PLUGIN_DOMAIN, values={}
@@ -126,6 +131,11 @@ async def _ensure_hass_plugin(mass: Any) -> None:
     except HomeAssistantError:
         raise
     except Exception as err:  # noqa: BLE001 - save rejected = needs user input (external MA)
+        _LOGGER.info(
+            "teds MA auto-create: couldn't auto-add the Home Assistant plugin provider "
+            "(likely an external Music Assistant server needing a URL + token): %s",
+            err,
+        )
         raise HomeAssistantError(
             f"{GUIDE_HASS_PLUGIN}Music Assistant's Home Assistant connection isn't set up. "
             "In Music Assistant, add the Home Assistant provider under Settings → "
@@ -135,6 +145,7 @@ async def _ensure_hass_plugin(mass: Any) -> None:
     deadline = asyncio.get_running_loop().time() + _REGISTER_TIMEOUT_S
     while asyncio.get_running_loop().time() < deadline:
         if await _hass_plugin_enabled(mass):
+            _LOGGER.info("teds MA auto-create: Home Assistant plugin provider is now online")
             return
         await asyncio.sleep(_POLL_INTERVAL_S)
     raise HomeAssistantError(
@@ -158,6 +169,8 @@ async def async_create_music_player(hass: HomeAssistant, entity_id: str) -> dict
             "The Music Assistant integration isn't set up or connected in Home Assistant."
         )
 
+    _LOGGER.info("teds MA auto-create: starting for %s", entity_id)
+
     # 1) The player provider depends on the Home Assistant plugin provider being set up.
     #    Auto-add it when Music Assistant runs as the HA add-on; otherwise guide the user.
     await _ensure_hass_plugin(mass)
@@ -172,7 +185,14 @@ async def async_create_music_player(hass: HomeAssistant, entity_id: str) -> dict
         raw = _config_value(existing.get("values"), _CONF_PLAYERS, [])
         current = list(raw) if isinstance(raw, (list, tuple)) else []
 
-    if entity_id not in current:
+    if entity_id in current:
+        _LOGGER.info("teds MA auto-create: %s already in the HA MediaPlayers provider", entity_id)
+    else:
+        _LOGGER.info(
+            "teds MA auto-create: adding %s to the HA MediaPlayers provider (%s)",
+            entity_id,
+            "updating existing" if existing else "creating provider",
+        )
         await _command(
             mass,
             "config/providers/save",
@@ -183,6 +203,7 @@ async def async_create_music_player(hass: HomeAssistant, entity_id: str) -> dict
 
     # 3) The hass_players provider registers each player with player_id == entity_id.
     #    Saving the provider config reloads it, so wait for our player to appear.
+    _LOGGER.info("teds MA auto-create: waiting for player %s to register", entity_id)
     deadline = asyncio.get_running_loop().time() + _REGISTER_TIMEOUT_S
     while asyncio.get_running_loop().time() < deadline:
         players = await _command(mass, "config/players", provider=_HASS_PLAYERS_INSTANCE)
@@ -190,6 +211,11 @@ async def async_create_music_player(hass: HomeAssistant, entity_id: str) -> dict
             break
         await asyncio.sleep(_POLL_INTERVAL_S)
     else:
+        _LOGGER.warning(
+            "teds MA auto-create: player %s did not register within %ss",
+            entity_id,
+            _REGISTER_TIMEOUT_S,
+        )
         raise HomeAssistantError(
             "Music Assistant accepted the player but it didn't register in time. It may "
             "still appear shortly — refresh and check again."
@@ -198,6 +224,7 @@ async def async_create_music_player(hass: HomeAssistant, entity_id: str) -> dict
     # 4) Configure the new player: expose to HA + friendly icon (one save), then Smart
     #    Crossfade separately (it's unavailable on low-memory servers; don't let that
     #    failure undo the rest).
+    _LOGGER.info("teds MA auto-create: configuring player %s (expose to HA + icon)", entity_id)
     await _command(
         mass,
         "config/players/save",
@@ -218,4 +245,5 @@ async def async_create_music_player(hass: HomeAssistant, entity_id: str) -> dict
             "Created MA player %s but could not enable Smart Crossfade: %s", entity_id, err
         )
 
+    _LOGGER.info("teds MA auto-create: done for %s", entity_id)
     return {"player_id": entity_id}
