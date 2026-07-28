@@ -1,11 +1,53 @@
 # Ted's Dashboard System
 
-Home Assistant integration backing **Ted's Cards** alarms & timers — so the Alarm and Timer cards can add/manage them without you creating helpers by hand.
+A Home Assistant integration that installs and serves the whole **Ted's Dashboard** ecosystem from a single HACS install — and backs the interactive cards server-side.
 
-- **Alarms** — label, description, time, repeat days, enabled; fires a `teds_dashboard_system_alarm_ringing` event you can automate.
-- **Timers** — countdown (h/m/s) + name, pause/resume, edit (rename/change duration), view/cancel in-progress, last 5 recent for one-tap restart; fires `teds_dashboard_system_timer_finished`.
+## What it does
 
-Install via HACS (custom repository, category **Integration**), restart, then add **Ted's Dashboard System** from Settings → Devices & Services. Pair with the cards in [Teds-Cards](https://github.com/tedr91/Teds-Cards).
+- **Serves Ted's Cards** — bundles and auto-loads `ted-cards.js` (via `add_extra_js_url`); automatically defers if you already have a standalone **Ted's Cards** HACS install (detected in `www/community` or as a Lovelace resource).
+- **Installs Ted's Themes** into `<config>/themes/` — never overwriting your own or a HACS-installed theme file.
+- **Installs & registers the generic Ted's Dashboard** as a yaml-mode dashboard at `/ted-dashboard` (no `configuration.yaml` edit needed), with a **user override layer** (`dashboards/ted-dashboard-user/`) so your customizations survive updates.
+- **Auto-updates** the dashboard content from GitHub (an Update entity + optional auto-update).
+- **Backs the cards server-side** — alarms, timers, notifications, announcements, Assist-Response, per-device settings, and media/sound/background serving.
+
+## Install
+
+1. Add this repo to HACS as a custom repository (category **Integration**) and install it.
+2. Restart Home Assistant.
+3. Add **Ted's Dashboard System** from Settings → Devices & Services.
+
+The **Ted's Dashboard** panel then appears in the sidebar. Manage its views from **Ted's Settings → Dashboards → Dashboard views** (customize / revert / add / remove / hide / reorder, with upstream-drift badges).
+
+## Prerequisites (front-end plugins)
+
+The integration serves the cards + themes itself, but the shipped **Ted's Dashboard** views use a few third-party front-end plugins. Install these via HACS for the full experience — the Welcome view and `sensor.teds_requirements` flag any that are missing:
+
+- **Browser Mod** (`thomasloven/hass-browser_mod`) — device registration, the Refresh action, per-browser screen light (night mode), and the native kiosk toggle.
+- **Layout Card** (`thomasloven/lovelace-layout-card`) — the `custom:grid-layout` used by every view.
+- **card-mod** (`thomasloven/lovelace-card-mod`) — styling on a few views.
+- **Custom Icons** — an icon pack so Ted's icons can render as Streamline / Fluent / Pepicons (they fall back to built-in MDI when absent).
+- **Daylight Calendar Card** (`superdingo101/daylight-calendar-card`) — the Calendar views.
+- Per-view extras: **yet-another-media-player** and **Music Assistant** (+ `mass_queue`) for the Music view; **clock-weather-card** and a weather-radar card for the Weather view.
+
+Kiosk mode uses Home Assistant's **built-in** kiosk (2026.1+), driven per-device from Ted's Settings — no third-party kiosk plugin is required.
+
+## Themes
+
+For the bundled Ted's Themes to appear in the theme picker, Home Assistant must load the themes directory. Add this to `configuration.yaml` once, then restart:
+
+```yaml
+frontend:
+  themes: !include_dir_merge_named themes/
+```
+
+(HA only auto-loads `<config>/themes/` when this include is present.)
+
+## Services & events
+
+- **Alarms** — `add_alarm` / `update_alarm` / `remove_alarm`; fires `teds_dashboard_system_alarm_ringing`.
+- **Timers** — `start_timer` / `cancel_timer` / pause / resume / update; fires `teds_dashboard_system_timer_finished`.
+- **Dashboard views** — `dashboard_customize_view` / `dashboard_revert_view` / `dashboard_add_custom_view` / `dashboard_remove_custom_view` / `dashboard_set_layout` (also driven by the Settings UI above).
+- Plus `announce`, `assist_response`, `notify`, and settings services.
 
 ## Changelog
 
