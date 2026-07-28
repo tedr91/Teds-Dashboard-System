@@ -14,6 +14,7 @@ import voluptuous as vol
 
 from homeassistant.components import websocket_api
 from homeassistant.core import Event, HomeAssistant, callback
+from homeassistant.exceptions import HomeAssistantError
 
 from .bing_photos import (
     clear_bing_cache,
@@ -72,6 +73,7 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, handle_list_favorites)
     websocket_api.async_register_command(hass, handle_media_folder)
     websocket_api.async_register_command(hass, handle_list_dashboard_views)
+    websocket_api.async_register_command(hass, handle_create_ma_player)
     hass.data[_REGISTERED] = True
 
 
@@ -470,4 +472,34 @@ async def handle_list_dashboard_views(
             "custom_views": customs,
         },
     )
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): f"{DOMAIN}/create_ma_player",
+        vol.Required("entity_id"): str,
+    }
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def handle_create_ma_player(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict
+) -> None:
+    """Auto-create/configure a Music Assistant player for a device's media_player.
+
+    Drives the Music Assistant server API (via the shared music_assistant client) to add
+    the entity to the Home Assistant MediaPlayers provider and configure the resulting
+    player. Admin-only, since it changes Music Assistant's configuration.
+    """
+    from .music_assistant import async_create_music_player
+
+    try:
+        result = await async_create_music_player(hass, msg["entity_id"])
+    except HomeAssistantError as err:
+        connection.send_error(msg["id"], "create_failed", str(err))
+        return
+    except Exception as err:  # noqa: BLE001 - surface any unexpected failure to the UI
+        connection.send_error(msg["id"], "unknown_error", str(err))
+        return
+    connection.send_result(msg["id"], result)
 
