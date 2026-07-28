@@ -23,7 +23,15 @@ from .bing_photos import (
     list_favorites,
     remove_bing_photo,
 )
-from .const import DOMAIN, EVENT_ASSIST_RESPONSE, EVENT_NAVIGATE, EVENT_NOTIFICATION, EVENT_SETTINGS
+from .const import (
+    DASHBOARD_USER_DIR,
+    DASHBOARDS_DIR,
+    DOMAIN,
+    EVENT_ASSIST_RESPONSE,
+    EVENT_NAVIGATE,
+    EVENT_NOTIFICATION,
+    EVENT_SETTINGS,
+)
 
 _REGISTERED = f"{DOMAIN}_ws_registered"
 
@@ -63,6 +71,7 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, handle_store_background_photo)
     websocket_api.async_register_command(hass, handle_list_favorites)
     websocket_api.async_register_command(hass, handle_media_folder)
+    websocket_api.async_register_command(hass, handle_list_dashboard_views)
     hass.data[_REGISTERED] = True
 
 
@@ -363,5 +372,102 @@ def handle_media_folder(
     mgr = _manager(hass)
     connection.send_result(
         msg["id"], {"media_content_id": mgr.media_folder if mgr else None}
+    )
+
+
+def _scan_user_overlay(dashboards_dir: str) -> tuple[list[str], set[str]]:
+    """Return (custom view files, override filenames) from the ted-dashboard-user overlay."""
+    base = os.path.join(dashboards_dir, DASHBOARD_USER_DIR)
+    views: list[str] = []
+    overrides: set[str] = set()
+    try:
+        views = sorted(
+            f
+            for f in os.listdir(os.path.join(base, "views"))
+            if f.endswith((".yaml", ".yml"))
+        )
+    except OSError:
+        pass
+    try:
+        overrides = {
+            f
+            for f in os.listdir(os.path.join(base, "overrides"))
+            if f.endswith((".yaml", ".yml"))
+        }
+    except OSError:
+        pass
+    return views, overrides
+
+
+@websocket_api.websocket_command(
+    {vol.Required("type"): f"{DOMAIN}/list_dashboard_views"}
+)
+@websocket_api.async_response
+async def handle_list_dashboard_views(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict
+) -> None:
+    """Installed managed views + custom views with fork/drift status.
+
+    Powers the Settings → Dashboard management UI: each managed view reports its
+    installed version, the latest upstream version, whether it's been forked into the
+    user overrides, and whether the upstream has drifted past the forked version.
+    """
+    from .dashboard import _version_gt, effective_view_order
+    from .updater import async_load_installer_state
+
+    _, state = await async_load_installer_state(hass)
+    installed = state.get("versions", {}).get("dashboard", {}) or {}
+    order = (installed.get("layout", {}) or {}).get("order", []) or []
+    inst_views = installed.get("views", {}) or {}
+    forks = state.get("forks", {}) or {}
+    ordered, hidden_set = effective_view_order(order, state.get("layout") or {})
+
+    manager = _manager(hass)
+    remote = getattr(getattr(manager, "updater", None), "remote_versions", None) or {}
+    remote_views = remote.get("views", {}) or {}
+    remote_dash = remote.get("dashboard")
+    inst_dash = installed.get("dashboard")
+
+    dashboards_dir = hass.config.path(DASHBOARDS_DIR)
+    custom_files, override_files = await hass.async_add_executor_job(
+        _scan_user_overlay, dashboards_dir
+    )
+
+    views: list[dict] = []
+    for rel in ordered:
+        file = os.path.basename(rel)
+        stem = file[:-5] if file.endswith(".yaml") else file
+        forked = file in override_files
+        fork_ver = forks.get(file)
+        latest = remote_views.get(stem)
+        drift = bool(forked and latest and fork_ver and _version_gt(latest, fork_ver))
+        views.append(
+            {
+                "name": stem,
+                "file": file,
+                "version": inst_views.get(stem),
+                "latest": latest,
+                "forked": forked,
+                "fork_version": fork_ver,
+                "drift": drift,
+                "hidden": file in hidden_set,
+            }
+        )
+
+    customs = [
+        {"file": f, "name": f[:-5] if f.endswith(".yaml") else f} for f in custom_files
+    ]
+
+    connection.send_result(
+        msg["id"],
+        {
+            "dashboard_version": inst_dash,
+            "latest_version": remote_dash,
+            "update_available": bool(
+                remote_dash and inst_dash and _version_gt(remote_dash, inst_dash)
+            ),
+            "views": views,
+            "custom_views": customs,
+        },
     )
 

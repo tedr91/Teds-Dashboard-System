@@ -39,6 +39,7 @@ SERVICE_CUSTOMIZE_VIEW = "dashboard_customize_view"
 SERVICE_REVERT_VIEW = "dashboard_revert_view"
 SERVICE_ADD_CUSTOM_VIEW = "dashboard_add_custom_view"
 SERVICE_REMOVE_CUSTOM_VIEW = "dashboard_remove_custom_view"
+SERVICE_SET_LAYOUT = "dashboard_set_layout"
 
 _MANAGED_VIEW_SUBDIRS = ("views", "views-home")
 
@@ -125,6 +126,17 @@ def async_register_services(hass: HomeAssistant) -> None:
         await hass.async_add_executor_job(_remove_file, _user_dir(hass, "views", name))
         await dashboard.async_recompose(hass)
 
+    async def set_layout(call: ServiceCall) -> None:
+        """Persist the user's view order + hidden list (basenames) and recompose."""
+        store, state = await async_load_installer_state(hass)
+        layout = state.setdefault("layout", {})
+        if "hidden" in call.data:
+            layout["hidden"] = [os.path.basename(str(x)) for x in call.data["hidden"]]
+        if "order" in call.data:
+            layout["order"] = [os.path.basename(str(x)) for x in call.data["order"]]
+        await store.async_save(state)
+        await dashboard.async_recompose(hass)
+
     view_schema = vol.Schema({vol.Required("view"): cv.string})
     add_schema = vol.Schema(
         {
@@ -134,11 +146,15 @@ def async_register_services(hass: HomeAssistant) -> None:
         }
     )
     name_schema = vol.Schema({vol.Required("name"): cv.string})
+    layout_schema = vol.Schema(
+        {vol.Optional("hidden"): [cv.string], vol.Optional("order"): [cv.string]}
+    )
 
     hass.services.async_register(DOMAIN, SERVICE_CUSTOMIZE_VIEW, customize_view, schema=view_schema)
     hass.services.async_register(DOMAIN, SERVICE_REVERT_VIEW, revert_view, schema=view_schema)
     hass.services.async_register(DOMAIN, SERVICE_ADD_CUSTOM_VIEW, add_custom_view, schema=add_schema)
     hass.services.async_register(DOMAIN, SERVICE_REMOVE_CUSTOM_VIEW, remove_custom_view, schema=name_schema)
+    hass.services.async_register(DOMAIN, SERVICE_SET_LAYOUT, set_layout, schema=layout_schema)
 
 
 # -- blocking filesystem helpers (run in the executor) ---------------------

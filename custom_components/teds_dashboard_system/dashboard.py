@@ -106,17 +106,49 @@ def _scaffold_user_dir(dashboards_dir: str) -> None:
             fh.write(_USER_README)
 
 
-def _compose_main(dashboards_dir: str, versions: dict[str, Any]) -> str:
+def effective_view_order(
+    canonical_order: list, layout_ovr: dict | None
+) -> tuple[list[str], set[str]]:
+    """Apply the user's reorder + hide overrides to the shipped view order.
+
+    ``canonical_order`` is ``versions["layout"]["order"]`` (relative paths). The
+    override ``layout_ovr`` holds ``order`` and ``hidden`` as lists of view *basenames*.
+    Returns ``(ordered_rel_paths, hidden_basenames)`` — the ordered list includes hidden
+    views (callers decide whether to skip them).
+    """
+    by_base = {os.path.basename(rel): rel for rel in canonical_order}
+    user_order = (layout_ovr or {}).get("order") or []
+    hidden = set((layout_ovr or {}).get("hidden") or [])
+    ordered: list[str] = []
+    seen: set[str] = set()
+    for base in user_order:
+        rel = by_base.get(base)
+        if rel and base not in seen:
+            ordered.append(rel)
+            seen.add(base)
+    for rel in canonical_order:
+        base = os.path.basename(rel)
+        if base not in seen:
+            ordered.append(rel)
+            seen.add(base)
+    return ordered, hidden
+
+
+def _compose_main(
+    dashboards_dir: str, versions: dict[str, Any], layout_ovr: dict | None = None
+) -> str:
     """Build the generated main dashboard yaml (an include list) as text."""
-    layout = versions.get("layout", {})
-    order = layout.get("order", [])
+    canonical = versions.get("layout", {}).get("order", [])
+    ordered, hidden = effective_view_order(canonical, layout_ovr)
     user_overrides = os.path.join(dashboards_dir, DASHBOARD_USER_DIR, "overrides")
     user_views = os.path.join(dashboards_dir, DASHBOARD_USER_DIR, "views")
 
     lines = [_GENERATED_HEADER]
     lines.append("views:")
-    for rel in order:
+    for rel in ordered:
         name = os.path.basename(rel)
+        if name in hidden:
+            continue
         if os.path.isfile(os.path.join(user_overrides, name)):
             lines.append(f"  - !include {DASHBOARD_USER_DIR}/overrides/{name}")
         else:
@@ -137,7 +169,8 @@ def _write_text(path: str, text: str) -> None:
 
 
 def _install_sync(
-    bundle_managed: str, versions: dict, config_dir: str, mirror: bool
+    bundle_managed: str, versions: dict, config_dir: str, mirror: bool,
+    layout_ovr: dict | None = None,
 ) -> None:
     """Blocking filesystem work: (optionally) mirror managed, scaffold, compose."""
     dashboards_dir = os.path.join(config_dir, DASHBOARDS_DIR)
@@ -146,7 +179,7 @@ def _install_sync(
     _scaffold_user_dir(dashboards_dir)
     _write_text(
         os.path.join(dashboards_dir, DASHBOARD_MAIN_FILE),
-        _compose_main(dashboards_dir, versions),
+        _compose_main(dashboards_dir, versions, layout_ovr),
     )
 
 
@@ -256,7 +289,8 @@ async def async_install_dashboard(hass: HomeAssistant) -> None:
         versions.get("dashboard", "0"), installed.get("dashboard", "0")
     )
     await hass.async_add_executor_job(
-        _install_sync, bundle_managed, versions, hass.config.config_dir, need_content
+        _install_sync, bundle_managed, versions, hass.config.config_dir, need_content,
+        state.get("layout") or {},
     )
     _register_dashboard(hass)
 
@@ -274,21 +308,23 @@ def _rmtree_quiet(path: str) -> None:
 
 
 def _install_downloaded(
-    tmp: str, dashboards_dir: str, versions: dict
+    tmp: str, dashboards_dir: str, versions: dict, layout_ovr: dict | None = None
 ) -> None:
     _mirror_dir(tmp, os.path.join(dashboards_dir, DASHBOARD_MANAGED_DIR))
     _scaffold_user_dir(dashboards_dir)
     _write_text(
         os.path.join(dashboards_dir, DASHBOARD_MAIN_FILE),
-        _compose_main(dashboards_dir, versions),
+        _compose_main(dashboards_dir, versions, layout_ovr),
     )
 
 
-def _recompose_sync(dashboards_dir: str, versions: dict) -> None:
+def _recompose_sync(
+    dashboards_dir: str, versions: dict, layout_ovr: dict | None = None
+) -> None:
     _scaffold_user_dir(dashboards_dir)
     _write_text(
         os.path.join(dashboards_dir, DASHBOARD_MAIN_FILE),
-        _compose_main(dashboards_dir, versions),
+        _compose_main(dashboards_dir, versions, layout_ovr),
     )
 
 
@@ -305,7 +341,9 @@ async def async_recompose(hass: HomeAssistant) -> None:
             _read_json, os.path.join(_bundle_dir(), VERSIONS_FILE)
         )
     dashboards_dir = os.path.join(hass.config.config_dir, DASHBOARDS_DIR)
-    await hass.async_add_executor_job(_recompose_sync, dashboards_dir, versions)
+    await hass.async_add_executor_job(
+        _recompose_sync, dashboards_dir, versions, state.get("layout") or {}
+    )
 
 
 async def async_download_and_install(
@@ -324,8 +362,10 @@ async def async_download_and_install(
         if not count:
             return None
         dashboards_dir = os.path.join(hass.config.config_dir, DASHBOARDS_DIR)
+        _, state = await async_load_installer_state(hass)
         await hass.async_add_executor_job(
-            _install_downloaded, tmp, dashboards_dir, versions_remote
+            _install_downloaded, tmp, dashboards_dir, versions_remote,
+            state.get("layout") or {},
         )
         _register_dashboard(hass)
         return versions_remote

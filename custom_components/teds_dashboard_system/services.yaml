@@ -157,3 +157,10 @@ dashboard_remove_custom_view:
   description: Delete a user view from the Ted's Dashboard user overlay.
   fields:
     name: { required: true, selector: { text: {} } }
+
+dashboard_set_layout:
+  name: Set dashboard view layout
+  description: Persist the user's view order and hidden list (view filenames) for Ted's Dashboard.
+  fields:
+    hidden: { selector: { object: {} } }
+    order: { selector: { object: {} } }
