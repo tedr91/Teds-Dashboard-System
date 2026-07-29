@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.19
+
+- Serves the MDI icon-name list locally (`frontend/mdi-names.txt`) so the Calendar card can resolve non-MDI icons to their `mdi:` equivalent offline. Bundles Ted's Cards v0.9.16. Pairs with Ted's Cards v0.9.16+.
+
 ### v0.9.18
 
 - Bundles Ted's Cards v0.9.15 — consistent Camera/Photo Viewer empty states and a “Multi” default camera layout. Pairs with Ted's Cards v0.9.15+.
