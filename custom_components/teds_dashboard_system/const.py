@@ -158,7 +158,8 @@ SETTINGS_DEFAULTS = {
     # Per-device: use Home Assistant's built-in kiosk mode (2026.1+) on this device,
     # hiding the sidebar/header/edit UI. Driven client-side by Ted's Cards; not composed
     # into the dashboard yaml. Default on (turn off per device).
-    "use_kiosk_mode": True,
+    "use_kiosk_mode": False,
+    "kiosk_nudge_dismissed": False,
     # Icon set used by Ted's built-in icons (Status/Settings etc.). "auto" = the best
     # installed set by priority; otherwise force a specific set (falls back to mdi).
     "icon_set": "auto",

@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.13
+
+- **Kiosk mode is now opt-in** (off by default). A registered device shows a one-time prompt to enable it. Bundles Ted's Cards v0.9.12. Pairs with Ted's Cards v0.9.12+.
+
 ### v0.9.12
 
 - Bundles Ted's Cards v0.9.11 (kiosk mode now also hides HA's header; Automatic Night Mode defaults off and turns on for Nightstand-type devices; night schedule can follow the Sun integration; and the Bing attribution icon clears when switching slideshow albums). Pairs with Ted's Cards v0.9.11+.
