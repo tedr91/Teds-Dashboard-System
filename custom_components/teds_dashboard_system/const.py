@@ -20,6 +20,8 @@ EVENT_NOTIFICATION = f"{DOMAIN}_notification"
 EVENT_SETTINGS = f"{DOMAIN}_settings"
 EVENT_NAVIGATE = f"{DOMAIN}_navigate"
 EVENT_ASSIST_RESPONSE = f"{DOMAIN}_assist_response"
+# Fired when a dashboard content update is installed (so clients can auto-refresh).
+EVENT_DASHBOARD_UPDATED = f"{DOMAIN}_dashboard_updated"
 
 # Custom Assist intent type names (registered in intents.py + sentences/en.yaml).
 INTENT_ADD_ALARM = "TedsAddAlarm"
@@ -152,6 +154,9 @@ SETTINGS_DEFAULTS = {
     # General
     "do_not_disturb": False,
     "debug_mode": False,
+    # Per-device: reload this browser once (like the navbar Refresh) when a dashboard
+    # update is installed, so the new files take effect without a manual refresh.
+    "auto_refresh_on_update": True,
     # When on, Ted's Dashboard System keeps the installed Ted's Dashboard files up to
     # date automatically; off pins the current version for manual management.
     "dashboard_auto_update": True,

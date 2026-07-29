@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.20
+
+- Fires a `dashboard_updated` event when a dashboard update installs, so devices can auto-refresh. Bundles Ted's Cards v0.9.17 (new “Auto-refresh on update” setting). Pairs with Ted's Cards v0.9.17+.
+
 ### v0.9.19
 
 - Serves the MDI icon-name list locally (`frontend/mdi-names.txt`) so the Calendar card can resolve non-MDI icons to their `mdi:` equivalent offline. Bundles Ted's Cards v0.9.16. Pairs with Ted's Cards v0.9.16+.

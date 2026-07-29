@@ -19,6 +19,7 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 
 from .const import (
     DOMAIN,
+    EVENT_DASHBOARD_UPDATED,
     INSTALLER_STORAGE_KEY,
     INSTALLER_STORAGE_VERSION,
     UPDATE_POLL_INTERVAL_HOURS,
@@ -122,3 +123,7 @@ class DashboardUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             self._state.setdefault("versions", {})["dashboard"] = installed
             await self._store.async_save(self._state)
             self.async_update_listeners()
+            # Let clients (Ted's Cards) auto-refresh once now the files have changed.
+            self.hass.bus.async_fire(
+                EVENT_DASHBOARD_UPDATED, {"version": self.installed_version}
+            )
