@@ -26,7 +26,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.network import NoURLAvailableError, get_url
 
-from .const import DOMAIN
+from .const import DOMAIN, MEDIA_FOLDER_NAME
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -35,12 +35,30 @@ _BING_ARCHIVE = "/HPImageArchive.aspx"
 _CACHE_DIRNAME = "bing_pod"
 _FAVORITES_DIRNAME = "favorites"
 _STORED_DIRNAME = "stored"
+# Favorites + imported wallpapers are stored under HA's media folder (survives
+# integration updates), served read-only from these static paths. Subfolders are
+# capitalised for the media browser (<config>/media/Ted Dash System/<Subdir>).
+_MEDIA_FAVORITES_SUBDIR = "Favorites"
+_MEDIA_WALLPAPERS_SUBDIR = "Wallpapers"
+MEDIA_FAVORITES_URL = "/teds_dashboard_system/media_favorites"
+MEDIA_WALLPAPERS_URL = "/teds_dashboard_system/media_wallpapers"
 _INDEX_NAME = "index.json"
 _REMOVED_NAME = "removed.json"
 _URL_BASE = f"/teds_dashboard_system/backgrounds/{_CACHE_DIRNAME}"
 _DEFAULT_CACHE_SIZE = 100
 _FETCH_DAYS = 8  # Bing's archive exposes up to the last 8 days.
 _RESOLUTIONS = ("_UHD.jpg", "_1920x1080.jpg")  # try UHD first, then 1080p.
+
+# Persistent data dir (config-root, survives integration updates) for small state
+# that must NOT be lost on update — e.g. the Bing "removed" blocklist. Set at setup
+# via set_data_dir(); falls back to the (update-unsafe) cache dir until then.
+_data_dir: str | None = None
+
+
+def set_data_dir(path: str | None) -> None:
+    """Point the persistent blocklist at a config-root data dir (survives updates)."""
+    global _data_dir  # noqa: PLW0603
+    _data_dir = path
 
 
 def _cache_dir() -> str:
@@ -52,7 +70,7 @@ def _index_path() -> str:
 
 
 def _removed_path() -> str:
-    return os.path.join(_cache_dir(), _REMOVED_NAME)
+    return os.path.join(_data_dir or _cache_dir(), _REMOVED_NAME)
 
 
 def _bing_mkt(hass: HomeAssistant) -> str:
@@ -279,6 +297,46 @@ def _favorites_dir() -> str:
     return os.path.join(os.path.dirname(__file__), "backgrounds", _FAVORITES_DIRNAME)
 
 
+def media_favorites_dir(hass: HomeAssistant) -> str | None:
+    """Filesystem path of the update-safe Favorites album under HA's media folder
+    (``<media>/Ted Dash System/Favorites``), or None when no media dir is configured."""
+    return _media_subdir(hass, _MEDIA_FAVORITES_SUBDIR)
+
+
+def media_wallpapers_dir(hass: HomeAssistant) -> str | None:
+    """Filesystem path of the update-safe imported-wallpapers folder under HA's media
+    folder (``<media>/Ted Dash System/Wallpapers``), or None when unavailable."""
+    return _media_subdir(hass, _MEDIA_WALLPAPERS_SUBDIR)
+
+
+def _media_subdir(hass: HomeAssistant, subdir: str) -> str | None:
+    """``<first media_dir>/Ted Dash System/<subdir>``, or None when no media dir."""
+    media_dirs = getattr(hass.config, "media_dirs", None) or {}
+    source_dir_id = next(iter(media_dirs), None)
+    if source_dir_id is None:
+        return None
+    return os.path.join(media_dirs[source_dir_id], MEDIA_FOLDER_NAME, subdir)
+
+
+def _favorites_target(hass: HomeAssistant) -> tuple[str, str]:
+    """(filesystem dir, served URL base) for Favorites. Prefers the media folder so
+    favorites survive integration updates; falls back to the integration folder when
+    no media dir is configured."""
+    fs = media_favorites_dir(hass)
+    if fs is not None:
+        return fs, MEDIA_FAVORITES_URL
+    return _favorites_dir(), f"/teds_dashboard_system/backgrounds/{_FAVORITES_DIRNAME}"
+
+
+def _stored_target(hass: HomeAssistant) -> tuple[str, str]:
+    """(filesystem dir, served URL base) for imported wallpapers (set-as-wallpaper).
+    Prefers the media folder (update-safe); falls back to the integration folder."""
+    fs = media_wallpapers_dir(hass)
+    if fs is not None:
+        return fs, MEDIA_WALLPAPERS_URL
+    return _stored_dir(), f"/teds_dashboard_system/backgrounds/{_STORED_DIRNAME}"
+
+
 def _safe_bing_name(name: str | None) -> str | None:
     """Validate a cached-photo filename (guards against path traversal). The cache
     stores strictly ``<startdate>.jpg`` (all-digit stem), so accept only that shape."""
@@ -291,13 +349,13 @@ def _safe_bing_name(name: str | None) -> str | None:
     return base
 
 
-def _do_favorite(name: str) -> bool:
+def _do_favorite(name: str, fav_dir: str) -> bool:
     src = os.path.join(_cache_dir(), name)
     if not os.path.isfile(src):
         return False
     try:
-        os.makedirs(_favorites_dir(), exist_ok=True)
-        shutil.copyfile(src, os.path.join(_favorites_dir(), name))
+        os.makedirs(fav_dir, exist_ok=True)
+        shutil.copyfile(src, os.path.join(fav_dir, name))
         return True
     except OSError:
         return False
@@ -324,11 +382,12 @@ def _do_remove(name: str) -> bool:
 
 
 async def favorite_bing_photo(hass: HomeAssistant, name: str) -> bool:
-    """Copy a cached Bing image into the ``favorites`` folder (for a future album)."""
+    """Copy a cached Bing image into the update-safe Favorites album."""
     safe = _safe_bing_name(name)
     if not safe:
         return False
-    return await hass.async_add_executor_job(_do_favorite, safe)
+    fav_dir, _ = _favorites_target(hass)
+    return await hass.async_add_executor_job(_do_favorite, safe, fav_dir)
 
 
 async def remove_bing_photo(hass: HomeAssistant, name: str) -> bool:
@@ -355,10 +414,6 @@ def _stored_dir() -> str:
     return os.path.join(os.path.dirname(__file__), "backgrounds", _STORED_DIRNAME)
 
 
-def _import_dirname(dest: str) -> str:
-    return _STORED_DIRNAME if dest == "stored" else _FAVORITES_DIRNAME
-
-
 def _import_ext(url: str, content_type: str | None) -> str:
     """Pick a file extension from the response Content-Type, else the URL path."""
     ct = (content_type or "").split(";")[0].strip().lower()
@@ -382,30 +437,30 @@ def _readable_stem(url: str) -> str:
     return cleaned[:40] or "photo"
 
 
-def _write_import(dirname: str, stem: str, short: str, ext: str, content: bytes) -> str | None:
-    """Write ``content`` into backgrounds/<dirname>/<stem>-<short><ext>. Deduped by
-    the ``short`` content hash: if any file already ends with ``-<short><ext>`` (any
-    readable prefix), reuse it. Blocking — run in the executor."""
-    dest_dir = os.path.join(os.path.dirname(__file__), "backgrounds", dirname)
-    base = f"/teds_dashboard_system/backgrounds/{dirname}"
+def _write_import(dest_dir: str, url_base: str, stem: str, short: str, ext: str, content: bytes) -> str | None:
+    """Write ``content`` into ``dest_dir``/``<stem>-<short><ext>`` and return its served
+    URL under ``url_base``. Deduped by the ``short`` content hash: if any file already
+    ends with ``-<short><ext>`` (any readable prefix), reuse it. Blocking — run in the
+    executor."""
     suffix = f"-{short}{ext}"
     try:
         os.makedirs(dest_dir, exist_ok=True)
         for existing in os.listdir(dest_dir):
             if existing.endswith(suffix):
-                return f"{base}/{existing}"
+                return f"{url_base}/{existing}"
         filename = f"{stem}{suffix}"
         with open(os.path.join(dest_dir, filename), "wb") as fh:
             fh.write(content)
-        return f"{base}/{filename}"
+        return f"{url_base}/{filename}"
     except OSError:
         return None
 
 
 async def import_photo(hass: HomeAssistant, ref: str, dest: str = "favorites") -> str | None:
-    """Download the image at ``ref`` and store it under backgrounds/favorites (or
-    backgrounds/stored when ``dest == 'stored'``), named ``<name>-<shorthash><ext>``
-    and deduped by the content hash.
+    """Download the image at ``ref`` and store it. ``dest == 'favorites'`` writes to the
+    update-safe Favorites album (under HA's media folder); ``dest == 'stored'`` writes to
+    the integration's ``backgrounds/stored``. Named ``<name>-<shorthash><ext>`` and
+    deduped by the content hash.
 
     ``ref`` may be an absolute http(s) URL or a HA-relative path (e.g. a resolved
     media-source or our own served wallpaper). Returns the served URL, or None.
@@ -436,11 +491,17 @@ async def import_photo(hass: HomeAssistant, ref: str, dest: str = "favorites") -
     if not content:
         return None
 
+    if dest == "stored":
+        dest_dir, url_base = _stored_target(hass)
+    else:
+        dest_dir, url_base = _favorites_target(hass)
+
     # SHA-1 is used purely to dedupe identical images (not for security).
     short = hashlib.sha1(content, usedforsecurity=False).hexdigest()[:10]
     return await hass.async_add_executor_job(
         _write_import,
-        _import_dirname(dest),
+        dest_dir,
+        url_base,
         _readable_stem(url),
         short,
         _import_ext(url, content_type),
@@ -448,16 +509,16 @@ async def import_photo(hass: HomeAssistant, ref: str, dest: str = "favorites") -
     )
 
 
-def _list_favorites() -> list[str]:
+def _list_favorites(fav_dir: str, url_base: str) -> list[str]:
     try:
-        names = sorted(os.listdir(_favorites_dir()))
+        names = sorted(os.listdir(fav_dir))
     except OSError:
         return []
-    base = f"/teds_dashboard_system/backgrounds/{_FAVORITES_DIRNAME}"
-    return [f"{base}/{n}" for n in names if n.lower().endswith(_IMPORT_EXTS)]
+    return [f"{url_base}/{n}" for n in names if n.lower().endswith(_IMPORT_EXTS)]
 
 
 async def list_favorites(hass: HomeAssistant) -> list[str]:
     """Return the served URLs of every favorited photo (newest-last)."""
-    return await hass.async_add_executor_job(_list_favorites)
+    fav_dir, url_base = _favorites_target(hass)
+    return await hass.async_add_executor_job(_list_favorites, fav_dir, url_base)
 

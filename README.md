@@ -51,6 +51,11 @@ frontend:
 
 ## Changelog
 
+### v0.9.11
+
+- **Favorites, imported wallpapers, and the Bing “removed” list now survive integration updates.** Favorited photos (Bing + Photos page) are stored under `media/Ted Dash System/Favorites`, set-as-wallpaper imports under `media/Ted Dash System/Wallpapers`, and the Bing removed-photo list in a config-level data folder — so a HACS update no longer wipes them. (Anything saved before this update in the old location is lost once; re-save it.)
+- Bundles Ted's Cards v0.9.10 (no Single-Image background flicker when navigating between views). Pairs with Ted's Cards v0.9.10+.
+
 ### v0.9.10
 
 - Bundles Ted's Cards v0.9.9 ("Enable music on this device" is now admin-only with a note, and the Climate empty state uses the standard message card). Pairs with Ted's Cards v0.9.9+.

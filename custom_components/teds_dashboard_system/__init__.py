@@ -63,6 +63,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     await _register_background_path(hass)
     manager.announce_cache_dir = await _register_announce_cache_path(hass)
     manager.media_folder = await _ensure_media_folder(hass)
+    await _register_media_paths(hass)
     manager.cards_js_url = await async_setup_cards(hass, manager.version)
     try:
         await async_install_bundled_themes(hass)
@@ -448,6 +449,60 @@ async def _register_background_path(hass: HomeAssistant) -> None:
             hass.data[flag] = True
         except Exception:  # noqa: BLE001
             pass
+
+
+async def _register_media_paths(hass: HomeAssistant) -> None:
+    """Make Photos/Bing favorites, imported wallpapers, and the Bing "removed"
+    blocklist survive integration updates:
+
+    - Favorites  → <media>/Ted Dash System/Favorites   (served /teds_dashboard_system/media_favorites)
+    - Wallpapers → <media>/Ted Dash System/Wallpapers  (served /teds_dashboard_system/media_wallpapers)
+    - Bing blocklist → <config>/teds_dashboard_system_data/  (config-root, survives updates)
+
+    Best-effort: the media paths no-op when no media dir is configured (favorites/
+    wallpapers then fall back to the integration folder)."""
+    from .bing_photos import (
+        MEDIA_FAVORITES_URL,
+        MEDIA_WALLPAPERS_URL,
+        media_favorites_dir,
+        media_wallpapers_dir,
+        set_data_dir,
+    )
+
+    # Persistent data dir (config-root) for the Bing removed-blocklist.
+    data_dir = hass.config.path(f"{DOMAIN}_data")
+    try:
+        await hass.async_add_executor_job(lambda: os.makedirs(data_dir, exist_ok=True))
+        set_data_dir(data_dir)
+    except OSError:
+        pass
+
+    # Serve the media-folder albums (favorites + imported wallpapers) read-only.
+    flag = f"{DOMAIN}_media_paths_registered"
+    if hass.data.get(flag):
+        return
+    targets = [
+        (MEDIA_FAVORITES_URL, media_favorites_dir(hass)),
+        (MEDIA_WALLPAPERS_URL, media_wallpapers_dir(hass)),
+    ]
+    registered = False
+    for url, fs in targets:
+        if not fs:
+            continue
+        try:
+            await hass.async_add_executor_job(lambda p=fs: os.makedirs(p, exist_ok=True))
+            from homeassistant.components.http import StaticPathConfig
+
+            await hass.http.async_register_static_paths([StaticPathConfig(url, fs, False)])
+            registered = True
+        except Exception:  # noqa: BLE001 - fall back for older HA cores
+            try:
+                hass.http.register_static_path(url, fs, False)
+                registered = True
+            except Exception:  # noqa: BLE001
+                pass
+    if registered:
+        hass.data[flag] = True
 
 
 async def _ensure_media_folder(hass: HomeAssistant) -> str | None:
