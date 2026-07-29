@@ -292,7 +292,7 @@ DASHBOARD_USER_DIR = f"{DASHBOARD_SLUG}-user"  # never written by the integratio
 
 # Lovelace panel registration.
 DASHBOARD_TITLE = "Ted's Dashboard"
-DASHBOARD_ICON = "mdi:view-dashboard"
+DASHBOARD_ICON = "mdi:teddy-bear"
 
 # Bundled/served frontend card assets.
 FRONTEND_DIR = "frontend"  # bundled asset dir inside the integration

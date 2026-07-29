@@ -68,7 +68,7 @@ cards:
           area. Register it to unlock per-device settings, area-scoped alarms and
           notifications, and the right home layout for this screen.
         dismiss_key: ted-register-device
-        visibility:
+        visible_when:
           - condition: device
             registered: false
           - condition: state
@@ -91,7 +91,7 @@ cards:
           refreshes.
         actions:
           - { label: Re-check requirements, icon: mdi:refresh, action: perform-action, perform_action: teds_dashboard_system.check_requirements, variant: primary }
-        visibility:
+        visible_when:
           - condition: state
             entity: sensor.teds_settings
             state_not: [unknown, unavailable]
@@ -111,7 +111,7 @@ cards:
           settings — and to power these dependency checks.
         docs_url: https://github.com/tedr91/Teds-Dashboard-System
         docs_label: Install guide
-        visibility:
+        visible_when:
           - condition: state
             entity: sensor.teds_settings
             state: [unknown, unavailable]
@@ -123,7 +123,7 @@ cards:
         message: HACS is how you install the plugins the dashboard needs.
         docs_url: https://hacs.xyz/
         docs_label: Get HACS
-        visibility:
+        visible_when:
           - condition: state
             entity: sensor.teds_requirements
             attribute: hacs
@@ -135,7 +135,7 @@ cards:
         message: Without card-mod or UIX, some card styling across the dashboard won't apply.
         docs_url: https://github.com/thomasloven/lovelace-card-mod
         docs_label: Learn more
-        visibility:
+        visible_when:
           - condition: state
             entity: sensor.teds_requirements
             attribute: card_mod
@@ -148,7 +148,7 @@ cards:
           UIX is downloaded in HACS but not set up yet. Add it under Settings →
           Devices & Services → Add Integration → UIX, then reload — card styling
           across the dashboard relies on it (or card-mod).
-        visibility:
+        visible_when:
           - condition: state
             entity: sensor.teds_requirements
             attribute: card_mod
@@ -160,7 +160,7 @@ cards:
         message: Install Custom Icons via HACS so the dashboard's icons render (they may otherwise appear blank).
         docs_url: https://github.com/thomasloven/hass-custom_icons
         docs_label: Learn more
-        visibility:
+        visible_when:
           - condition: state
             entity: sensor.teds_requirements
             attribute: custom_icons
@@ -175,7 +175,7 @@ cards:
           Configure, and Download the icon sets.
         docs_url: https://github.com/thomasloven/hass-custom_icons
         docs_label: Learn more
-        visibility:
+        visible_when:
           - condition: state
             entity: sensor.teds_requirements
             attribute: custom_icons
@@ -187,7 +187,7 @@ cards:
         message: The Calendar views won't render without the Daylight Calendar Card.
         docs_url: https://github.com/superdingo101/daylight-calendar-card
         docs_label: Learn more
-        visibility:
+        visible_when:
           - condition: state
             entity: sensor.teds_requirements
             attribute: daylight_calendar
@@ -199,7 +199,7 @@ cards:
         message: Install browser_mod via HACS — the Refresh button and some navigation rely on it.
         docs_url: https://github.com/thomasloven/hass-browser_mod
         docs_label: Learn more
-        visibility:
+        visible_when:
           - condition: state
             entity: sensor.teds_requirements
             attribute: browser_mod
@@ -213,7 +213,7 @@ cards:
           Settings → Devices & Services → Add Integration → Browser Mod.
         docs_url: https://github.com/thomasloven/hass-browser_mod
         docs_label: Learn more
-        visibility:
+        visible_when:
           - condition: state
             entity: sensor.teds_requirements
             attribute: browser_mod
@@ -228,7 +228,7 @@ cards:
           Add it under Settings → Devices & Services (it auto-discovers a running MA server).
         docs_url: https://www.home-assistant.io/integrations/music_assistant/
         docs_label: Learn more
-        visibility:
+        visible_when:
           - condition: state
             entity: sensor.teds_requirements
             attribute: music_assistant
@@ -243,7 +243,7 @@ cards:
           ranking.
         docs_url: https://github.com/droans/mass_queue
         docs_label: Learn more
-        visibility:
+        visible_when:
           - condition: state
             entity: sensor.teds_requirements
             attribute: mass_queue
@@ -257,7 +257,7 @@ cards:
           Settings → Devices & Services → Add Integration → Music Assistant Queue.
         docs_url: https://github.com/droans/mass_queue
         docs_label: Learn more
-        visibility:
+        visible_when:
           - condition: state
             entity: sensor.teds_requirements
             attribute: mass_queue
@@ -267,7 +267,7 @@ cards:
         icon: mdi:weather-partly-cloudy
         title: No weather entity found
         message: Add a weather integration so the clock/weather card can show a forecast.
-        visibility:
+        visible_when:
           - condition: state
             entity: sensor.teds_requirements
             attribute: weather
@@ -281,7 +281,7 @@ cards:
         title: A better layout for this screen
         message: You appear to be on a phone — the Home (Handheld) view is a better fit.
         dismiss_key: ted-home-tip-handheld
-        visibility:
+        visible_when:
           - condition: screen
             media_query: "(orientation: portrait) and (max-width: 600px)"
           - condition: device
@@ -295,7 +295,7 @@ cards:
         title: A better layout for this screen
         message: This looks like a large landscape display — the Home (Wall Panel Landscape) view is a better fit.
         dismiss_key: ted-home-tip-wallpanel-h
-        visibility:
+        visible_when:
           - condition: screen
             media_query: "(orientation: landscape) and (min-height: 601px)"
           - condition: device
@@ -309,7 +309,7 @@ cards:
         title: A better layout for this screen
         message: This looks like a large portrait tablet — the Home (Wall Panel Portrait) view is a better fit.
         dismiss_key: ted-home-tip-wallpanel-v
-        visibility:
+        visible_when:
           - condition: screen
             media_query: "(orientation: portrait) and (min-width: 601px)"
           - condition: device
@@ -323,7 +323,7 @@ cards:
         title: On a nightstand?
         message: Small bedside displays work well with the Home (Nightstand) view.
         dismiss_key: ted-home-tip-nightstand
-        visibility:
+        visible_when:
           - condition: screen
             media_query: "(orientation: landscape) and (max-height: 600px)"
           - condition: device

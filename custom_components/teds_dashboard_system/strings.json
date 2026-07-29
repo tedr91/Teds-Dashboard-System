@@ -1,6 +1,6 @@
 {
   "config": {
-    "step": { "user": { "title": "Ted's Dashboard System", "description": "Add the alarms & timers backend for Ted's Cards." } },
+    "step": { "user": { "title": "Ted's Dashboard System", "description": "Set up Ted's Dashboard System. It serves Ted's Cards and themes, installs the Ted's Dashboard, and powers alarms, timers, notifications, and announcements." } },
     "abort": { "single_instance_allowed": "Already configured." }
   },
   "options": {

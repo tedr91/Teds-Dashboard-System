@@ -51,6 +51,11 @@ frontend:
 
 ## Changelog
 
+### v0.9.17
+
+- **Fixed: Welcome-page setup tips reappear** (the layout suggestions + “register this device” prompt were hidden by HA's native card visibility). Bundles Ted's Cards v0.9.14. Pairs with Ted's Cards v0.9.14+.
+- The integration's setup description and the sidebar panel icon (temporary teddy-bear placeholder) were refreshed.
+
 ### v0.9.16
 
 - **Welcome page:** the “Re-check requirements” box now hides itself once every requirement is met, and its wording is clearer. Bundles Ted's Cards v0.9.13 (tidier kiosk-mode prompt). Pairs with Ted's Cards v0.9.13+.
