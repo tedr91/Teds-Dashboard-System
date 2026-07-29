@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.16
+
+- **Welcome page:** the “Re-check requirements” box now hides itself once every requirement is met, and its wording is clearer. Bundles Ted's Cards v0.9.13 (tidier kiosk-mode prompt). Pairs with Ted's Cards v0.9.13+.
+
 ### v0.9.15
 
 - **Welcome page layout fix:** it now uses a full-width panel layout (instead of a narrow column) while still rendering without Layout Card.

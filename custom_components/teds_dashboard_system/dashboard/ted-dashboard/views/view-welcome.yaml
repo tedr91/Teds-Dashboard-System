@@ -85,16 +85,20 @@ cards:
         theme: ted-style
         severity: tip
         icon: mdi:refresh
-        title: Installed or set up a plugin?
+        title: Did you recently install or setup an integration?
         message: >-
-          Re-check now so the status above updates right away — otherwise it refreshes
-          on restart, a dashboard reload, or within a few minutes.
+          You can trigger a manual re-check now or simply wait until it naturally
+          refreshes.
         actions:
           - { label: Re-check requirements, icon: mdi:refresh, action: perform-action, perform_action: teds_dashboard_system.check_requirements, variant: primary }
         visibility:
           - condition: state
             entity: sensor.teds_settings
             state_not: [unknown, unavailable]
+          - condition: state
+            entity: sensor.teds_requirements
+            attribute: all_met
+            state: "false"
       # Backend integration — the funnel; shows only when it's absent (which is
       # also what unlocks every other check below).
       - type: custom:ted-messagebox-card

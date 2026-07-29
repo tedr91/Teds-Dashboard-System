@@ -149,5 +149,8 @@ class TedsRequirementsSensor(_Base):
     def extra_state_attributes(self):
         reqs = self._m.requirements or {}
         missing = [k for k, v in reqs.items() if v == "missing"]
-        return {**reqs, "missing": missing, "ok": not missing, "version": self._m.version}
+        # `all_met` is stricter than `ok`: True only when EVERY requirement is "ok"
+        # (so a downloaded-but-not-added "setup" state still counts as not-yet-met).
+        all_met = bool(reqs) and all(v == "ok" for v in reqs.values())
+        return {**reqs, "missing": missing, "ok": not missing, "all_met": all_met, "version": self._m.version}
 
