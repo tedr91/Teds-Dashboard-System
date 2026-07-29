@@ -10,6 +10,7 @@ from homeassistant.core import callback
 from .const import (
     CONF_DASHBOARD_BRANCH,
     CONF_DASHBOARD_REPO,
+    CONF_MA_ADMIN_TOKEN,
     DEFAULT_DASHBOARD_BRANCH,
     DEFAULT_DASHBOARD_REPO,
     DOMAIN,
@@ -48,6 +49,10 @@ def _options_schema(options) -> vol.Schema:
                 CONF_DASHBOARD_BRANCH,
                 default=options.get(CONF_DASHBOARD_BRANCH, DEFAULT_DASHBOARD_BRANCH),
             ): str,
+            vol.Optional(
+                CONF_MA_ADMIN_TOKEN,
+                default=options.get(CONF_MA_ADMIN_TOKEN, ""),
+            ): str,
         }
     )
 
@@ -61,6 +66,7 @@ class TedsDashboardOptionsFlow(config_entries.OptionsFlow):
                 data={
                     CONF_DASHBOARD_REPO: user_input[CONF_DASHBOARD_REPO].strip(),
                     CONF_DASHBOARD_BRANCH: user_input[CONF_DASHBOARD_BRANCH].strip(),
+                    CONF_MA_ADMIN_TOKEN: user_input.get(CONF_MA_ADMIN_TOKEN, "").strip(),
                 }
             )
         return self.async_show_form(

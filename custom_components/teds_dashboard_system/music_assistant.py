@@ -22,12 +22,18 @@ Key strings/values are taken verbatim from the Music Assistant server source
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
+import uuid
+from collections.abc import Awaitable, Callable
 from typing import Any
 
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
+
+from .const import CONF_MA_ADMIN_TOKEN, DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -55,29 +61,68 @@ _POLL_INTERVAL_S = 0.5
 # this into a distinct error code so the UI can show a *guided* step, not a hard failure.
 GUIDE_HASS_PLUGIN = "GUIDE_HASS_PLUGIN: "
 
+# Prefix when no Music Assistant admin token is configured (or MA rejected it). MA gates
+# config writes behind an admin role, so without a token we can't auto-create — the
+# websocket handler maps this to a distinct code so the UI shows the guided/token path.
+GUIDE_NEEDS_TOKEN = "GUIDE_NEEDS_TOKEN: "
 
-def _get_mass_client(hass: HomeAssistant) -> Any | None:
-    """Return the live MusicAssistantClient from the HA music_assistant integration.
+# An async Music Assistant command runner (bound to the admin HTTP endpoint).
+_Cmd = Callable[..., Awaitable[Any]]
 
-    Reuses the existing authenticated server connection rather than opening our own.
-    Returns ``None`` when the integration isn't set up / loaded.
+
+def _config_endpoint(hass: HomeAssistant) -> tuple[str, str] | None:
+    """Return ``(base_url, admin_token)`` for MA config writes, or ``None``.
+
+    MA gates provider/player config writes behind an admin role, and the HA integration's
+    own connection is a non-admin "system user". So we drive config writes over MA's
+    JSON-RPC HTTP API (``POST {base}/api``) authenticated with the admin token from this
+    integration's options, reusing the Music Assistant server URL the integration already
+    connects to. Returns ``None`` when no token is configured (→ guided setup) or MA isn't
+    set up.
     """
-    for entry in hass.config_entries.async_entries("music_assistant"):
-        if entry.state is not ConfigEntryState.LOADED:
-            continue
-        data = getattr(entry, "runtime_data", None)
-        mass = getattr(data, "mass", None)
-        if mass is not None:
-            return mass
-    return None
+    tds = next(iter(hass.config_entries.async_entries(DOMAIN)), None)
+    token = ((tds.options.get(CONF_MA_ADMIN_TOKEN) if tds else "") or "").strip()
+    if not token:
+        return None
+    ma = next(
+        (
+            e
+            for e in hass.config_entries.async_entries("music_assistant")
+            if e.state is ConfigEntryState.LOADED
+        ),
+        None,
+    )
+    url = ma.data.get("url") if ma else None
+    if not url:
+        return None
+    base = str(url).rstrip("/")
+    if base.endswith("/ws"):
+        base = base[:-3]
+    return base, token
 
 
-async def _command(mass: Any, command: str, **kwargs: Any) -> Any:
-    """Send a raw Music Assistant API command via the shared client."""
-    send = getattr(mass, "send_command", None)
-    if send is None:  # pragma: no cover - defensive; client API changed
-        raise HomeAssistantError("Music Assistant client does not support send_command.")
-    return await send(command, **kwargs)
+async def _config_command(
+    session: Any, base_url: str, token: str, command: str, **args: Any
+) -> Any:
+    """Run a Music Assistant API command over its JSON-RPC HTTP endpoint as admin."""
+    payload = {"command": command, "message_id": uuid.uuid4().hex, "args": args or {}}
+    async with session.post(
+        f"{base_url}/api",
+        json=payload,
+        headers={"Authorization": f"Bearer {token}"},
+    ) as resp:
+        text = await resp.text()
+        if resp.status == 200:
+            return json.loads(text) if text.strip() else None
+        if resp.status in (401, 403):
+            raise HomeAssistantError(
+                f"{GUIDE_NEEDS_TOKEN}Music Assistant rejected the admin token "
+                f"(HTTP {resp.status}). Set a valid Music Assistant admin token in "
+                "Ted's Dashboard System → Configure."
+            )
+        raise HomeAssistantError(
+            f"Music Assistant API error (HTTP {resp.status}): {text[:200]}"
+        )
 
 
 def _config_value(values: Any, key: str, default: Any = None) -> Any:
@@ -97,13 +142,13 @@ def _config_value(values: Any, key: str, default: Any = None) -> Any:
     return default if raw is None else raw
 
 
-async def _hass_plugin_enabled(mass: Any) -> bool:
+async def _hass_plugin_enabled(cmd: _Cmd) -> bool:
     """True when Music Assistant's `hass` plugin provider is set up and enabled."""
-    provs = await _command(mass, "config/providers", provider_domain=_HASS_PLUGIN_DOMAIN)
+    provs = await cmd("config/providers", provider_domain=_HASS_PLUGIN_DOMAIN)
     return any((p or {}).get("enabled", True) for p in (provs or []))
 
 
-async def _ensure_hass_plugin(mass: Any) -> None:
+async def _ensure_hass_plugin(cmd: _Cmd) -> None:
     """Ensure the `hass` plugin provider exists (the player provider depends on it).
 
     When Music Assistant runs as the Home Assistant **add-on**, that provider needs no
@@ -117,7 +162,7 @@ async def _ensure_hass_plugin(mass: Any) -> None:
     robust to Music Assistant API differences: it only ever succeeds when no input is
     needed, and validation cleanly rejects it (saving nothing) otherwise.
     """
-    if await _hass_plugin_enabled(mass):
+    if await _hass_plugin_enabled(cmd):
         _LOGGER.info("teds MA auto-create: Home Assistant plugin provider already set up")
         return
     _LOGGER.info(
@@ -125,8 +170,8 @@ async def _ensure_hass_plugin(mass: Any) -> None:
         "(works when Music Assistant runs as the HA add-on)"
     )
     try:
-        await _command(
-            mass, "config/providers/save", provider_domain=_HASS_PLUGIN_DOMAIN, values={}
+        await cmd(
+            "config/providers/save", provider_domain=_HASS_PLUGIN_DOMAIN, values={}
         )
     except HomeAssistantError:
         raise
@@ -144,7 +189,7 @@ async def _ensure_hass_plugin(mass: Any) -> None:
     # Wait for the newly-added plugin to come online before adding the dependent player.
     deadline = asyncio.get_running_loop().time() + _REGISTER_TIMEOUT_S
     while asyncio.get_running_loop().time() < deadline:
-        if await _hass_plugin_enabled(mass):
+        if await _hass_plugin_enabled(cmd):
             _LOGGER.info("teds MA auto-create: Home Assistant plugin provider is now online")
             return
         await asyncio.sleep(_POLL_INTERVAL_S)
@@ -163,21 +208,29 @@ async def async_create_music_player(hass: HomeAssistant, entity_id: str) -> dict
     if not entity_id or not entity_id.startswith("media_player."):
         raise HomeAssistantError("A media_player entity is required to create an MA player.")
 
-    mass = _get_mass_client(hass)
-    if mass is None:
+    endpoint = _config_endpoint(hass)
+    if endpoint is None:
         raise HomeAssistantError(
-            "The Music Assistant integration isn't set up or connected in Home Assistant."
+            f"{GUIDE_NEEDS_TOKEN}Set a Music Assistant admin token in Ted's Dashboard "
+            "System → Configure to let it set this device up as a Music Assistant player, "
+            "or add the device yourself in Music Assistant → Settings → Providers → Home "
+            "Assistant Players."
         )
+    base_url, token = endpoint
+    session = async_get_clientsession(hass, verify_ssl=False)
+
+    async def cmd(command: str, **args: Any) -> Any:
+        return await _config_command(session, base_url, token, command, **args)
 
     _LOGGER.info("teds MA auto-create: starting for %s", entity_id)
 
     # 1) The player provider depends on the Home Assistant plugin provider being set up.
     #    Auto-add it when Music Assistant runs as the HA add-on; otherwise guide the user.
-    await _ensure_hass_plugin(mass)
+    await _ensure_hass_plugin(cmd)
 
     # 2) Ensure the hass_players provider exists and includes this entity.
-    hp_provs = await _command(
-        mass, "config/providers", provider_domain=_HASS_PLAYERS_DOMAIN, include_values=True
+    hp_provs = await cmd(
+        "config/providers", provider_domain=_HASS_PLAYERS_DOMAIN, include_values=True
     )
     existing = hp_provs[0] if hp_provs else None
     current: list[str] = []
@@ -193,8 +246,7 @@ async def async_create_music_player(hass: HomeAssistant, entity_id: str) -> dict
             entity_id,
             "updating existing" if existing else "creating provider",
         )
-        await _command(
-            mass,
+        await cmd(
             "config/providers/save",
             provider_domain=_HASS_PLAYERS_DOMAIN,
             instance_id=_HASS_PLAYERS_INSTANCE if existing else None,
@@ -206,7 +258,7 @@ async def async_create_music_player(hass: HomeAssistant, entity_id: str) -> dict
     _LOGGER.info("teds MA auto-create: waiting for player %s to register", entity_id)
     deadline = asyncio.get_running_loop().time() + _REGISTER_TIMEOUT_S
     while asyncio.get_running_loop().time() < deadline:
-        players = await _command(mass, "config/players", provider=_HASS_PLAYERS_INSTANCE)
+        players = await cmd("config/players", provider=_HASS_PLAYERS_INSTANCE)
         if any((p or {}).get("player_id") == entity_id for p in (players or [])):
             break
         await asyncio.sleep(_POLL_INTERVAL_S)
@@ -225,15 +277,13 @@ async def async_create_music_player(hass: HomeAssistant, entity_id: str) -> dict
     #    Crossfade separately (it's unavailable on low-memory servers; don't let that
     #    failure undo the rest).
     _LOGGER.info("teds MA auto-create: configuring player %s (expose to HA + icon)", entity_id)
-    await _command(
-        mass,
+    await cmd(
         "config/players/save",
         player_id=entity_id,
         values={_CONF_EXPOSE_TO_HA: True, _CONF_ICON: _PLAYER_ICON},
     )
     try:
-        await _command(
-            mass,
+        await cmd(
             "config/players/save",
             player_id=entity_id,
             values={_CONF_SMART_FADES: _SMART_CROSSFADE},

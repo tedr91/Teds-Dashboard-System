@@ -265,6 +265,12 @@ DEFAULT_THEMES_REPO = "tedr91/Teds-Themes"
 # Config-entry option keys.
 CONF_DASHBOARD_REPO = "dashboard_repo"
 CONF_DASHBOARD_BRANCH = "dashboard_branch"
+# Optional Music Assistant admin API token. MA gates provider/player config writes behind
+# an admin role, and the HA integration's own connection is a limited non-admin "system
+# user". When set, Ted's Dashboard System uses this token (via MA's JSON-RPC HTTP API) to
+# auto-expose a device as a Music Assistant player; when empty, the cards fall back to a
+# guided setup instead.
+CONF_MA_ADMIN_TOKEN = "ma_admin_token"
 
 # Asset classes tracked in versions.json / the installer store.
 ASSET_DASHBOARD = "dashboard"  # generated main file + shared includes

@@ -504,14 +504,19 @@ async def handle_create_ma_player(
     error (external MA needs a URL + token) is reported as the distinct `needs_hass_setup`
     code so the UI can show a guided step rather than a hard failure.
     """
-    from .music_assistant import GUIDE_HASS_PLUGIN, async_create_music_player
+    from .music_assistant import GUIDE_HASS_PLUGIN, GUIDE_NEEDS_TOKEN, async_create_music_player
 
     try:
         async with _CREATE_MA_LOCK:
             result = await async_create_music_player(hass, msg["entity_id"])
     except HomeAssistantError as err:
         message = str(err)
-        if message.startswith(GUIDE_HASS_PLUGIN):
+        if message.startswith(GUIDE_NEEDS_TOKEN):
+            _LOGGER.info("create_ma_player needs an admin token for %s", msg["entity_id"])
+            connection.send_error(
+                msg["id"], "needs_admin_token", message[len(GUIDE_NEEDS_TOKEN) :]
+            )
+        elif message.startswith(GUIDE_HASS_PLUGIN):
             _LOGGER.info("create_ma_player needs guided setup for %s: %s", msg["entity_id"], message)
             connection.send_error(
                 msg["id"], "needs_hass_setup", message[len(GUIDE_HASS_PLUGIN) :]
