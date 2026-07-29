@@ -51,6 +51,11 @@ frontend:
 
 ## Changelog
 
+### v0.9.12
+
+- Bundles Ted's Cards v0.9.11 (kiosk mode now also hides HA's header; Automatic Night Mode defaults off and turns on for Nightstand-type devices; night schedule can follow the Sun integration; and the Bing attribution icon clears when switching slideshow albums). Pairs with Ted's Cards v0.9.11+.
+- **Automatic Night Mode now defaults to off**, and a new **night schedule source** setting (Manual / Sun sunset→sunrise / Sun dusk→dawn) is available.
+
 ### v0.9.11
 
 - **Favorites, imported wallpapers, and the Bing “removed” list now survive integration updates.** Favorited photos (Bing + Photos page) are stored under `media/Ted Dash System/Favorites`, set-as-wallpaper imports under `media/Ted Dash System/Wallpapers`, and the Bing removed-photo list in a config-level data folder — so a HACS update no longer wipes them. (Anything saved before this update in the old location is lost once; re-save it.)

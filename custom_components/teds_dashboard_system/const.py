@@ -167,7 +167,8 @@ SETTINGS_DEFAULTS = {
     "weather_entity": None,
     # Automatic Night Mode — dims the background, lowers screen brightness, and switches to a
     # night font color on a nightly schedule, restoring day values in the morning.
-    "night_enabled": True,
+    "night_enabled": False,
+    "night_schedule_source": "manual",
     "night_start": "21:00:00",           # night begins (local time, HH:MM:SS)
     "night_end": "07:00:00",             # night ends (local time)
     "night_dim_brightness": 75,          # target screen brightness percent at night
