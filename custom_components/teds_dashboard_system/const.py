@@ -85,7 +85,7 @@ SETTINGS_DEFAULTS = {
     # per-device = the curated subset that device shows (empty inherits the global list).
     "cameras_list": [],
     # How this device arranges its cameras on the Cameras view (single/quad/big-small/auto).
-    "cameras_layout": "auto",
+    "cameras_layout": "big-small",
     # Temperatures — ordered list of climate entity ids. Global = the available allow-list;
     # per-device = the curated subset that device shows (empty inherits the global list).
     "climate_list": [],

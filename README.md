@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.18
+
+- Bundles Ted's Cards v0.9.15 — consistent Camera/Photo Viewer empty states and a “Multi” default camera layout. Pairs with Ted's Cards v0.9.15+.
+
 ### v0.9.17
 
 - **Fixed: Welcome-page setup tips reappear** (the layout suggestions + “register this device” prompt were hidden by HA's native card visibility). Bundles Ted's Cards v0.9.14. Pairs with Ted's Cards v0.9.14+.
