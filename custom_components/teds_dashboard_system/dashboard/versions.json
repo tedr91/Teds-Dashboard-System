@@ -1,9 +1,9 @@
 {
   "schema": 1,
-  "dashboard": "0.9.0",
+  "dashboard": "0.9.1",
   "shared": "1.0.0",
   "views": {
-    "view-welcome": "1.0.1",
+    "view-welcome": "1.0.2",
     "view-alarms-timers": "1.0.0",
     "view-announce": "1.0.0",
     "view-assist-response": "1.0.0",

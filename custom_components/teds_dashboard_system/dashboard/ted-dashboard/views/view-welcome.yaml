@@ -51,6 +51,30 @@ cards:
       # only renders when Ted's Cards frontend is loaded, which the markdown
       # blocker above already covers when it isn't.
       - type: custom:ted-status-card
+      # This browser isn't registered with Browser Mod yet — it has no name/area,
+      # so per-device settings and area-scoped alerts can't target it. Offers a
+      # one-tap register (falls back to the Browser Mod panel). Only shown once
+      # Browser Mod is installed + set up.
+      - type: custom:ted-messagebox-card
+        theme: ted-style
+        severity: warning
+        icon: mdi:cellphone-cog
+        title: Register this device with Browser Mod
+        message: >-
+          This device isn't registered with Browser Mod yet, so it has no name or
+          area. Register it to unlock per-device settings, area-scoped alarms and
+          notifications, and the right home layout for this screen.
+        dismiss_key: ted-register-device
+        visibility:
+          - condition: device
+            registered: false
+          - condition: state
+            entity: sensor.teds_requirements
+            attribute: browser_mod
+            state: ok
+        actions:
+          - { label: Register this device, icon: mdi:web, action: register-device, navigation_path: /browser-mod, variant: primary }
+          - { label: Not now, action: dismiss-session }
       # Backend integration — the funnel; shows only when it's absent (which is
       # also what unlocks every other check below).
       - type: custom:ted-messagebox-card
@@ -223,6 +247,8 @@ cards:
         visibility:
           - condition: screen
             media_query: "(orientation: portrait) and (max-width: 600px)"
+          - condition: device
+            registered: true
         actions:
           - { label: Use Home (Handheld), icon: mdi:cellphone, action: set-device-type, device_type: handheld, navigation_path: /ted-dashboard/home-handheld, variant: primary }
           - { label: Not now, action: dismiss-session }
@@ -235,6 +261,8 @@ cards:
         visibility:
           - condition: screen
             media_query: "(orientation: landscape) and (min-height: 601px)"
+          - condition: device
+            registered: true
         actions:
           - { label: Use Home (Wall Panel), icon: mdi:monitor, action: set-device-type, device_type: tablet-landscape, navigation_path: /ted-dashboard/home-wallpanel-h, variant: primary }
           - { label: Not now, action: dismiss-session }
@@ -247,6 +275,8 @@ cards:
         visibility:
           - condition: screen
             media_query: "(orientation: portrait) and (min-width: 601px)"
+          - condition: device
+            registered: true
         actions:
           - { label: Use Home (Wall Panel Portrait), icon: mdi:tablet, action: set-device-type, device_type: tablet-portrait, navigation_path: /ted-dashboard/home-wallpanel-v, variant: primary }
           - { label: Not now, action: dismiss-session }
@@ -259,6 +289,8 @@ cards:
         visibility:
           - condition: screen
             media_query: "(orientation: landscape) and (max-height: 600px)"
+          - condition: device
+            registered: true
         actions:
           - { label: Use Home (Nightstand), icon: mdi:bed-clock, action: set-device-type, device_type: nightstand, navigation_path: /ted-dashboard/home-nightstand, variant: primary }
           - { label: Not now, action: dismiss-session }
