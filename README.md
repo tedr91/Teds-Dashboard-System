@@ -51,6 +51,11 @@ frontend:
 
 ## Changelog
 
+### v0.9.10
+
+- Bundles Ted's Cards v0.9.9 ("Enable music on this device" is now admin-only with a note, and the Climate empty state uses the standard message card). Pairs with Ted's Cards v0.9.9+.
+- Weather view: the clock-weather forecast card is now centered and width-capped so it no longer stretches with an oversized "today" section.
+
 ### v0.9.9
 
 - Bundles Ted's Cards v0.9.8 (registering a device also syncs its Browser ID to the login session, and "Update Name / Area" is now admin-only with a clear note for non-admins). Pairs with Ted's Cards v0.9.8+.

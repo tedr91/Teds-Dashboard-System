@@ -37,11 +37,19 @@ cards:
             forecast_rows: 7
             card_mod:
               style: |
-                :host { height: 100%; }
-                /* Opaque, theme-adaptive grey surface so the forecast reads well over the
-                   translucent dashboard in both light and dark mode (nudged toward grey). */
-                ha-card {
+                /* clock-weather-card sizes to its content (the "today" section scales with
+                   card WIDTH), so forcing height:100% stretched it and, at full width, made
+                   the today section huge with a big gap above the forecast. Instead center
+                   the natural-height card and cap its width. */
+                :host {
                   height: 100%;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                }
+                ha-card {
+                  width: 100%;
+                  max-width: 700px;
                   background: color-mix(in srgb, var(--card-background-color, #fff) 88%, gray) !important;
                   -webkit-backdrop-filter: none !important;
                   backdrop-filter: none !important;
