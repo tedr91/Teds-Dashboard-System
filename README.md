@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.14
+
+- **Welcome page improvements:** a **Re-check requirements** button (forces an immediate re-scan after installing a plugin); a clearer notice when **UIX** is downloaded but not yet added as an integration; reworded “needs setup” boxes; and the welcome page now renders even when **Layout Card** isn't installed yet (so its own setup guidance is always reachable).
+
 ### v0.9.13
 
 - **Kiosk mode is now opt-in** (off by default). A registered device shows a one-time prompt to enable it. Bundles Ted's Cards v0.9.12. Pairs with Ted's Cards v0.9.12+.

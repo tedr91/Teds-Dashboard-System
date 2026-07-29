@@ -1,19 +1,14 @@
-# View: Home-Welcome (custom:grid-layout) — path: home-welcome
-# The dashboard's DEFAULT landing page (first view). Reuses the calendar-week
-# layout: the top "clock" section stays; the bottom "content" section is an
-# informational panel that guides setup (e.g. installing Ted's Dashboard System)
-# and points to the right home view.
+# View: Home-Welcome (native masonry) — path: home-welcome
+# The dashboard's DEFAULT landing page (first view). It's an informational panel
+# that guides setup (e.g. installing Ted's Dashboard System) and points to the
+# right home view.
 #
-# Effective view height = viewport - navbar - header, where the "header" term is
-#   var(--kiosk-header-height, var(--header-height, 56px))
-# Ted's Cards sets --kiosk-header-height:0 when this device uses kiosk mode (kiosk =
-# viewport - navbar); non-kiosk falls back to the real --header-height.
-# Clock: min 100px, 25% of that height. Content: 75% of that height.
-type: custom:grid-layout
+# IMPORTANT: this view intentionally uses HA's NATIVE (masonry) layout rather than
+# custom:grid-layout — Layout Card is one of the very dependencies it warns about,
+# so the guidance must still render even when Layout Card isn't installed yet.
 path: home-welcome
 title: Home-Welcome
 icon: mdi:home
-layout: !include ../shared/layout-clock-content.yaml
 cards:
   # Clock section — kept identical to the calendar-week view.
   # - !include ../shared/clock-header.yaml
@@ -23,8 +18,6 @@ cards:
   # is missing. MDI icons are used here so the boxes render even when the
   # custom-icons pack is the thing that's missing.
   - type: vertical-stack
-    view_layout:
-      grid-area: content
     card_mod:
       style: |
         :host { height: 100%; }
@@ -75,6 +68,23 @@ cards:
         actions:
           - { label: Register this device, icon: mdi:web, action: register-device, navigation_path: /browser-mod, variant: primary }
           - { label: Not now, action: dismiss-session }
+      # Force an immediate requirements re-scan (the sensor otherwise refreshes on
+      # HA start, a dashboard reload, or every ~10 min). Only shown once the backend
+      # (which provides the service) is connected.
+      - type: custom:ted-messagebox-card
+        theme: ted-style
+        severity: tip
+        icon: mdi:refresh
+        title: Installed or set up a plugin?
+        message: >-
+          Re-check now so the status above updates right away — otherwise it refreshes
+          on restart, a dashboard reload, or within a few minutes.
+        actions:
+          - { label: Re-check requirements, icon: mdi:refresh, action: perform-action, perform_action: teds_dashboard_system.check_requirements, variant: primary }
+        visibility:
+          - condition: state
+            entity: sensor.teds_settings
+            state_not: [unknown, unavailable]
       # Backend integration — the funnel; shows only when it's absent (which is
       # also what unlocks every other check below).
       - type: custom:ted-messagebox-card
@@ -118,6 +128,19 @@ cards:
             state: missing
       - type: custom:ted-messagebox-card
         severity: warning
+        icon: mdi:palette-outline
+        title: UIX is installed, but needs further setup
+        message: >-
+          UIX is downloaded in HACS but not set up yet. Add it under Settings →
+          Devices & Services → Add Integration → UIX, then reload — card styling
+          across the dashboard relies on it (or card-mod).
+        visibility:
+          - condition: state
+            entity: sensor.teds_requirements
+            attribute: card_mod
+            state: setup
+      - type: custom:ted-messagebox-card
+        severity: warning
         icon: mdi:emoticon-outline
         title: Custom Icons not installed
         message: Install Custom Icons via HACS so the dashboard's icons render (they may otherwise appear blank).
@@ -131,7 +154,7 @@ cards:
       - type: custom:ted-messagebox-card
         severity: warning
         icon: mdi:emoticon-outline
-        title: Custom Icons needs setup
+        title: Custom Icons is installed, but needs further setup
         message: >-
           Custom Icons is downloaded in HACS but not set up yet. Go to Settings →
           Devices & Services → Add Integration → Custom Icons, then open it, click
@@ -170,7 +193,7 @@ cards:
       - type: custom:ted-messagebox-card
         severity: warning
         icon: mdi:web
-        title: browser_mod needs setup
+        title: Browser Mod is installed, but needs further setup
         message: >-
           browser_mod is downloaded in HACS but not set up yet. Add it under
           Settings → Devices & Services → Add Integration → Browser Mod.
@@ -214,7 +237,7 @@ cards:
       - type: custom:ted-messagebox-card
         severity: tip
         icon: mdi:playlist-music
-        title: mass_queue needs setup
+        title: Music Assistant Queue is installed, but needs further setup
         message: >-
           mass_queue is downloaded in HACS but not set up yet. Add it under
           Settings → Devices & Services → Add Integration → Music Assistant Queue.

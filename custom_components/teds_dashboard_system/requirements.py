@@ -34,7 +34,7 @@ REQUIREMENTS: list[dict] = [
     # or UIX (a superset replacement) is installed.
     {"id": "layout_card", "kind": "resource", "match": ["layout-card"]},
     {"id": "ted_cards", "kind": "resource", "match": ["ted-cards"]},
-    {"id": "card_mod", "kind": "resource", "match": ["card-mod", "/uix"]},
+    {"id": "card_mod", "kind": "resource", "match": ["card-mod", "/uix"], "setup": ["uix"]},
     {"id": "daylight_calendar", "kind": "resource", "match": ["daylight-calendar"]},
     # Entities
     {"id": "weather", "kind": "entity", "match": ["weather"]},
@@ -110,10 +110,15 @@ async def compute_requirements(hass: HomeAssistant) -> dict[str, str]:
                 result[rid] = "ok"
             elif urls is None:
                 result[rid] = "unknown"
+            elif any(m in u for m in match for u in urls):
+                result[rid] = "ok"
+            elif any(d in downloaded for d in req.get("setup", [])):
+                # A backing integration is downloaded but hasn't registered its
+                # resource yet (e.g. UIX, whose /uix resource appears only once the
+                # integration is added) — tell the user to finish setup, not install.
+                result[rid] = "setup"
             else:
-                result[rid] = (
-                    "ok" if any(m in u for m in match for u in urls) else "missing"
-                )
+                result[rid] = "missing"
         elif kind == "entity":
             result[rid] = (
                 "ok"
