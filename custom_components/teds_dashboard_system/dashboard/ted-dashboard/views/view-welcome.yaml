@@ -3,9 +3,14 @@
 # that guides setup (e.g. installing Ted's Dashboard System) and points to the
 # right home view.
 #
-# IMPORTANT: this view intentionally uses HA's NATIVE (masonry) layout rather than
+# IMPORTANT: this view intentionally uses HA's NATIVE (panel) layout rather than
 # custom:grid-layout — Layout Card is one of the very dependencies it warns about,
 # so the guidance must still render even when Layout Card isn't installed yet.
+#
+# `panel: true` renders ONLY the first card, full-width — so everything lives in a
+# single vertical-stack. The navbar + background includes are nested INSIDE that
+# stack so they still render (both are fixed/invisible, so nesting is harmless).
+panel: true
 path: home-welcome
 title: Home-Welcome
 icon: mdi:home
@@ -21,7 +26,12 @@ cards:
     card_mod:
       style: |
         :host { height: 100%; }
-        #root { height: 100%; overflow-y: auto; box-sizing: border-box; }
+        #root {
+          height: 100%;
+          overflow-y: auto;
+          box-sizing: border-box;
+          padding-bottom: var(--ted-navbar-bottom-reserve, 48px);
+        }
     cards:
       # Always-on header + core fallback for the two blockers (layout-card /
       # Ted's Cards) — these can't be MessageBoxes because the view won't render
@@ -317,5 +327,5 @@ cards:
         actions:
           - { label: Use Home (Nightstand), icon: mdi:bed-clock, action: set-device-type, device_type: nightstand, navigation_path: /ted-dashboard/home-nightstand, variant: primary }
           - { label: Not now, action: dismiss-session }
-  - !include ../shared/navbar.yaml
-  - !include ../shared/background.yaml
+      - !include ../shared/navbar.yaml
+      - !include ../shared/background.yaml
