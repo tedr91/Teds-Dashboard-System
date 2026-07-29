@@ -100,12 +100,15 @@ class TedsManager:
 
     # ── alarms ──────────────────────────────────────────────
     async def add_alarm(self, label, time, days, description="", enabled=True, location=None):
+        # An empty `days` list is a valid one-shot alarm (rings once at the next
+        # matching time, then disables itself). Only default to every-day when no
+        # days field was supplied at all (None).
         self.alarms.append({
             "id": uuid.uuid4().hex,
             "label": label,
             "description": description,
             "time": time,
-            "days": days or [0, 1, 2, 3, 4, 5, 6],
+            "days": list(days) if days is not None else [0, 1, 2, 3, 4, 5, 6],
             "enabled": enabled,
             "location": location,
         })
@@ -135,25 +138,34 @@ class TedsManager:
         hhmm = local.strftime("%H:%M")
         rang = False
         for a in self.alarms:
-            if a.get("enabled") and local.weekday() in a.get("days", []) and a.get("time") == hhmm:
-                loc = a.get("location")
-                self.hass.bus.async_fire(EVENT_ALARM_RINGING, {
-                    "id": a["id"],
-                    "label": a["label"],
-                    "location": loc,
-                    "area_name": self._area_name(loc),
-                })
-                self._add_notification(
-                    title="Alarm",
-                    message=a["label"],
-                    severity="warning",
-                    icon="mdi:alarm",
-                    area=loc,
-                    timeout=120,
-                    source="alarm",
-                    snooze={"kind": "alarm", "name": a["label"], "area": loc},
-                )
-                rang = True
+            if not a.get("enabled") or a.get("time") != hhmm:
+                continue
+            days = a.get("days") or []
+            # No days = one-shot: ring at the next matching time on any weekday,
+            # then disable. Otherwise only ring on the selected weekdays.
+            one_shot = not days
+            if not one_shot and local.weekday() not in days:
+                continue
+            loc = a.get("location")
+            self.hass.bus.async_fire(EVENT_ALARM_RINGING, {
+                "id": a["id"],
+                "label": a["label"],
+                "location": loc,
+                "area_name": self._area_name(loc),
+            })
+            self._add_notification(
+                title="Alarm",
+                message=a["label"],
+                severity="warning",
+                icon="mdi:alarm",
+                area=loc,
+                timeout=120,
+                source="alarm",
+                snooze={"kind": "alarm", "name": a["label"], "area": loc},
+            )
+            if one_shot:
+                a["enabled"] = False
+            rang = True
         if rang:
             self.hass.async_create_task(self._save())
             self._notify()

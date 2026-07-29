@@ -704,6 +704,33 @@ class PlaybackEngine:
             _LOGGER.debug("Could not measure TTS audio: %s", ex)
         return None
 
+    def _is_own_alert_sound(self, content_id) -> bool:
+        """True when `content_id` is one of our own transient alert sounds.
+
+        Our alarm/timer/notification/announce sounds must never be "resumed" as if
+        they were the user's media: doing so replays a stray alert (e.g. an alarm mp3
+        firing once right after a timer is dismissed, because the player's last media
+        was our alarm sound). Matches the bundled defaults by URL prefix, plus any
+        custom sound configured in global or present-device settings.
+        """
+        if not content_id or not isinstance(content_id, str):
+            return False
+        if SOUNDS_URL_PREFIX in content_id:
+            return True
+        scopes = [None, *[did for did, _ in self._m._present_devices()]]
+        for did in scopes:
+            eff = self._m.effective_settings(did)
+            for key, val in eff.items():
+                if (
+                    isinstance(val, str)
+                    and val
+                    and val != DEFAULT_SOUND
+                    and val == content_id
+                    and (key.endswith("_sound") or key.startswith("notification_sound"))
+                ):
+                    return True
+        return False
+
     def _inspect(self, mp):
         """Return (announce_supported, snapshot) for a media player.
 
@@ -715,9 +742,13 @@ class PlaybackEngine:
         announce = bool(int(attrs.get("supported_features", 0) or 0) & MEDIA_ANNOUNCE)
         snapshot = None
         if not announce and st is not None:
+            content_id = attrs.get("media_content_id") if st.state == "playing" else None
+            # Never resume one of our own alert sounds (stray replay on dismiss).
+            if self._is_own_alert_sound(content_id):
+                content_id = None
             snapshot = {
                 "volume": attrs.get("volume_level"),
-                "content_id": attrs.get("media_content_id") if st.state == "playing" else None,
+                "content_id": content_id,
                 "content_type": attrs.get("media_content_type") or "music",
             }
         return announce, snapshot
