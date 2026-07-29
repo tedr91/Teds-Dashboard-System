@@ -506,9 +506,15 @@ async def handle_create_ma_player(
     """
     from .music_assistant import GUIDE_HASS_PLUGIN, GUIDE_NEEDS_TOKEN, async_create_music_player
 
+    user = connection.user
     try:
         async with _CREATE_MA_LOCK:
-            result = await async_create_music_player(hass, msg["entity_id"])
+            result = await async_create_music_player(
+                hass,
+                msg["entity_id"],
+                getattr(user, "id", None),
+                getattr(user, "name", None),
+            )
     except HomeAssistantError as err:
         message = str(err)
         if message.startswith(GUIDE_NEEDS_TOKEN):

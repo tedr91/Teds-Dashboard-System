@@ -82,8 +82,6 @@ def _config_endpoint(hass: HomeAssistant) -> tuple[str, str] | None:
     """
     tds = next(iter(hass.config_entries.async_entries(DOMAIN)), None)
     token = ((tds.options.get(CONF_MA_ADMIN_TOKEN) if tds else "") or "").strip()
-    if not token:
-        return None
     ma = next(
         (
             e
@@ -102,23 +100,39 @@ def _config_endpoint(hass: HomeAssistant) -> tuple[str, str] | None:
 
 
 async def _config_command(
-    session: Any, base_url: str, token: str, command: str, **args: Any
+    session: Any,
+    base_url: str,
+    token: str,
+    ha_user_id: str | None,
+    ha_user_name: str | None,
+    command: str,
+    **args: Any,
 ) -> Any:
-    """Run a Music Assistant API command over its JSON-RPC HTTP endpoint as admin."""
+    """Run a Music Assistant API command over its JSON-RPC HTTP endpoint as admin.
+
+    Sends the calling HA admin user's ``X-Remote-User-*`` headers (Music Assistant's
+    ingress path maps these to the HA user's role, so an HA admin is treated as an MA
+    admin — no token needed on the add-on) AND, if configured, an ``Authorization: Bearer``
+    token (used when the request hits MA's regular, non-ingress webserver / an external
+    server). MA reads whichever applies to where the request lands, so sending both covers
+    every setup.
+    """
     payload = {"command": command, "message_id": uuid.uuid4().hex, "args": args or {}}
-    async with session.post(
-        f"{base_url}/api",
-        json=payload,
-        headers={"Authorization": f"Bearer {token}"},
-    ) as resp:
+    headers: dict[str, str] = {}
+    if ha_user_id:
+        headers["X-Remote-User-ID"] = ha_user_id
+        headers["X-Remote-User-Name"] = ha_user_name or ha_user_id
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    async with session.post(f"{base_url}/api", json=payload, headers=headers) as resp:
         text = await resp.text()
         if resp.status == 200:
             return json.loads(text) if text.strip() else None
         if resp.status in (401, 403):
             raise HomeAssistantError(
-                f"{GUIDE_NEEDS_TOKEN}Music Assistant rejected the admin token "
-                f"(HTTP {resp.status}). Set a valid Music Assistant admin token in "
-                "Ted's Dashboard System → Configure."
+                f"{GUIDE_NEEDS_TOKEN}Music Assistant wouldn't authorize the request "
+                f"(HTTP {resp.status}). On an external Music Assistant server, set an "
+                "admin token in Ted's Dashboard System → Configure."
             )
         raise HomeAssistantError(
             f"Music Assistant API error (HTTP {resp.status}): {text[:200]}"
@@ -199,8 +213,16 @@ async def _ensure_hass_plugin(cmd: _Cmd) -> None:
     )
 
 
-async def async_create_music_player(hass: HomeAssistant, entity_id: str) -> dict[str, Any]:
+async def async_create_music_player(
+    hass: HomeAssistant,
+    entity_id: str,
+    ha_user_id: str | None = None,
+    ha_user_name: str | None = None,
+) -> dict[str, Any]:
     """Create/configure a Music Assistant player for a device's media_player entity.
+
+    ``ha_user_id`` / ``ha_user_name`` identify the calling HA admin so Music Assistant's
+    ingress path can authorize the config writes as that (admin) user without a token.
 
     Returns ``{"player_id": entity_id}`` on success. Raises ``HomeAssistantError`` with a
     user-facing message when a prerequisite is missing or the server rejects a step.
@@ -211,18 +233,25 @@ async def async_create_music_player(hass: HomeAssistant, entity_id: str) -> dict
     endpoint = _config_endpoint(hass)
     if endpoint is None:
         raise HomeAssistantError(
-            f"{GUIDE_NEEDS_TOKEN}Set a Music Assistant admin token in Ted's Dashboard "
-            "System → Configure to let it set this device up as a Music Assistant player, "
-            "or add the device yourself in Music Assistant → Settings → Providers → Home "
-            "Assistant Players."
+            f"{GUIDE_NEEDS_TOKEN}Music Assistant isn't set up in Home Assistant yet, so a "
+            "device can't be added as a Music Assistant player. Add the Music Assistant "
+            "integration (Settings → Devices & Services), then try again."
         )
     base_url, token = endpoint
     session = async_get_clientsession(hass, verify_ssl=False)
 
     async def cmd(command: str, **args: Any) -> Any:
-        return await _config_command(session, base_url, token, command, **args)
+        return await _config_command(
+            session, base_url, token, ha_user_id, ha_user_name, command, **args
+        )
 
-    _LOGGER.info("teds MA auto-create: starting for %s", entity_id)
+    _LOGGER.info(
+        "teds MA auto-create: starting for %s via %s (ha_user=%s, token=%s)",
+        entity_id,
+        base_url,
+        ha_user_id or "none",
+        "yes" if token else "no",
+    )
 
     # 1) The player provider depends on the Home Assistant plugin provider being set up.
     #    Auto-add it when Music Assistant runs as the HA add-on; otherwise guide the user.
