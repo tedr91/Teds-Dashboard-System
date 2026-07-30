@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.29
+
+- Bundles Ted's Cards v0.9.26 — the navbar **Float** mode now works on **Left/Right** (vertical) bars: a floating side bar detaches from the edge with rounded corners, centers along its height, and hugs its content. Pairs with Ted's Cards v0.9.26+.
+
 ### v0.9.28
 
 - **Auto-recovers dashboard clients after a Home Assistant restart** — a few seconds after HA finishes starting, every `browser_mod` screen is refreshed once, so panels don't get stuck on a loading spinner. Renames the sidebar dashboard to **TDS** and the settings screen to **TDS Settings**. New defaults: Calendars use the **Ted's Style** theme and **Automatic Night Mode** follows the Sun (dusk → dawn). Bundles Ted's Cards v0.9.25 (room-scoping fix for area-less devices + wallpaper slideshow crossfade). Pairs with Ted's Cards v0.9.25+.
