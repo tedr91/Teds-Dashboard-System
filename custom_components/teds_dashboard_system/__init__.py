@@ -11,12 +11,12 @@ from functools import partial
 import voluptuous as vol
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import EVENT_CALL_SERVICE, Platform
+from homeassistant.const import EVENT_CALL_SERVICE, EVENT_HOMEASSISTANT_STARTED, Platform
 from homeassistant.core import Event, HomeAssistant, ServiceCall, callback
 from homeassistant.exceptions import Unauthorized
 import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers import device_registry as dr, entity_registry as er, issue_registry as ir
-from homeassistant.helpers.event import async_track_time_change, async_track_time_interval
+from homeassistant.helpers.event import async_call_later, async_track_time_change, async_track_time_interval
 from homeassistant.helpers.start import async_at_started
 from homeassistant.loader import async_get_integration
 
@@ -32,6 +32,7 @@ from .overrides import async_register_services as async_register_override_servic
 from .const import (
     CONF_DASHBOARD_BRANCH,
     CONF_DASHBOARD_REPO,
+    CLIENT_RELOAD_ON_STARTUP_DELAY,
     DEFAULT_DASHBOARD_BRANCH,
     DEFAULT_DASHBOARD_REPO,
     DOMAIN,
@@ -295,6 +296,24 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     entry.async_on_unload(async_at_started(hass, _refresh_reqs))
     entry.async_on_unload(hass.bus.async_listen("lovelace_updated", _refresh_reqs))
     entry.async_on_unload(async_track_time_interval(hass, _refresh_reqs, timedelta(minutes=10)))
+
+    # Recover dashboard clients after an HA restart: they often hang on a loading
+    # spinner while HA was down. A short while after HA fully starts, refresh every
+    # browser_mod browser once (mirrors a manual page refresh). Fires ONLY on a real
+    # HA startup — not on an integration reload while HA is already running.
+    @callback
+    def _schedule_client_reload(_event: Event) -> None:
+        async def _reload_clients(_now) -> None:
+            if hass.services.has_service("browser_mod", "refresh"):
+                await hass.services.async_call("browser_mod", "refresh", {}, blocking=False)
+
+        entry.async_on_unload(
+            async_call_later(hass, CLIENT_RELOAD_ON_STARTUP_DELAY, _reload_clients)
+        )
+
+    entry.async_on_unload(
+        hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STARTED, _schedule_client_reload)
+    )
 
     # Keep the Bing "Photo of the Day" cache fresh once a day, but only when it's
     # already in use (non-empty) — never download for users who don't use it.

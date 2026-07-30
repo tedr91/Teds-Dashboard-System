@@ -18,6 +18,6 @@ cards:
     card:
       type: custom:ted-settings-card
       section_tabs: true
-      title: Ted's Cards Settings
+      title: TDS Settings
   - !include ../shared/navbar.yaml
   - !include ../shared/background.yaml

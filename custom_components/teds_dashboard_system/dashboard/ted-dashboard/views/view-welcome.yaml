@@ -38,7 +38,7 @@ cards:
       # without them, so a core markdown card carries the warning.
       - type: markdown
         content: |
-          ## Welcome to the Ted Dashboard system!
+          ## Welcome to the TDS dashboard!
 
           {% set lc = state_attr('sensor.teds_requirements','layout_card') %}
           {% set tc = state_attr('sensor.teds_requirements','ted_cards') %}

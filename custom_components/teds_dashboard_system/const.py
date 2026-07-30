@@ -62,6 +62,12 @@ MEDIA_FOLDER_NAME = "Ted Dash System"
 # playback targeting after its last heartbeat.
 DEVICE_PRESENCE_TTL = 900
 
+# After a full Home Assistant startup, wait this long (seconds) then refresh every
+# browser_mod client once — dashboard clients often get stuck on a loading spinner
+# while HA was down, and a single reload recovers them. Gives browsers time to
+# reconnect their websockets before the reload fires.
+CLIENT_RELOAD_ON_STARTUP_DELAY = 8
+
 # Global settings baseline. Per-device overrides layer on top of these; a card's
 # effective value = device override (if set) else global (if set) else default.
 SETTINGS_DEFAULTS = {
@@ -127,7 +133,7 @@ SETTINGS_DEFAULTS = {
     # Card-level Calendar appearance (used by Ted's Calendar card in settings mode when
     # the card's own YAML doesn't set the corresponding option).
     "calendar_name": "Family Calendar",  # calendar title ("" = no title)
-    "calendar_theme": "ha",       # ha | ted-style
+    "calendar_theme": "ted-style",  # ha | ted-style
     "calendar_view": "month",     # month | week | schedule | agenda
     # When true, add a day_styles rule that dims weekends so weekdays stand out.
     "calendar_emphasize_weekdays": True,
@@ -206,7 +212,7 @@ SETTINGS_DEFAULTS = {
     # Automatic Night Mode — dims the background, lowers screen brightness, and switches to a
     # night font color on a nightly schedule, restoring day values in the morning.
     "night_enabled": False,
-    "night_schedule_source": "manual",
+    "night_schedule_source": "sun_dusk_dawn",
     "night_start": "21:00:00",           # night begins (local time, HH:MM:SS)
     "night_end": "07:00:00",             # night ends (local time)
     "night_dim_brightness": 75,          # target screen brightness percent at night
@@ -330,7 +336,7 @@ DASHBOARD_MANAGED_DIR = DASHBOARD_SLUG  # overwritten wholesale on update
 DASHBOARD_USER_DIR = f"{DASHBOARD_SLUG}-user"  # never written by the integration
 
 # Lovelace panel registration.
-DASHBOARD_TITLE = "Ted's Dashboard"
+DASHBOARD_TITLE = "TDS"
 DASHBOARD_ICON = "mdi:teddy-bear"
 
 # Bundled/served frontend card assets.

@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.28
+
+- **Auto-recovers dashboard clients after a Home Assistant restart** — a few seconds after HA finishes starting, every `browser_mod` screen is refreshed once, so panels don't get stuck on a loading spinner. Renames the sidebar dashboard to **TDS** and the settings screen to **TDS Settings**. New defaults: Calendars use the **Ted's Style** theme and **Automatic Night Mode** follows the Sun (dusk → dawn). Bundles Ted's Cards v0.9.25 (room-scoping fix for area-less devices + wallpaper slideshow crossfade). Pairs with Ted's Cards v0.9.25+.
+
 ### v0.9.27
 
 - Assist-Response conversation history. Persists a rolling per-device/area conversation (last 20 turns, with the recognized question) and exposes it so the Assist-Response view can scroll back through past answers. Bundles Ted's Cards v0.9.24 (scroll-back conversation log).
