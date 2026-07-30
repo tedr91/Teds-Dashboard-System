@@ -41,6 +41,12 @@ INTENT_TIMER_STATUS = "TedsTimerStatus"
 INTENT_NEXT_EVENT = "TedsNextCalendarEvent"
 INTENT_SET_THERMOSTAT = "TedsSetThermostat"
 INTENT_ADJUST_THERMOSTAT = "TedsAdjustThermostat"
+INTENT_START_TIMER = "TedsStartTimer"
+INTENT_CANCEL_TIMER = "TedsCancelTimer"
+INTENT_PAUSE_TIMER = "TedsPauseTimer"
+INTENT_RESUME_TIMER = "TedsResumeTimer"
+INTENT_ADD_TIME = "TedsAddTime"
+INTENT_REMOVE_TIME = "TedsRemoveTime"
 
 # Sentinel meaning "use the bundled default sound for this alert kind".
 DEFAULT_SOUND = "default"
@@ -62,9 +68,6 @@ SETTINGS_DEFAULTS = {
     "timer_alert_sound": DEFAULT_SOUND,
     "timer_alert_volume": 60,
     "timer_alert_repeat": True,
-    # Bridge native HA voice timers into Ted's timers on registered Ted's Dashboard
-    # devices (so "set a timer" spoken to a Ted's screen shows on the Timers view).
-    "timer_bridge_enabled": True,
     # Alarms
     "alarm_snooze_enabled": True,
     "alarm_snooze_minutes": 9,
@@ -183,6 +186,9 @@ SETTINGS_DEFAULTS = {
     # into the dashboard yaml. Default on (turn off per device).
     "use_kiosk_mode": False,
     "kiosk_nudge_dismissed": False,
+    # When on, a kiosk (non-admin) wall-panel account may assign its own currently
+    # un-scoped device to an Area via the privileged set_device_area WS command.
+    "allow_device_area_self_assign": True,
     # Icon set used by Ted's built-in icons (Status/Settings etc.). "auto" = the best
     # installed set by priority; otherwise force a specific set (falls back to mdi).
     "icon_set": "auto",

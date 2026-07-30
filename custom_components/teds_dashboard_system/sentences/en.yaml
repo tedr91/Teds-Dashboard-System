@@ -119,6 +119,42 @@ intents:
           - "(make it|turn it) {direction} by {amount} degrees[ in [the] {area}]"
           - "(make|turn) [the] {zone} thermostat {direction}[ by {amount} degrees]"
           - "turn [the] {zone} thermostat {direction}[ by {amount} degrees]"
+  TedsStartTimer:
+    data:
+      - sentences:
+          - "(set|start|create|make) a timer for [{hours} (hour|hours)] [[and] {minutes} (minute|minutes)] [[and] {seconds} (second|seconds)]"
+          - "(set|start|create|make) a [{hours} (hour|hours)] [{minutes} (minute|minutes)] [{seconds} (second|seconds)] timer"
+          - "(set|start|create|make) a timer (called|named) {name} for [{hours} (hour|hours)] [[and] {minutes} (minute|minutes)] [[and] {seconds} (second|seconds)]"
+  TedsCancelTimer:
+    data:
+      - sentences:
+          - "(cancel|stop|delete|remove|end) [the|my] timer"
+          - "(cancel|stop|delete|remove|end) [the|my] {name} timer"
+          - "(cancel|stop|delete|remove|end) [the|my] [{start_hours} (hour|hours)] [{start_minutes} (minute|minutes)] [{start_seconds} (second|seconds)] timer"
+  TedsPauseTimer:
+    data:
+      - sentences:
+          - "pause [the|my] timer"
+          - "pause [the|my] {name} timer"
+          - "pause [the|my] [{start_hours} (hour|hours)] [{start_minutes} (minute|minutes)] [{start_seconds} (second|seconds)] timer"
+  TedsResumeTimer:
+    data:
+      - sentences:
+          - "(resume|unpause|continue) [the|my] timer"
+          - "(resume|unpause|continue) [the|my] {name} timer"
+          - "(resume|unpause|continue) [the|my] [{start_hours} (hour|hours)] [{start_minutes} (minute|minutes)] [{start_seconds} (second|seconds)] timer"
+  TedsAddTime:
+    data:
+      - sentences:
+          - "add {hours} (hour|hours) to [the|my] timer"
+          - "add {minutes} (minute|minutes) to [the|my] timer"
+          - "add {seconds} (second|seconds) to [the|my] timer"
+  TedsRemoveTime:
+    data:
+      - sentences:
+          - "(remove|subtract|take) {hours} (hour|hours) (from|off) [the|my] timer"
+          - "(remove|subtract|take) {minutes} (minute|minutes) (from|off) [the|my] timer"
+          - "(remove|subtract|take) {seconds} (second|seconds) (from|off) [the|my] timer"
 lists:
   hour:
     range:
@@ -236,3 +272,33 @@ lists:
         out: "warmer"
       - in: "(cooler|colder)"
         out: "cooler"
+  hours:
+    range:
+      type: number
+      from: 0
+      to: 99
+  minutes:
+    range:
+      type: number
+      from: 0
+      to: 999
+  seconds:
+    range:
+      type: number
+      from: 0
+      to: 999
+  start_hours:
+    range:
+      type: number
+      from: 0
+      to: 99
+  start_minutes:
+    range:
+      type: number
+      from: 0
+      to: 999
+  start_seconds:
+    range:
+      type: number
+      from: 0
+      to: 999

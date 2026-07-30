@@ -15,7 +15,7 @@ from homeassistant.const import EVENT_CALL_SERVICE, Platform
 from homeassistant.core import Event, HomeAssistant, ServiceCall, callback
 from homeassistant.exceptions import Unauthorized
 import homeassistant.helpers.config_validation as cv
-from homeassistant.helpers import device_registry as dr, entity_registry as er
+from homeassistant.helpers import device_registry as dr, entity_registry as er, issue_registry as ir
 from homeassistant.helpers.event import async_track_time_change, async_track_time_interval
 from homeassistant.helpers.start import async_at_started
 from homeassistant.loader import async_get_integration
@@ -41,7 +41,6 @@ from .const import (
 from .intents import async_register_intents
 from .store import TedsManager
 from .themes import async_install_bundled_themes
-from .timer_bridge import async_setup_timer_bridge
 from .websocket import async_register as async_register_ws
 
 PLATFORMS = [Platform.SENSOR, Platform.UPDATE]
@@ -289,6 +288,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # dashboards change and periodically.
     async def _refresh_reqs(*_):
         await manager.refresh_requirements()
+        _check_unassigned_devices(hass)
 
     entry.async_on_unload(async_at_started(hass, _refresh_reqs))
     entry.async_on_unload(hass.bus.async_listen("lovelace_updated", _refresh_reqs))
@@ -305,7 +305,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     )
 
     _setup_action_nudge(hass, entry, manager)
-    async_setup_timer_bridge(hass, entry, manager)
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
@@ -378,6 +377,35 @@ def _setup_action_nudge(hass: HomeAssistant, entry: ConfigEntry, manager) -> Non
                 return  # one nudge per call is enough
 
     entry.async_on_unload(hass.bus.async_listen(EVENT_CALL_SERVICE, _on_call_service))
+
+
+@callback
+def _check_unassigned_devices(hass: HomeAssistant) -> None:
+    """Raise/clear a repair issue when Companion-app devices have no area.
+
+    Voice commands from an area-less device aren't room-aware, so surface it for admins.
+    """
+    dev_reg = dr.async_get(hass)
+    unassigned = [
+        d
+        for d in dev_reg.devices.values()
+        if d.area_id is None
+        and not d.disabled_by
+        and any(ident[0] == "mobile_app" for ident in d.identifiers)
+    ]
+    if unassigned:
+        names = ", ".join(sorted((d.name_by_user or d.name or d.id) for d in unassigned))
+        ir.async_create_issue(
+            hass,
+            DOMAIN,
+            "unassigned_mobile_app_devices",
+            is_fixable=False,
+            severity=ir.IssueSeverity.WARNING,
+            translation_key="unassigned_mobile_app_devices",
+            translation_placeholders={"count": str(len(unassigned)), "devices": names},
+        )
+    else:
+        ir.async_delete_issue(hass, DOMAIN, "unassigned_mobile_app_devices")
 
 
 async def _install_sentences(hass: HomeAssistant) -> None:

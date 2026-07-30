@@ -51,6 +51,8 @@ class TedsManager:
         self.settings: dict = {"global": {}, "devices": {}}
         # Devices that have registered themselves (device_id -> {area, name, last_seen}).
         self.device_registry: dict[str, dict] = {}
+        # HA device_ids we've already nudged once about a missing area.
+        self.area_nudged_devices: set[str] = set()
         # Server-side dependency detection results (req_id -> ok/missing/unknown).
         self.requirements: dict[str, str] = {}
         # This integration's version (from the manifest), for status displays.
@@ -76,6 +78,7 @@ class TedsManager:
             "devices": {k: dict(v) for k, v in (stored_settings.get("devices") or {}).items()},
         }
         self.device_registry = {k: dict(v) for k, v in (data.get("devices") or {}).items()}
+        self.area_nudged_devices = set(data.get("area_nudged_devices") or [])
         # Per-minute alarm check.
         self._listeners.append(async_track_time_change(self.hass, self._tick, second=0))
 
@@ -88,6 +91,7 @@ class TedsManager:
             "assist_responses": self.assist_responses,
             "settings": self.settings,
             "devices": self.device_registry,
+            "area_nudged_devices": sorted(self.area_nudged_devices),
         })
 
     def shutdown(self) -> None:
@@ -177,6 +181,14 @@ class TedsManager:
         area = ar.async_get(self.hass).async_get_area(location)
         return area.name if area else None
 
+    async def async_mark_area_nudged(self, device_id: str) -> bool:
+        """Record a one-time 'assign this device a room' nudge. True the first time."""
+        if not device_id or device_id in self.area_nudged_devices:
+            return False
+        self.area_nudged_devices.add(device_id)
+        await self._save()
+        return True
+
 
     # ── timers ──────────────────────────────────────────────
     async def start_timer(self, name, hours=0, minutes=0, seconds=0, location=None):
@@ -254,65 +266,6 @@ class TedsManager:
                     and r["s"] == seconds and r.get("location") == location)
         ]
         await self._save()
-        self._notify()
-
-    # ── mirrored (native voice) timers ──────────────────────
-    # Timers started via HA's native voice intents on a bridged Ted's Dashboard
-    # device are mirrored here as read-only "external" timers. The native timer
-    # remains the authoritative clock (so spoken add-time/cancel/pause keep working);
-    # these entries only reflect its state on the Timers view + own the finish alert.
-    def mirror_timer_started(self, native_id, name, seconds, location=None):
-        secs = max(0, int(seconds or 0))
-        ends = dt_util.utcnow() + timedelta(seconds=secs)
-        self.active[native_id] = {
-            "id": native_id, "name": name or "Timer", "ends": ends.isoformat(),
-            "duration": secs, "remaining": secs, "paused": False, "cancel": None,
-            "location": location, "external": True,
-        }
-        self._notify()
-
-    def mirror_timer_updated(self, native_id, seconds_left, paused):
-        t = self.active.get(native_id)
-        if not t:
-            return
-        secs = max(0, int(seconds_left or 0))
-        t["remaining"] = secs
-        t["paused"] = bool(paused)
-        t["ends"] = (
-            dt_util.utcnow() if paused else dt_util.utcnow() + timedelta(seconds=secs)
-        ).isoformat()
-        if secs > t.get("duration", 0):
-            t["duration"] = secs  # time was added beyond the original duration
-        self._notify()
-
-    def mirror_timer_cancelled(self, native_id):
-        if self.active.pop(native_id, None) is not None:
-            self._notify()
-
-    def mirror_timer_finished(self, native_id):
-        t = self.active.pop(native_id, None)
-        if t is None:
-            self._notify()
-            return
-        loc = t.get("location")
-        self.hass.bus.async_fire(EVENT_TIMER_FINISHED, {
-            "id": native_id,
-            "name": t["name"],
-            "duration": t.get("duration", 0),
-            "location": loc,
-            "area_name": self._area_name(loc),
-        })
-        self._add_notification(
-            title="Timer complete",
-            message=f"{t['name']} ({self._fmt_duration(t.get('duration', 0))} timer)",
-            severity="info",
-            icon="mdi:timer-check-outline",
-            area=loc,
-            timeout=60,
-            source="timer",
-            snooze={"kind": "timer", "name": t["name"], "area": loc},
-        )
-        self.hass.async_create_task(self._save())
         self._notify()
 
     @callback

@@ -51,6 +51,12 @@ frontend:
 
 ## Changelog
 
+### v0.9.22
+
+- **Voice timers own the dashboard.** "Set a timer" spoken to a Ted's Dashboard panel now creates a Ted's timer with a live countdown on the Timers view — with full voice control (cancel, pause, resume, add/remove time). Phones and other devices keep Home Assistant's native timers. (Replaces the previous experimental timer bridge.)
+- **Room‑aware setup.** An un‑scoped panel is nudged to pick a room (voice commands are area‑scoped by the device), with a one‑tap fix dialog and a privileged `set_device_area` command so even kiosk accounts can self‑assign (gated by a new setting). Admins also get a Repair listing Companion‑app devices without an area.
+- Bundles Ted's Cards v0.9.19. Pairs with Ted's Cards v0.9.19+.
+
 ### v0.9.21
 
 - **Full voice Assist support.** Adds voice commands to play music, make announcements, control the thermostat (smart heat/cool with an optional auto-on and a minimum gap between setpoints), and ask for your next alarm, running timers, or next calendar appointment — spoken answers also appear on the Assist-Response view. Timers started with Home Assistant's built-in voice now mirror onto the Timers view. New Settings → Thermostats options: voice zone names, auto turn on, and a minimum heat/cool gap. Bundles Ted's Cards v0.9.18. Pairs with Ted's Cards v0.9.18+.

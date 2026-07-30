@@ -14,5 +14,11 @@
         }
       }
     }
+  },
+  "issues": {
+    "unassigned_mobile_app_devices": {
+      "title": "Some devices aren't assigned to a room",
+      "description": "{count} Home Assistant Companion app device(s) have no area, so voice commands spoken to them won't be room-aware:\n\n{devices}\n\nAssign each to a room in Settings → Devices & Services → Devices → open the device → set its Area. Ted's voice features (thermostat, music, announcements, timers, and answers on the Assist-Response screen) use a device's area to know which room you mean."
+    }
   }
 }

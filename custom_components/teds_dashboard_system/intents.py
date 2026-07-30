@@ -45,6 +45,12 @@ from .const import (
     INTENT_READ_NOTIFICATIONS,
     INTENT_REMOVE_ALARM,
     INTENT_SET_THERMOSTAT,
+    INTENT_START_TIMER,
+    INTENT_CANCEL_TIMER,
+    INTENT_PAUSE_TIMER,
+    INTENT_RESUME_TIMER,
+    INTENT_ADD_TIME,
+    INTENT_REMOVE_TIME,
     INTENT_TIMER_STATUS,
     INTENT_WEATHER,
 )
@@ -89,6 +95,12 @@ def async_register_intents(hass: HomeAssistant) -> None:
     intent.async_register(hass, NextCalendarEventIntent())
     intent.async_register(hass, SetThermostatIntent())
     intent.async_register(hass, AdjustThermostatIntent())
+    intent.async_register(hass, StartTimerIntent())
+    intent.async_register(hass, CancelTimerIntent())
+    intent.async_register(hass, PauseTimerIntent())
+    intent.async_register(hass, ResumeTimerIntent())
+    intent.async_register(hass, AddTimeIntent())
+    intent.async_register(hass, RemoveTimeIntent())
     hass.data[_REGISTERED] = True
 
 
@@ -642,7 +654,44 @@ async def _answer(
         await mgr.assist_response(
             text, title=title, image=image, areas=[area_id], devices=[], navigate=navigate
         )
+    else:
+        await _maybe_area_nudge(hass, intent_obj)
     return _speech(intent_obj, text)
+
+
+async def _maybe_area_nudge(hass: HomeAssistant, intent_obj: intent.Intent) -> None:
+    """Once per device, nudge an un-scoped calling device to pick a room.
+
+    Fires when the request came from a real device that has no area (and none was
+    spoken/injected), so voice features can't be room-aware yet. House-wide (we
+    can't target the area we don't have); self-clears once the device is assigned.
+    """
+    mgr = _manager(hass)
+    if mgr is None:
+        return
+    device_id = intent_obj.device_id
+    if not device_id or _slot(intent_obj, "area") or _slot(intent_obj, "preferred_area_id"):
+        return
+    device = dr.async_get(hass).async_get(device_id)
+    if device is None or device.area_id:
+        return
+    if not await mgr.async_mark_area_nudged(device_id):
+        return
+    eff = mgr.effective_settings() or {}
+    root = str(eff.get("dashboard_root") or "ted-dashboard")
+    home = str(eff.get("home_dashboard") or "[root]/home-welcome").replace("[root]", root)
+    if not home.startswith("/"):
+        home = "/" + home
+    await mgr.notify(
+        "Assign this screen to a room",
+        "Voice commands here aren't room-aware yet because this device has no area. "
+        "Open the welcome screen to set it, or ask an admin to assign it in Settings.",
+        severity="info",
+        icon="mdi:map-marker-question",
+        actions=[
+            {"label": "Set the room", "action": "navigate", "navigation_path": home, "variant": "primary"}
+        ],
+    )
 
 
 def _resolve_music_player(hass: HomeAssistant, area_id: str | None) -> str | None:
@@ -780,6 +829,7 @@ class PlayMusicIntent(intent.IntentHandler):
 
     async def async_handle(self, intent_obj: intent.Intent) -> intent.IntentResponse:
         hass = intent_obj.hass
+        await _maybe_area_nudge(hass, intent_obj)
         area_id = _resolve_area(hass, intent_obj)
         player = _resolve_music_player(hass, area_id)
         if not player:
@@ -827,6 +877,7 @@ class AnnounceIntent(intent.IntentHandler):
         message = _slot(intent_obj, "message")
         if not message:
             return _speech(intent_obj, "What would you like me to announce?")
+        await _maybe_area_nudge(hass, intent_obj)
         force_all = _slot(intent_obj, "scope") == "all"
         area_id = None if force_all else _resolve_area(hass, intent_obj)
         areas = [area_id] if area_id else []
@@ -875,6 +926,9 @@ class TimerStatusIntent(intent.IntentHandler):
         mgr = _manager(hass)
         if mgr is None:
             return _speech(intent_obj, "Ted's Cards is not set up yet.")
+        # Non-Ted's devices keep native timers: report those instead.
+        if not _is_tds_voice_device(hass, mgr, intent_obj.device_id):
+            return _speech(intent_obj, _native_timer_status_speech(hass, intent_obj))
         area_id = _resolve_area(hass, intent_obj)
         timers = [t for t in mgr.active.values() if t.get("location") in (None, area_id)]
         if not timers:
@@ -964,6 +1018,7 @@ class SetThermostatIntent(intent.IntentHandler):
         mgr = _manager(hass)
         if mgr is None:
             return _speech(intent_obj, "Ted's Cards is not set up yet.")
+        await _maybe_area_nudge(hass, intent_obj)
         entity_id = resolve_climate_entity(
             hass, mgr, _slot(intent_obj, "zone"), _resolve_area(hass, intent_obj)
         )
@@ -1006,6 +1061,7 @@ class AdjustThermostatIntent(intent.IntentHandler):
         mgr = _manager(hass)
         if mgr is None:
             return _speech(intent_obj, "Ted's Cards is not set up yet.")
+        await _maybe_area_nudge(hass, intent_obj)
         entity_id = resolve_climate_entity(
             hass, mgr, _slot(intent_obj, "zone"), _resolve_area(hass, intent_obj)
         )
@@ -1018,3 +1074,288 @@ class AdjustThermostatIntent(intent.IntentHandler):
             amount=float(amount) if amount is not None else None,
         )
         return _speech(intent_obj, speech)
+
+
+# ── timers (Ted's-owned voice timers, per device) ───────────
+# Custom sentences deterministically beat the built-in Hass*Timer intents (the
+# default agent prefers custom-sentence matches). On a Ted's Dashboard panel we
+# create a Ted's timer (live countdown on the Timers view + Ted's alert); on any
+# other device we hand the same utterance back to the built-in intent so native
+# timers (with their on-device ring/notification) keep working there.
+
+_TIMER_DURATION_SLOTS = {
+    vol.Optional("hours"): vol.Coerce(int),
+    vol.Optional("minutes"): vol.Coerce(int),
+    vol.Optional("seconds"): vol.Coerce(int),
+}
+_TIMER_FIND_SLOTS = {
+    vol.Optional("name"): cv.string,
+    vol.Optional("start_hours"): vol.Coerce(int),
+    vol.Optional("start_minutes"): vol.Coerce(int),
+    vol.Optional("start_seconds"): vol.Coerce(int),
+    vol.Optional("area"): cv.string,
+    vol.Optional("preferred_area_id"): cv.string,
+}
+
+
+def _is_tds_voice_device(hass: HomeAssistant, mgr, device_id: str | None) -> bool:
+    """True when the calling device is a Ted's Dashboard panel.
+
+    A Companion-app (``mobile_app``) device counts when its area contains a
+    registered Ted's Dashboard screen — i.e. the tablet running the dashboard.
+    """
+    if not device_id or mgr is None:
+        return False
+    device = dr.async_get(hass).async_get(device_id)
+    if device is None or not device.area_id:
+        return False
+    if not any(ident[0] == "mobile_app" for ident in device.identifiers):
+        return False
+    tds_areas = {e.get("area") for e in mgr.device_registry.values() if e.get("area")}
+    return device.area_id in tds_areas
+
+
+async def _redispatch_native(
+    intent_obj: intent.Intent, native_type: str
+) -> intent.IntentResponse:
+    """Hand the utterance to a built-in HA timer intent (native behavior)."""
+    return await intent.async_handle(
+        intent_obj.hass,
+        DOMAIN,
+        native_type,
+        intent_obj.slots,
+        intent_obj.text,
+        intent_obj.context,
+        intent_obj.language,
+        device_id=intent_obj.device_id,
+    )
+
+
+def _duration_slots(intent_obj: intent.Intent) -> tuple[int, int, int]:
+    return (
+        int(_slot(intent_obj, "hours") or 0),
+        int(_slot(intent_obj, "minutes") or 0),
+        int(_slot(intent_obj, "seconds") or 0),
+    )
+
+
+def _fmt_secs(secs) -> str:
+    """Spoken duration, e.g. "1 hour 30 minutes"."""
+    secs = max(0, int(secs or 0))
+    h, m, s = secs // 3600, (secs % 3600) // 60, secs % 60
+    parts = []
+    if h:
+        parts.append(f"{h} hour" + ("s" if h != 1 else ""))
+    if m:
+        parts.append(f"{m} minute" + ("s" if m != 1 else ""))
+    if s or not parts:
+        parts.append(f"{s} second" + ("s" if s != 1 else ""))
+    return " ".join(parts)
+
+
+def _native_timer_status_speech(hass: HomeAssistant, intent_obj: intent.Intent) -> str:
+    """Summarize the built-in HA timers for this device (non-Ted's devices)."""
+    try:
+        from homeassistant.components.intent.const import TIMER_DATA
+    except ImportError:  # pragma: no cover - defensive
+        return "You have no active timers."
+    manager = hass.data.get(TIMER_DATA)
+    device_id = intent_obj.device_id
+    timers = [
+        t
+        for t in (getattr(manager, "timers", {}) or {}).values()
+        if (not device_id) or t.device_id == device_id
+    ]
+    if not timers:
+        return "You have no active timers."
+    parts = []
+    for t in sorted(timers, key=lambda x: x.seconds_left):
+        state = "" if t.is_active else " (paused)"
+        parts.append(f"{t.name or 'Timer'} with {_fmt_secs(t.seconds_left)} left{state}")
+    count = len(timers)
+    noun = "timer" if count == 1 else "timers"
+    return f"You have {count} {noun}: " + "; ".join(parts) + "."
+
+
+def _find_ted_timers(mgr, intent_obj: intent.Intent, area_id, paused=None) -> list[dict]:
+    """Ted's active timers in scope, optionally filtered by name/start-time/paused."""
+    timers = [t for t in mgr.active.values() if t.get("location") in (None, area_id)]
+    if paused is not None:
+        timers = [t for t in timers if bool(t.get("paused")) == paused]
+    name = _slot(intent_obj, "name")
+    if name:
+        wanted = str(name).casefold()
+        timers = [t for t in timers if wanted in (t.get("name") or "").casefold()]
+    sh = _slot(intent_obj, "start_hours")
+    sm = _slot(intent_obj, "start_minutes")
+    ss = _slot(intent_obj, "start_seconds")
+    if sh is not None or sm is not None or ss is not None:
+        total = int(sh or 0) * 3600 + int(sm or 0) * 60 + int(ss or 0)
+        timers = [t for t in timers if t.get("duration") == total]
+    return timers
+
+
+def _pick_ted_timer(mgr, intent_obj: intent.Intent, area_id, paused=None):
+    """Return (timer, error_speech). error_speech set on 0 or >1 matches."""
+    matches = _find_ted_timers(mgr, intent_obj, area_id, paused=paused)
+    if not matches:
+        return None, "I couldn't find that timer."
+    if len(matches) > 1:
+        return None, f"You have {len(matches)} timers running — please be more specific."
+    return matches[0], None
+
+
+class StartTimerIntent(intent.IntentHandler):
+    """Start a countdown timer (Ted's on a panel, native elsewhere)."""
+
+    intent_type = INTENT_START_TIMER
+    description = "Start a countdown timer in Ted's Cards"
+    slot_schema = {**_TIMER_DURATION_SLOTS, vol.Optional("name"): cv.string, **_AREA_SLOTS}
+
+    async def async_handle(self, intent_obj: intent.Intent) -> intent.IntentResponse:
+        hass = intent_obj.hass
+        mgr = _manager(hass)
+        if mgr is None:
+            return _speech(intent_obj, "Ted's Cards is not set up yet.")
+        h, m, s = _duration_slots(intent_obj)
+        if not _is_tds_voice_device(hass, mgr, intent_obj.device_id):
+            response = await _redispatch_native(intent_obj, "HassStartTimer")
+            if not response.speech:
+                response.async_set_speech(f"Timer set for {_fmt_secs(h * 3600 + m * 60 + s)}.")
+            return response
+        if h == 0 and m == 0 and s == 0:
+            return _speech(intent_obj, "How long should the timer run?")
+        name = _slot(intent_obj, "name") or f"{_fmt_secs(h * 3600 + m * 60 + s)} timer"
+        area_id = _resolve_area(hass, intent_obj)
+        await mgr.start_timer(str(name), h, m, s, location=area_id)
+        _fire_navigate(hass, "timers_dashboard", area_id, intent_obj.device_id)
+        return _speech(intent_obj, f"Timer set for {_fmt_secs(h * 3600 + m * 60 + s)}.")
+
+
+class CancelTimerIntent(intent.IntentHandler):
+    """Cancel a running timer."""
+
+    intent_type = INTENT_CANCEL_TIMER
+    description = "Cancel a running timer in Ted's Cards"
+    slot_schema = {**_TIMER_FIND_SLOTS}
+
+    async def async_handle(self, intent_obj: intent.Intent) -> intent.IntentResponse:
+        hass = intent_obj.hass
+        mgr = _manager(hass)
+        if mgr is None:
+            return _speech(intent_obj, "Ted's Cards is not set up yet.")
+        if not _is_tds_voice_device(hass, mgr, intent_obj.device_id):
+            response = await _redispatch_native(intent_obj, "HassCancelTimer")
+            if not response.speech:
+                response.async_set_speech("Timer cancelled.")
+            return response
+        timer, err = _pick_ted_timer(mgr, intent_obj, _resolve_area(hass, intent_obj))
+        if err:
+            return _speech(intent_obj, err)
+        mgr.cancel_timer(timer["id"])
+        return _speech(intent_obj, "Timer cancelled.")
+
+
+class PauseTimerIntent(intent.IntentHandler):
+    """Pause a running timer."""
+
+    intent_type = INTENT_PAUSE_TIMER
+    description = "Pause a running timer in Ted's Cards"
+    slot_schema = {**_TIMER_FIND_SLOTS}
+
+    async def async_handle(self, intent_obj: intent.Intent) -> intent.IntentResponse:
+        hass = intent_obj.hass
+        mgr = _manager(hass)
+        if mgr is None:
+            return _speech(intent_obj, "Ted's Cards is not set up yet.")
+        if not _is_tds_voice_device(hass, mgr, intent_obj.device_id):
+            response = await _redispatch_native(intent_obj, "HassPauseTimer")
+            if not response.speech:
+                response.async_set_speech("Timer paused.")
+            return response
+        timer, err = _pick_ted_timer(mgr, intent_obj, _resolve_area(hass, intent_obj), paused=False)
+        if err:
+            return _speech(intent_obj, err)
+        mgr.pause_timer(timer["id"])
+        return _speech(intent_obj, "Timer paused.")
+
+
+class ResumeTimerIntent(intent.IntentHandler):
+    """Resume a paused timer."""
+
+    intent_type = INTENT_RESUME_TIMER
+    description = "Resume a paused timer in Ted's Cards"
+    slot_schema = {**_TIMER_FIND_SLOTS}
+
+    async def async_handle(self, intent_obj: intent.Intent) -> intent.IntentResponse:
+        hass = intent_obj.hass
+        mgr = _manager(hass)
+        if mgr is None:
+            return _speech(intent_obj, "Ted's Cards is not set up yet.")
+        if not _is_tds_voice_device(hass, mgr, intent_obj.device_id):
+            response = await _redispatch_native(intent_obj, "HassUnpauseTimer")
+            if not response.speech:
+                response.async_set_speech("Timer resumed.")
+            return response
+        timer, err = _pick_ted_timer(mgr, intent_obj, _resolve_area(hass, intent_obj), paused=True)
+        if err:
+            return _speech(intent_obj, err)
+        mgr.resume_timer(timer["id"])
+        return _speech(intent_obj, "Timer resumed.")
+
+
+class AddTimeIntent(intent.IntentHandler):
+    """Add time to a running timer."""
+
+    intent_type = INTENT_ADD_TIME
+    description = "Add time to a running timer in Ted's Cards"
+    slot_schema = {**_TIMER_DURATION_SLOTS, **_TIMER_FIND_SLOTS}
+
+    async def async_handle(self, intent_obj: intent.Intent) -> intent.IntentResponse:
+        hass = intent_obj.hass
+        mgr = _manager(hass)
+        if mgr is None:
+            return _speech(intent_obj, "Ted's Cards is not set up yet.")
+        h, m, s = _duration_slots(intent_obj)
+        delta = h * 3600 + m * 60 + s
+        if not _is_tds_voice_device(hass, mgr, intent_obj.device_id):
+            response = await _redispatch_native(intent_obj, "HassIncreaseTimer")
+            if not response.speech:
+                response.async_set_speech(f"Added {_fmt_secs(delta)} to the timer.")
+            return response
+        timer, err = _pick_ted_timer(mgr, intent_obj, _resolve_area(hass, intent_obj))
+        if err:
+            return _speech(intent_obj, err)
+        new_total = _remaining_secs(timer) + delta
+        mgr.update_timer(timer["id"], seconds=new_total)
+        return _speech(intent_obj, f"Added {_fmt_secs(delta)} to the timer.")
+
+
+class RemoveTimeIntent(intent.IntentHandler):
+    """Remove time from a running timer."""
+
+    intent_type = INTENT_REMOVE_TIME
+    description = "Remove time from a running timer in Ted's Cards"
+    slot_schema = {**_TIMER_DURATION_SLOTS, **_TIMER_FIND_SLOTS}
+
+    async def async_handle(self, intent_obj: intent.Intent) -> intent.IntentResponse:
+        hass = intent_obj.hass
+        mgr = _manager(hass)
+        if mgr is None:
+            return _speech(intent_obj, "Ted's Cards is not set up yet.")
+        h, m, s = _duration_slots(intent_obj)
+        delta = h * 3600 + m * 60 + s
+        if not _is_tds_voice_device(hass, mgr, intent_obj.device_id):
+            response = await _redispatch_native(intent_obj, "HassDecreaseTimer")
+            if not response.speech:
+                response.async_set_speech(f"Removed {_fmt_secs(delta)} from the timer.")
+            return response
+        timer, err = _pick_ted_timer(mgr, intent_obj, _resolve_area(hass, intent_obj))
+        if err:
+            return _speech(intent_obj, err)
+        new_total = _remaining_secs(timer) - delta
+        if new_total <= 0:
+            mgr.cancel_timer(timer["id"])
+            return _speech(intent_obj, "That leaves no time, so I cancelled the timer.")
+        mgr.update_timer(timer["id"], seconds=new_total)
+        return _speech(intent_obj, f"Removed {_fmt_secs(delta)} from the timer.")

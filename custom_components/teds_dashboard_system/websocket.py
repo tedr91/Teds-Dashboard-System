@@ -17,6 +17,7 @@ import voluptuous as vol
 from homeassistant.components import websocket_api
 from homeassistant.core import Event, HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError
+from homeassistant.helpers import area_registry as ar, device_registry as dr
 
 from .bing_photos import (
     clear_bing_cache,
@@ -76,7 +77,51 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, handle_media_folder)
     websocket_api.async_register_command(hass, handle_list_dashboard_views)
     websocket_api.async_register_command(hass, handle_create_ma_player)
+    websocket_api.async_register_command(hass, handle_set_device_area)
     hass.data[_REGISTERED] = True
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): f"{DOMAIN}/set_device_area",
+        vol.Required("device_id"): str,
+        vol.Required("area_id"): vol.Any(None, str),
+    }
+)
+@websocket_api.async_response
+async def handle_set_device_area(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict
+) -> None:
+    """Assign an HA device to an area on behalf of the frontend.
+
+    Admins may set any device. Non-admin (kiosk/wall-panel) users may only set a
+    device that currently has NO area, and only when the `allow_device_area_self_assign`
+    setting is on — so a panel can fix its own missing room but can't reassign
+    already-configured devices.
+    """
+    dev_reg = dr.async_get(hass)
+    device = dev_reg.async_get(msg["device_id"])
+    if device is None:
+        connection.send_error(msg["id"], "not_found", "Device not found")
+        return
+    is_admin = bool(connection.user and connection.user.is_admin)
+    if not is_admin:
+        mgr = _manager(hass)
+        allowed = bool(
+            mgr and mgr.effective_settings().get("allow_device_area_self_assign", True)
+        )
+        if not allowed:
+            connection.send_error(msg["id"], "unauthorized", "Self-assignment is disabled")
+            return
+        if device.area_id:
+            connection.send_error(msg["id"], "unauthorized", "Device already has an area")
+            return
+    area_id = msg["area_id"]
+    if area_id and ar.async_get(hass).async_get_area(area_id) is None:
+        connection.send_error(msg["id"], "not_found", "Area not found")
+        return
+    dev_reg.async_update_device(msg["device_id"], area_id=area_id)
+    connection.send_result(msg["id"], {"success": True})
 
 
 @websocket_api.websocket_command(
