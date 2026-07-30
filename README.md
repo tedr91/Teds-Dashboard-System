@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.30
+
+- Bundles Ted's Cards v0.9.27 — the navbar's sections and items are now editable in **Settings → Navbar → Navbar sections** (with a default that matches the dashboard's existing bar), and vertical navbars self-heal the first-load overflow collapse. Adds the `navbar_sections` setting default. Pairs with Ted's Cards v0.9.27+.
+
 ### v0.9.29
 
 - Bundles Ted's Cards v0.9.26 — the navbar **Float** mode now works on **Left/Right** (vertical) bars: a floating side bar detaches from the edge with rounded corners, centers along its height, and hugs its content. Pairs with Ted's Cards v0.9.26+.

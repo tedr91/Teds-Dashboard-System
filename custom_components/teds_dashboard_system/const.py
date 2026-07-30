@@ -145,6 +145,41 @@ SETTINGS_DEFAULTS = {
     "navbar_size": 48,
     # Custom navbar hold-menu items: list of {name, icon?, tap_action}.
     "navbar_menu_items": [],
+    # The navbar's five positional sections + their items (status items + buttons).
+    # Pre-populated to match the bar Ted's Dashboard ships with (0=weather, 1/2/3 empty
+    # [2 = View Launcher target], 4=assist/timers/alarms/datetime/notifications) so a
+    # dashboard-integrated navbar with no YAML `sections` renders it out of the box and
+    # every piece is editable in Settings -> Navbar. Must match the frontend
+    # DEFAULT_NAVBAR_SECTIONS in settings-schema.ts.
+    "navbar_sections": [
+        {
+            "items": [
+                {
+                    "type": "weather",
+                    "tap_action": {"action": "navigate-dashboard", "dashboard": "weather_dashboard"},
+                }
+            ]
+        },
+        {"items": []},
+        {"items": []},
+        {"items": []},
+        {
+            "items": [
+                {"type": "assist"},
+                {"type": "timers"},
+                {"type": "alarms"},
+                {
+                    "type": "datetime",
+                    "display": "both-stacked",
+                    "date_format": "MMMM D",
+                    "time_format": "h:MM a",
+                    "tap_action": {"action": "navigate-dashboard", "dashboard": "calendar_dashboard"},
+                    "hold_action": {"action": "navigate-dashboard", "dashboard": "alarms_dashboard"},
+                },
+                {"type": "notifications"},
+            ]
+        },
+    ],
     # View Launcher — auto-discovered, Settings-driven navbar buttons that navigate to the
     # dashboard's views (shown on navbars with `dashboard_integration: true`).
     "launcher_enabled": True,
