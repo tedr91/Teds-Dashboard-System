@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.32
+
+- Bundles Ted's Cards v0.9.29 — vertical navbar layout fixes (floating side bars hug content + center vertically; snap side bars restored to full-height spread) and the Nightstand device type trims the navbar to Home/Music/Alarms-Timers + Center section. Pairs with Ted's Cards v0.9.29+.
+
 ### v0.9.31
 
 - Bundles Ted's Cards v0.9.28 — vertical (left/right) navbars now center their item cluster vertically on the screen. Pairs with Ted's Cards v0.9.28+.
