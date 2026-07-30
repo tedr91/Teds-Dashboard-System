@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.24
+
+- Improves the "Assign devices to a room" dialog: a non-admin (kiosk) account now sees only the current screen's device, while admins see the current device pinned to the top with a clear "This device" badge and highlight. Bundles Ted's Cards v0.9.21. Pairs with Ted's Cards v0.9.21+.
+
 ### v0.9.23
 
 - Fixes a false "Assign this screen to a room" prompt that could appear on panels already assigned to a room (it was triggered by other unassigned devices). The prompt is now scoped to this panel's own device, and the fix dialog marks this screen. Bundles Ted's Cards v0.9.20. Pairs with Ted's Cards v0.9.20+.
