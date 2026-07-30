@@ -1101,15 +1101,17 @@ _TIMER_FIND_SLOTS = {
 def _is_tds_voice_device(hass: HomeAssistant, mgr, device_id: str | None) -> bool:
     """True when the calling device is a Ted's Dashboard panel.
 
-    A Companion-app (``mobile_app``) device counts when its area contains a
-    registered Ted's Dashboard screen — i.e. the tablet running the dashboard.
+    A panel is identified by a ``mobile_app`` (Companion app) OR ``browser_mod``
+    (dashboard webview) device whose area contains a registered Ted's Dashboard
+    screen. The browser_mod case covers the in-dashboard voice satellite, where the
+    request is attributed to the panel's own dashboard device.
     """
     if not device_id or mgr is None:
         return False
     device = dr.async_get(hass).async_get(device_id)
     if device is None or not device.area_id:
         return False
-    if not any(ident[0] == "mobile_app" for ident in device.identifiers):
+    if not any(ident[0] in ("mobile_app", "browser_mod") for ident in device.identifiers):
         return False
     tds_areas = {e.get("area") for e in mgr.device_registry.values() if e.get("area")}
     return device.area_id in tds_areas

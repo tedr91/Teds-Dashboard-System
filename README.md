@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.26
+
+- Voice Assist fixes. Recognizes the dashboard (`browser_mod`) device as a Ted's voice satellite, so voice timers create a Ted's timer on the panel instead of erroring. Bundles Ted's Cards v0.9.23 — voice requests now carry the panel's device id (room-aware "show the cameras" navigation, correct room, timers), a listening chime, a single accumulating conversation box, a longer on-screen linger past the spoken answer, and every answer mirrored to the Assist-Response view.
+
 ### v0.9.25
 
 - Bundles Ted's Cards v0.9.22 — browser-based voice Assist: a device runs the Home Assistant Assist pipeline in the dashboard with a self-dismissing voice overlay (push-to-talk mic button + experimental continuous wake word), replacing the Companion app's native Assist dialog. New Voice settings group. Requires the dashboard served over HTTPS (browser microphone requirement). Pairs with Ted's Dashboard v0.9.7+ (navbar mic button).
