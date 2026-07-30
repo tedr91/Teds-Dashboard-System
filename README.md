@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.23
+
+- Fixes a false "Assign this screen to a room" prompt that could appear on panels already assigned to a room (it was triggered by other unassigned devices). The prompt is now scoped to this panel's own device, and the fix dialog marks this screen. Bundles Ted's Cards v0.9.20. Pairs with Ted's Cards v0.9.20+.
+
 ### v0.9.22
 
 - **Voice timers own the dashboard.** "Set a timer" spoken to a Ted's Dashboard panel now creates a Ted's timer with a live countdown on the Timers view — with full voice control (cancel, pause, resume, add/remove time). Phones and other devices keep Home Assistant's native timers. (Replaces the previous experimental timer bridge.)
