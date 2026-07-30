@@ -22,6 +22,7 @@ from .const import (
     EVENT_NOTIFICATION,
     EVENT_SETTINGS,
     EVENT_TIMER_FINISHED,
+    ASSIST_HISTORY_MAX,
     NOTIFICATIONS_MAX,
     RECENT_ANNOUNCEMENTS_MAX,
     RECENT_TIMERS_MAX,
@@ -47,6 +48,9 @@ class TedsManager:
         # Latest Assist-Response answer per target key ("device:<id>" / "area:<id>" /
         # "house") so a reloaded / late-joining screen can restore its current content.
         self.assist_responses: dict[str, dict] = {}
+        # Rolling conversation history per target key (oldest-first) for scroll-back on
+        # the Assist-Response view. Bounded to the most recent ASSIST_HISTORY_MAX entries.
+        self.assist_history: dict[str, list[dict]] = {}
         # Settings: global baseline + per-device overrides (only overridden keys stored).
         self.settings: dict = {"global": {}, "devices": {}}
         # Devices that have registered themselves (device_id -> {area, name, last_seen}).
@@ -72,6 +76,9 @@ class TedsManager:
         self.notifications = data.get("notifications", [])
         self.recent_announcements = data.get("recent_announcements", [])
         self.assist_responses = dict(data.get("assist_responses") or {})
+        self.assist_history = {
+            k: list(v) for k, v in (data.get("assist_history") or {}).items()
+        }
         stored_settings = data.get("settings") or {}
         self.settings = {
             "global": dict(stored_settings.get("global") or {}),
@@ -89,6 +96,7 @@ class TedsManager:
             "notifications": self.notifications,
             "recent_announcements": self.recent_announcements,
             "assist_responses": self.assist_responses,
+            "assist_history": self.assist_history,
             "settings": self.settings,
             "devices": self.device_registry,
             "area_nudged_devices": sorted(self.area_nudged_devices),
@@ -550,7 +558,7 @@ class TedsManager:
 
     # ── assist responses ────────────────────────────────────
     async def assist_response(self, message, title=None, image=None, areas=None,
-                              devices=None, navigate=True):
+                              devices=None, navigate=True, question=None):
         """Push a text answer to the targeted Assist-Response screens.
 
         Mirrors View Assist's "Info" view: an automation / voice pipeline calls this
@@ -567,16 +575,22 @@ class TedsManager:
         item = {
             "id": uuid.uuid4().hex,
             "title": (title or "").strip() or None,
+            "question": (question or "").strip() or None,
             "message": message,
             "image": image or None,
             "areas": areas,
             "devices": devices,
             "ts": dt_util.utcnow().isoformat(),
         }
-        # Store latest per target key (house-wide when no targets) for reload/late-join.
+        # Store latest per target key (house-wide when no targets) for reload/late-join,
+        # and append to that key's bounded conversation history for scroll-back.
         keys = [f"device:{d}" for d in devices] + [f"area:{a}" for a in areas] or ["house"]
         for key in keys:
             self.assist_responses[key] = item
+            hist = self.assist_history.setdefault(key, [])
+            hist.append(item)
+            if len(hist) > ASSIST_HISTORY_MAX:
+                del hist[: len(hist) - ASSIST_HISTORY_MAX]
         # Live push — each subscribed card filters by its own device/area.
         self.hass.bus.async_fire(EVENT_ASSIST_RESPONSE, item)
         # Reuse the existing navigation signal to switch explicit targets to the view.

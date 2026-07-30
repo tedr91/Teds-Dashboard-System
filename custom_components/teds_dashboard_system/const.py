@@ -14,6 +14,9 @@ RECENT_ANNOUNCEMENTS_MAX = 10
 # How many notifications to keep in the store (FIFO, newest kept).
 NOTIFICATIONS_MAX = 50
 
+# How many Assist-Response answers to keep per target for conversation scroll-back.
+ASSIST_HISTORY_MAX = 20
+
 EVENT_ALARM_RINGING = f"{DOMAIN}_alarm_ringing"
 EVENT_TIMER_FINISHED = f"{DOMAIN}_timer_finished"
 EVENT_NOTIFICATION = f"{DOMAIN}_notification"

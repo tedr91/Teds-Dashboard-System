@@ -137,6 +137,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             call.data["message"], title=call.data.get("title"),
             image=call.data.get("image"), areas=call.data.get("areas"),
             devices=call.data.get("devices"), navigate=call.data.get("navigate", True),
+            question=call.data.get("question"),
         )
 
     async def _require_admin_for_global(call: ServiceCall) -> None:
@@ -252,6 +253,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.services.async_register(DOMAIN, "assist_response", assist_response, schema=vol.Schema({
         vol.Required("message"): cv.string, vol.Optional("title"): vol.Any(None, cv.string),
         vol.Optional("image"): vol.Any(None, cv.string),
+        vol.Optional("question"): vol.Any(None, cv.string),
         vol.Optional("areas"): [cv.string], vol.Optional("devices"): [cv.string],
         vol.Optional("navigate"): cv.boolean}))
     hass.services.async_register(DOMAIN, "set_setting", set_setting, schema=vol.Schema({

@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.27
+
+- Assist-Response conversation history. Persists a rolling per-device/area conversation (last 20 turns, with the recognized question) and exposes it so the Assist-Response view can scroll back through past answers. Bundles Ted's Cards v0.9.24 (scroll-back conversation log).
+
 ### v0.9.26
 
 - Voice Assist fixes. Recognizes the dashboard (`browser_mod`) device as a Ted's voice satellite, so voice timers create a Ted's timer on the panel instead of erroring. Bundles Ted's Cards v0.9.23 — voice requests now carry the panel's device id (room-aware "show the cameras" navigation, correct room, timers), a listening chime, a single accumulating conversation box, a longer on-screen linger past the spoken answer, and every answer mirrored to the Assist-Response view.

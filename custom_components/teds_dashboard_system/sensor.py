@@ -113,7 +113,10 @@ class TedsAssistResponsesSensor(_Base):
 
     @property
     def extra_state_attributes(self):
-        return {"responses": {k: dict(v) for k, v in self._m.assist_responses.items()}}
+        return {
+            "responses": {k: dict(v) for k, v in self._m.assist_responses.items()},
+            "history": {k: [dict(i) for i in v] for k, v in self._m.assist_history.items()},
+        }
 
 
 class TedsSettingsSensor(_Base):
