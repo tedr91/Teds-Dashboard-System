@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.31
+
+- Bundles Ted's Cards v0.9.28 — vertical (left/right) navbars now center their item cluster vertically on the screen. Pairs with Ted's Cards v0.9.28+.
+
 ### v0.9.30
 
 - Bundles Ted's Cards v0.9.27 — the navbar's sections and items are now editable in **Settings → Navbar → Navbar sections** (with a default that matches the dashboard's existing bar), and vertical navbars self-heal the first-load overflow collapse. Adds the `navbar_sections` setting default. Pairs with Ted's Cards v0.9.27+.
