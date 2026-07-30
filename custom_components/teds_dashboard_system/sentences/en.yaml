@@ -65,6 +65,60 @@ intents:
           - "is it (sunny|raining|snowing|cloudy) [right now][ in {area}]"
           - "(what's|what is) the (temp|temperature) outside [in {area}]"
           - "how (hot|cold|warm) is it outside [in {area}]"
+  TedsPlayMusic:
+    data:
+      - sentences:
+          - "(play|start|put on|resume) [some] music[ in [the] {area}]"
+          - "(play|start|put on) {query}"
+  TedsAnnounce:
+    data:
+      - sentences:
+          - "announce {message}"
+          - "(broadcast|make an announcement saying|make an announcement that) {message}"
+          - "announce {scope} {message}"
+  TedsNextAlarm:
+    data:
+      - sentences:
+          - "when('s| is) my next alarm"
+          - "what('s| is) my next alarm"
+          - "when('s| is) the next alarm[ in [the] {area}]"
+          - "what time is my next alarm"
+          - "do i have an alarm coming up"
+  TedsTimerStatus:
+    data:
+      - sentences:
+          - "(what|which) timers (are|do i have) (set|running|active)"
+          - "what timers are (set|running|active)[ in [the] {area}]"
+          - "how (long|much time) (is|do i have) left on (my|the) timer"
+          - "do i have any timers (running|set|active)"
+          - "(list|show|check) [me] [my] timers"
+  TedsNextCalendarEvent:
+    data:
+      - sentences:
+          - "what('s| is) my next (appointment|event|meeting)"
+          - "when('s| is) my next (appointment|event|meeting)"
+          - "what('s| is) (next|coming up) on (my|the) calendar"
+          - "what('s| is) on my (calendar|schedule|agenda) next"
+          - "do i have (anything|any events|any appointments) coming up"
+  TedsSetThermostat:
+    data:
+      - sentences:
+          - "set [the] {zone} thermostat to {temperature} [degrees]"
+          - "set [the] {zone} thermostat to {hvac_mode} [mode]"
+          - "set [the] {zone} thermostat to [the] {preset} preset"
+          - "set [the] thermostat to {temperature} [degrees][ in [the] {area}]"
+          - "set [the] thermostat to {hvac_mode} [mode]"
+          - "set [the] thermostat to [the] {preset} preset"
+          - "set [the] temperature to {temperature} [degrees][ in [the] {area}]"
+          - "(change|put) [the] temperature to {temperature} [degrees][ in [the] {area}]"
+          - "make it {temperature} degrees[ in [the] {area}]"
+  TedsAdjustThermostat:
+    data:
+      - sentences:
+          - "(make it|turn it) {direction}[ in [the] {area}]"
+          - "(make it|turn it) {direction} by {amount} degrees[ in [the] {area}]"
+          - "(make|turn) [the] {zone} thermostat {direction}[ by {amount} degrees]"
+          - "turn [the] {zone} thermostat {direction}[ by {amount} degrees]"
 lists:
   hour:
     range:
@@ -118,6 +172,8 @@ lists:
         out: "all"
       - in: "(whole home|whole house|unscoped)"
         out: "all"
+      - in: "(to everyone|to everybody|to the whole house|to all rooms)"
+        out: "all"
   view:
     values:
       - in: "(cameras|camera|cams|cam|security cameras|feeds|feed)"
@@ -132,5 +188,51 @@ lists:
         out: "calendar"
       - in: "(home|home screen|home page|main screen)"
         out: "home"
+      - in: "(photos|photo|pictures|picture|photo album|gallery)"
+        out: "photos"
+      - in: "(settings|preferences|options|configuration|config)"
+        out: "settings"
+      - in: "(notifications|notification|alerts)"
+        out: "notifications"
+      - in: "(alarms|alarm)"
+        out: "alarms"
+      - in: "(timers|timer)"
+        out: "timers"
   name:
     wildcard: true
+  query:
+    wildcard: true
+  message:
+    wildcard: true
+  zone:
+    wildcard: true
+  temperature:
+    range:
+      type: number
+      from: 1
+      to: 99
+  amount:
+    range:
+      type: number
+      from: 1
+      to: 20
+  hvac_mode:
+    values:
+      - in: "(heat|heating)"
+        out: "heat"
+      - in: "(cool|cooling|ac|air conditioning)"
+        out: "cool"
+      - in: "(auto|automatic)"
+        out: "auto"
+      - in: "(heat cool|heat and cool|heat-cool|both)"
+        out: "heat_cool"
+      - in: "off"
+        out: "off"
+  preset:
+    wildcard: true
+  direction:
+    values:
+      - in: "(warmer|hotter)"
+        out: "warmer"
+      - in: "(cooler|colder)"
+        out: "cooler"

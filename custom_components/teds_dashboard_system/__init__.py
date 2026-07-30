@@ -22,6 +22,7 @@ from homeassistant.loader import async_get_integration
 
 from .bing_photos import cache_has_images as bing_cache_has_images, fetch_and_cache_bing
 from .cards import async_setup_cards, async_unload_cards
+from .climate import apply_climate, resolve_climate_entity
 from .dashboard import (
     async_install_dashboard,
     async_remove_dashboard_files,
@@ -40,6 +41,7 @@ from .const import (
 from .intents import async_register_intents
 from .store import TedsManager
 from .themes import async_install_bundled_themes
+from .timer_bridge import async_setup_timer_bridge
 from .websocket import async_register as async_register_ws
 
 PLATFORMS = [Platform.SENSOR, Platform.UPDATE]
@@ -189,6 +191,26 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             location=call.data.get("location"), _set_location=("location" in call.data),
         )
 
+    async def apply_climate_service(call: ServiceCall):
+        """Run the smart climate logic (shared by voice intents + prompt buttons)."""
+        entity_id = call.data.get("entity_id")
+        if not entity_id:
+            entity_id = resolve_climate_entity(
+                hass, manager, call.data.get("zone"), call.data.get("area")
+            )
+        if not entity_id:
+            return
+        await apply_climate(
+            hass, manager, entity_id=entity_id,
+            kind=call.data.get("kind", "absolute"),
+            temperature=call.data.get("temperature"),
+            amount=call.data.get("amount"),
+            direction=call.data.get("direction"),
+            hvac_mode=call.data.get("hvac_mode"),
+            preset=call.data.get("preset"),
+            force_on=call.data.get("force_on", False),
+        )
+
     hass.services.async_register(DOMAIN, "add_alarm", add_alarm, schema=vol.Schema({
         vol.Required("label"): cv.string, vol.Required("time"): cv.string,
         vol.Optional("days"): [int], vol.Optional("description"): cv.string, vol.Optional("enabled"): cv.boolean,
@@ -253,6 +275,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     hass.services.async_register(DOMAIN, "check_requirements", check_requirements, schema=vol.Schema({}))
 
+    hass.services.async_register(DOMAIN, "apply_climate", apply_climate_service, schema=vol.Schema({
+        vol.Optional("entity_id"): cv.entity_id, vol.Optional("zone"): cv.string,
+        vol.Optional("area"): vol.Any(None, cv.string),
+        vol.Optional("kind"): vol.In(["absolute", "relative", "mode", "preset"]),
+        vol.Optional("temperature"): vol.Coerce(float), vol.Optional("amount"): vol.Coerce(float),
+        vol.Optional("direction"): vol.In(["warmer", "cooler"]),
+        vol.Optional("hvac_mode"): cv.string, vol.Optional("preset"): cv.string,
+        vol.Optional("force_on"): cv.boolean}))
+
     # Detect optional dependencies server-side. Run once HA has fully started (so
     # all integrations + Lovelace resources are loaded), then re-check when the
     # dashboards change and periodically.
@@ -274,6 +305,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     )
 
     _setup_action_nudge(hass, entry, manager)
+    async_setup_timer_bridge(hass, entry, manager)
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True

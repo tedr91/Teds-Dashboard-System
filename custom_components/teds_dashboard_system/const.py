@@ -34,6 +34,13 @@ INTENT_CLEAR_NOTIFICATIONS = "TedsClearNotifications"
 INTENT_MARK_NOTIFICATIONS_READ = "TedsMarkNotificationsRead"
 INTENT_NAVIGATE = "TedsNavigate"
 INTENT_WEATHER = "TedsWeather"
+INTENT_PLAY_MUSIC = "TedsPlayMusic"
+INTENT_ANNOUNCE = "TedsAnnounce"
+INTENT_NEXT_ALARM = "TedsNextAlarm"
+INTENT_TIMER_STATUS = "TedsTimerStatus"
+INTENT_NEXT_EVENT = "TedsNextCalendarEvent"
+INTENT_SET_THERMOSTAT = "TedsSetThermostat"
+INTENT_ADJUST_THERMOSTAT = "TedsAdjustThermostat"
 
 # Sentinel meaning "use the bundled default sound for this alert kind".
 DEFAULT_SOUND = "default"
@@ -55,6 +62,9 @@ SETTINGS_DEFAULTS = {
     "timer_alert_sound": DEFAULT_SOUND,
     "timer_alert_volume": 60,
     "timer_alert_repeat": True,
+    # Bridge native HA voice timers into Ted's timers on registered Ted's Dashboard
+    # devices (so "set a timer" spoken to a Ted's screen shows on the Timers view).
+    "timer_bridge_enabled": True,
     # Alarms
     "alarm_snooze_enabled": True,
     "alarm_snooze_minutes": 9,
@@ -93,6 +103,14 @@ SETTINGS_DEFAULTS = {
     "climate_list": [],
     # How this device arranges its thermostats on the Climate view (auto/tabbed/vertical/horizontal).
     "climate_layout": "auto",
+    # Voice climate control — friendly-name -> climate entity mappings for spoken zones
+    # (e.g. {"name": "First Floor", "entity": "climate.zone_1"}). Global list.
+    "climate_aliases": [],
+    # When a spoken climate request targets a thermostat that is off, turn it on
+    # automatically instead of prompting first.
+    "climate_auto_on": False,
+    # Minimum gap (degrees) kept between the heat and cool setpoints in heat_cool/auto.
+    "climate_min_delta": 5,
     # Calendars — ordered list of calendar entity ids. Global = the available allow-list;
     # per-device = the curated subset that device shows (empty inherits the global list).
     "calendars_list": [],
@@ -245,6 +263,8 @@ SETTINGS_DEFAULTS = {
     "photos_dashboard": "[root]/photos",
     "assist_response_dashboard": "[root]/assist-response",
     "announce_dashboard": "[root]/announce",
+    "notifications_dashboard": "[root]/notifications",
+    "settings_dashboard": "[root]/settings",
     "auto_return_home_after": 0,
     # When true, a voice-driven climate/music action nudges this device's screen to the
     # matching view (Climate/Music) via the navigation signal (server-side, area-scoped).

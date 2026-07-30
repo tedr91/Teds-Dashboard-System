@@ -13,27 +13,39 @@ conversation agent auto-loads).
 
 from __future__ import annotations
 
+from datetime import datetime, timedelta
+
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import (
     area_registry as ar,
     config_validation as cv,
     device_registry as dr,
+    entity_registry as er,
     intent,
 )
+from homeassistant.util import dt as dt_util
 import voluptuous as vol
 
+from .climate import apply_climate, resolve_climate_entity
 from .const import (
     DOMAIN,
     EVENT_NAVIGATE,
     INTENT_ADD_ALARM,
+    INTENT_ADJUST_THERMOSTAT,
+    INTENT_ANNOUNCE,
     INTENT_CLEAR_NOTIFICATIONS,
     INTENT_DISABLE_ALARM,
     INTENT_ENABLE_ALARM,
     INTENT_LIST_ALARMS,
     INTENT_MARK_NOTIFICATIONS_READ,
     INTENT_NAVIGATE,
+    INTENT_NEXT_ALARM,
+    INTENT_NEXT_EVENT,
+    INTENT_PLAY_MUSIC,
     INTENT_READ_NOTIFICATIONS,
     INTENT_REMOVE_ALARM,
+    INTENT_SET_THERMOSTAT,
+    INTENT_TIMER_STATUS,
     INTENT_WEATHER,
 )
 
@@ -70,6 +82,13 @@ def async_register_intents(hass: HomeAssistant) -> None:
     intent.async_register(hass, MarkNotificationsReadIntent())
     intent.async_register(hass, NavigateIntent())
     intent.async_register(hass, WeatherIntent())
+    intent.async_register(hass, PlayMusicIntent())
+    intent.async_register(hass, AnnounceIntent())
+    intent.async_register(hass, NextAlarmIntent())
+    intent.async_register(hass, TimerStatusIntent())
+    intent.async_register(hass, NextCalendarEventIntent())
+    intent.async_register(hass, SetThermostatIntent())
+    intent.async_register(hass, AdjustThermostatIntent())
     hass.data[_REGISTERED] = True
 
 
@@ -236,6 +255,11 @@ _VIEW_TO_DASHBOARD = {
     "music": "music_dashboard",
     "calendar": "calendar_dashboard",
     "home": "home_dashboard",
+    "photos": "photos_dashboard",
+    "alarms": "alarms_dashboard",
+    "timers": "timers_dashboard",
+    "notifications": "notifications_dashboard",
+    "settings": "settings_dashboard",
 }
 
 
@@ -340,7 +364,7 @@ class ListAlarmsIntent(intent.IntentHandler):
             if a.get("location") in (None, area_id)
         ]
         if not alarms:
-            return _speech(intent_obj, "You have no alarms set.")
+            return await _answer(hass, intent_obj, "You have no alarms set.", title="Alarms")
 
         alarms.sort(key=lambda a: (not a.get("enabled"), a.get("time") or ""))
         parts = []
@@ -352,7 +376,8 @@ class ListAlarmsIntent(intent.IntentHandler):
             )
         count = len(alarms)
         noun = "alarm" if count == 1 else "alarms"
-        return _speech(intent_obj, f"You have {count} {noun}: " + "; ".join(parts) + ".")
+        text = f"You have {count} {noun}: " + "; ".join(parts) + "."
+        return await _answer(hass, intent_obj, text, title="Alarms")
 
 
 class SetAlarmEnabledIntent(intent.IntentHandler):
@@ -457,7 +482,7 @@ class ReadNotificationsIntent(intent.IntentHandler):
         area_id = _resolve_area(hass, intent_obj)
         items = _notifications_for_area(mgr, area_id)
         if not items:
-            return _speech(intent_obj, "You have no notifications.")
+            return await _answer(hass, intent_obj, "You have no notifications.", title="Notifications")
 
         parts = []
         for n in items:
@@ -469,7 +494,8 @@ class ReadNotificationsIntent(intent.IntentHandler):
                 parts.append(title or message)
         count = len(items)
         noun = "notification" if count == 1 else "notifications"
-        return _speech(intent_obj, f"You have {count} {noun}. " + ". ".join(parts) + ".")
+        text = f"You have {count} {noun}. " + ". ".join(parts) + "."
+        return await _answer(hass, intent_obj, text, title="Notifications")
 
 
 class ClearNotificationsIntent(intent.IntentHandler):
@@ -590,3 +616,405 @@ class WeatherIntent(intent.IntentHandler):
         if temp is not None:
             return _speech(intent_obj, f"It's currently {condition}, {temp}{unit}.")
         return _speech(intent_obj, f"It's currently {condition}.")
+
+
+# ── shared helpers for the new intents ────────────────────
+
+
+async def _answer(
+    hass: HomeAssistant,
+    intent_obj: intent.Intent,
+    text: str,
+    *,
+    title: str | None = None,
+    image: str | None = None,
+    navigate: bool = True,
+) -> intent.IntentResponse:
+    """Speak `text` AND mirror it onto the caller's Assist-Response screen.
+
+    Targets the caller's area (the Assist-Response card matches by area); when no
+    area can be resolved we just speak. `navigate` switches that area's screen to
+    the Assist-Response view.
+    """
+    mgr = _manager(hass)
+    area_id = _resolve_area(hass, intent_obj)
+    if mgr is not None and area_id:
+        await mgr.assist_response(
+            text, title=title, image=image, areas=[area_id], devices=[], navigate=navigate
+        )
+    return _speech(intent_obj, text)
+
+
+def _resolve_music_player(hass: HomeAssistant, area_id: str | None) -> str | None:
+    """Find a Music Assistant media_player for the area (else any MA player)."""
+    ent_reg = er.async_get(hass)
+    dev_reg = dr.async_get(hass)
+    ma_players: list[tuple[str, object]] = []
+    for state in hass.states.async_all("media_player"):
+        entry = ent_reg.async_get(state.entity_id)
+        if entry and entry.platform == "music_assistant":
+            ma_players.append((state.entity_id, entry))
+    if not ma_players:
+        return None
+    if area_id:
+        for entity_id, entry in ma_players:
+            area = entry.area_id
+            if area is None and entry.device_id:
+                device = dev_reg.async_get(entry.device_id)
+                area = device.area_id if device else None
+            if area == area_id:
+                return entity_id
+    return ma_players[0][0]
+
+
+def _norm_mode(spoken: str | None) -> str | None:
+    """Normalize a spoken HVAC mode to a canonical value (e.g. 'heat and cool')."""
+    if not spoken:
+        return None
+    token = str(spoken).strip().casefold()
+    token = token.replace(" and ", "_").replace(" ", "_").replace("-", "_")
+    return token or None
+
+
+def _next_alarm_dt(alarm: dict, now: datetime) -> datetime | None:
+    """Next future firing datetime for an alarm (None if it never fires)."""
+    raw = alarm.get("time") or ""
+    try:
+        hh, mm = (int(x) for x in raw.split(":"))
+    except (ValueError, AttributeError):
+        return None
+    days = alarm.get("days") or []
+    for offset in range(0, 8):
+        day = now + timedelta(days=offset)
+        if days and day.weekday() not in days:
+            continue
+        candidate = day.replace(hour=hh, minute=mm, second=0, microsecond=0)
+        if candidate <= now:
+            continue
+        return candidate
+    return None
+
+
+def _next_alarm(hass: HomeAssistant, mgr, area_id: str | None):
+    """Return (alarm, when) for the soonest enabled alarm in scope, or None."""
+    now = dt_util.now()
+    best = None
+    for alarm in mgr.alarms:
+        if not alarm.get("enabled"):
+            continue
+        if alarm.get("location") not in (None, area_id):
+            continue
+        when = _next_alarm_dt(alarm, now)
+        if when is None:
+            continue
+        if best is None or when < best[1]:
+            best = (alarm, when)
+    return best
+
+
+def _remaining_secs(timer: dict) -> int:
+    """Seconds left on an active/mirrored timer."""
+    if timer.get("paused"):
+        return int(timer.get("remaining", 0) or 0)
+    ends = dt_util.parse_datetime(timer.get("ends") or "")
+    if ends is None:
+        return int(timer.get("remaining", 0) or 0)
+    return max(0, int((ends - dt_util.utcnow()).total_seconds()))
+
+
+def _calendar_entities(hass: HomeAssistant, mgr) -> list[str]:
+    """The configured calendars (calendars_list) else every calendar.* entity."""
+    chosen = (mgr.effective_settings() or {}).get("calendars_list") or []
+    if chosen:
+        return [e for e in chosen if hass.states.get(e)]
+    return [s.entity_id for s in hass.states.async_all("calendar")]
+
+
+def _parse_event_start(raw) -> tuple[datetime | None, bool]:
+    """Parse a calendar event 'start' into (datetime, all_day)."""
+    if isinstance(raw, dict):
+        raw = raw.get("dateTime") or raw.get("date")
+    if not isinstance(raw, str) or not raw:
+        return None, False
+    if "T" in raw:
+        parsed = dt_util.parse_datetime(raw)
+        if parsed is not None and parsed.tzinfo is None:
+            parsed = dt_util.as_local(parsed)
+        return parsed, False
+    day = dt_util.parse_date(raw)
+    if day is None:
+        return None, False
+    return dt_util.start_of_local_day(datetime(day.year, day.month, day.day)), True
+
+
+def _describe_when(when: datetime, now: datetime, include_time: bool = True) -> str:
+    """Human phrase for an upcoming datetime relative to now (both local-aware)."""
+    day_diff = (when.date() - now.date()).days
+    if day_diff == 0:
+        base = "today"
+    elif day_diff == 1:
+        base = "tomorrow"
+    elif 2 <= day_diff <= 6:
+        base = f"on {when.strftime('%A')}"
+    else:
+        base = f"on {when.strftime('%A, %B ')}{when.day}"
+    if include_time:
+        return f"{base} at {_spoken_time(when.strftime('%H:%M'))}"
+    return base
+
+
+# ── music intent ──────────────────────────────────
+
+
+class PlayMusicIntent(intent.IntentHandler):
+    """Play music (optionally a spoken search) on the area's Music Assistant player."""
+
+    intent_type = INTENT_PLAY_MUSIC
+    description = "Play music in Ted's Cards, optionally a song, artist, album, or playlist"
+    slot_schema = {
+        vol.Optional(
+            "query", description="What to play: a song, artist, album, or playlist"
+        ): cv.string,
+        **_AREA_SLOTS,
+    }
+
+    async def async_handle(self, intent_obj: intent.Intent) -> intent.IntentResponse:
+        hass = intent_obj.hass
+        area_id = _resolve_area(hass, intent_obj)
+        player = _resolve_music_player(hass, area_id)
+        if not player:
+            return _speech(intent_obj, "I couldn't find a Music Assistant player to play on.")
+        query = _slot(intent_obj, "query")
+        if query:
+            if not hass.services.has_service("music_assistant", "play_media"):
+                return _speech(
+                    intent_obj, "Music Assistant isn't set up, so I can't search for that."
+                )
+            await hass.services.async_call(
+                "music_assistant", "play_media",
+                {"entity_id": player, "media_id": str(query), "enqueue": "replace"},
+                blocking=True,
+            )
+        else:
+            await hass.services.async_call(
+                "media_player", "media_play", {"entity_id": player}, blocking=True
+            )
+        _fire_navigate(hass, "music_dashboard", area_id, intent_obj.device_id)
+        return _speech(intent_obj, f"Playing {query}." if query else "Playing music.")
+
+
+# ── announce intent ────────────────────────────────
+
+
+class AnnounceIntent(intent.IntentHandler):
+    """Broadcast a spoken announcement to Ted's Dashboard devices."""
+
+    intent_type = INTENT_ANNOUNCE
+    description = "Broadcast a spoken announcement to Ted's Dashboard devices"
+    slot_schema = {
+        vol.Required("message", description="The announcement to speak"): cv.string,
+        vol.Optional(
+            "scope", description="Set to 'all' to announce house-wide"
+        ): vol.In(["all"]),
+        **_AREA_SLOTS,
+    }
+
+    async def async_handle(self, intent_obj: intent.Intent) -> intent.IntentResponse:
+        hass = intent_obj.hass
+        mgr = _manager(hass)
+        if mgr is None:
+            return _speech(intent_obj, "Ted's Cards is not set up yet.")
+        message = _slot(intent_obj, "message")
+        if not message:
+            return _speech(intent_obj, "What would you like me to announce?")
+        force_all = _slot(intent_obj, "scope") == "all"
+        area_id = None if force_all else _resolve_area(hass, intent_obj)
+        areas = [area_id] if area_id else []
+        await mgr.announce(str(message), areas=areas)
+        if area_id and (area := ar.async_get(hass).async_get_area(area_id)):
+            return _speech(intent_obj, f"Announcing in {area.name}.")
+        return _speech(intent_obj, "Announcing.")
+
+
+# ── status query intents ─────────────────────────────
+
+
+class NextAlarmIntent(intent.IntentHandler):
+    """Say when the next alarm is scheduled (and show it on the Assist-Response view)."""
+
+    intent_type = INTENT_NEXT_ALARM
+    description = "Say when the next alarm is scheduled in Ted's Cards"
+    slot_schema = {**_AREA_SLOTS}
+
+    async def async_handle(self, intent_obj: intent.Intent) -> intent.IntentResponse:
+        hass = intent_obj.hass
+        mgr = _manager(hass)
+        if mgr is None:
+            return _speech(intent_obj, "Ted's Cards is not set up yet.")
+        area_id = _resolve_area(hass, intent_obj)
+        found = _next_alarm(hass, mgr, area_id)
+        if not found:
+            return await _answer(
+                hass, intent_obj, "You have no upcoming alarms.", title="Next alarm"
+            )
+        alarm, when = found
+        label = alarm.get("label") or "Alarm"
+        text = f"Your next alarm, {label}, is {_describe_when(when, dt_util.now())}."
+        return await _answer(hass, intent_obj, text, title="Next alarm")
+
+
+class TimerStatusIntent(intent.IntentHandler):
+    """Report the active timers for this area (plus house-wide)."""
+
+    intent_type = INTENT_TIMER_STATUS
+    description = "Report the active timers in Ted's Cards"
+    slot_schema = {**_AREA_SLOTS}
+
+    async def async_handle(self, intent_obj: intent.Intent) -> intent.IntentResponse:
+        hass = intent_obj.hass
+        mgr = _manager(hass)
+        if mgr is None:
+            return _speech(intent_obj, "Ted's Cards is not set up yet.")
+        area_id = _resolve_area(hass, intent_obj)
+        timers = [t for t in mgr.active.values() if t.get("location") in (None, area_id)]
+        if not timers:
+            return await _answer(hass, intent_obj, "You have no active timers.", title="Timers")
+        parts = []
+        for timer in sorted(timers, key=_remaining_secs):
+            left = mgr._fmt_duration(_remaining_secs(timer))
+            state = " (paused)" if timer.get("paused") else ""
+            parts.append(f"{timer.get('name') or 'Timer'} with {left} left{state}")
+        count = len(timers)
+        noun = "timer" if count == 1 else "timers"
+        text = f"You have {count} {noun}: " + "; ".join(parts) + "."
+        return await _answer(hass, intent_obj, text, title="Timers")
+
+
+class NextCalendarEventIntent(intent.IntentHandler):
+    """Say the next upcoming calendar event across the configured calendars."""
+
+    intent_type = INTENT_NEXT_EVENT
+    description = "Say the next calendar event or appointment in Ted's Cards"
+    slot_schema = {**_AREA_SLOTS}
+
+    async def async_handle(self, intent_obj: intent.Intent) -> intent.IntentResponse:
+        hass = intent_obj.hass
+        mgr = _manager(hass)
+        if mgr is None:
+            return _speech(intent_obj, "Ted's Cards is not set up yet.")
+        calendars = _calendar_entities(hass, mgr)
+        if not calendars:
+            return _speech(intent_obj, "You don't have any calendars set up.")
+        now = dt_util.now()
+        try:
+            response = await hass.services.async_call(
+                "calendar", "get_events",
+                {
+                    "entity_id": calendars,
+                    "start_date_time": now.isoformat(),
+                    "end_date_time": (now + timedelta(days=30)).isoformat(),
+                },
+                blocking=True, return_response=True,
+            )
+        except Exception:  # noqa: BLE001 - calendar backends can raise; degrade gracefully
+            return _speech(intent_obj, "I couldn't read your calendars right now.")
+        best = None
+        for data in (response or {}).values():
+            for event in ((data or {}).get("events") or []):
+                start, all_day = _parse_event_start(event.get("start"))
+                if start is None or start < now:
+                    continue
+                if best is None or start < best[0]:
+                    best = (start, all_day, event)
+        if best is None:
+            return await _answer(
+                hass, intent_obj, "You have no upcoming events.", title="Next appointment"
+            )
+        start, all_day, event = best
+        summary = (event.get("summary") or "an event").strip()
+        when = _describe_when(start, now, include_time=not all_day)
+        text = f"Your next appointment is {summary}, {when}."
+        return await _answer(hass, intent_obj, text, title="Next appointment")
+
+
+# ── thermostat intents ──────────────────────────────
+
+
+class SetThermostatIntent(intent.IntentHandler):
+    """Set a thermostat's temperature, HVAC mode, or preset (smart logic in climate.py)."""
+
+    intent_type = INTENT_SET_THERMOSTAT
+    description = "Set a thermostat's temperature, mode, or preset in Ted's Cards"
+    slot_schema = {
+        vol.Optional(
+            "temperature", description="Target temperature in degrees"
+        ): vol.Coerce(float),
+        vol.Optional(
+            "hvac_mode", description="heat, cool, auto, heat_cool, or off"
+        ): cv.string,
+        vol.Optional(
+            "preset", description="A preset such as eco, away, home, sleep, or boost"
+        ): cv.string,
+        vol.Optional("zone", description="Which thermostat, zone, or room"): cv.string,
+        **_AREA_SLOTS,
+    }
+
+    async def async_handle(self, intent_obj: intent.Intent) -> intent.IntentResponse:
+        hass = intent_obj.hass
+        mgr = _manager(hass)
+        if mgr is None:
+            return _speech(intent_obj, "Ted's Cards is not set up yet.")
+        entity_id = resolve_climate_entity(
+            hass, mgr, _slot(intent_obj, "zone"), _resolve_area(hass, intent_obj)
+        )
+        if not entity_id:
+            return _speech(intent_obj, "I couldn't find that thermostat.")
+        mode = _norm_mode(_slot(intent_obj, "hvac_mode"))
+        preset = _slot(intent_obj, "preset")
+        temperature = _slot(intent_obj, "temperature")
+        if mode:
+            speech = await apply_climate(hass, mgr, entity_id=entity_id, kind="mode", hvac_mode=mode)
+        elif preset:
+            speech = await apply_climate(
+                hass, mgr, entity_id=entity_id, kind="preset", preset=str(preset)
+            )
+        elif temperature is not None:
+            speech = await apply_climate(
+                hass, mgr, entity_id=entity_id, kind="absolute", temperature=float(temperature)
+            )
+        else:
+            return _speech(intent_obj, "What would you like to set the thermostat to?")
+        return _speech(intent_obj, speech)
+
+
+class AdjustThermostatIntent(intent.IntentHandler):
+    """Make a thermostat warmer or cooler by an optional amount (smart logic in climate.py)."""
+
+    intent_type = INTENT_ADJUST_THERMOSTAT
+    description = "Make a thermostat warmer or cooler in Ted's Cards"
+    slot_schema = {
+        vol.Required("direction", description="warmer or cooler"): vol.In(["warmer", "cooler"]),
+        vol.Optional(
+            "amount", description="How many degrees to change by"
+        ): vol.Coerce(float),
+        vol.Optional("zone", description="Which thermostat, zone, or room"): cv.string,
+        **_AREA_SLOTS,
+    }
+
+    async def async_handle(self, intent_obj: intent.Intent) -> intent.IntentResponse:
+        hass = intent_obj.hass
+        mgr = _manager(hass)
+        if mgr is None:
+            return _speech(intent_obj, "Ted's Cards is not set up yet.")
+        entity_id = resolve_climate_entity(
+            hass, mgr, _slot(intent_obj, "zone"), _resolve_area(hass, intent_obj)
+        )
+        if not entity_id:
+            return _speech(intent_obj, "I couldn't find that thermostat.")
+        amount = _slot(intent_obj, "amount")
+        speech = await apply_climate(
+            hass, mgr, entity_id=entity_id, kind="relative",
+            direction=str(_slot(intent_obj, "direction") or "warmer"),
+            amount=float(amount) if amount is not None else None,
+        )
+        return _speech(intent_obj, speech)

@@ -256,6 +256,65 @@ class TedsManager:
         await self._save()
         self._notify()
 
+    # ── mirrored (native voice) timers ──────────────────────
+    # Timers started via HA's native voice intents on a bridged Ted's Dashboard
+    # device are mirrored here as read-only "external" timers. The native timer
+    # remains the authoritative clock (so spoken add-time/cancel/pause keep working);
+    # these entries only reflect its state on the Timers view + own the finish alert.
+    def mirror_timer_started(self, native_id, name, seconds, location=None):
+        secs = max(0, int(seconds or 0))
+        ends = dt_util.utcnow() + timedelta(seconds=secs)
+        self.active[native_id] = {
+            "id": native_id, "name": name or "Timer", "ends": ends.isoformat(),
+            "duration": secs, "remaining": secs, "paused": False, "cancel": None,
+            "location": location, "external": True,
+        }
+        self._notify()
+
+    def mirror_timer_updated(self, native_id, seconds_left, paused):
+        t = self.active.get(native_id)
+        if not t:
+            return
+        secs = max(0, int(seconds_left or 0))
+        t["remaining"] = secs
+        t["paused"] = bool(paused)
+        t["ends"] = (
+            dt_util.utcnow() if paused else dt_util.utcnow() + timedelta(seconds=secs)
+        ).isoformat()
+        if secs > t.get("duration", 0):
+            t["duration"] = secs  # time was added beyond the original duration
+        self._notify()
+
+    def mirror_timer_cancelled(self, native_id):
+        if self.active.pop(native_id, None) is not None:
+            self._notify()
+
+    def mirror_timer_finished(self, native_id):
+        t = self.active.pop(native_id, None)
+        if t is None:
+            self._notify()
+            return
+        loc = t.get("location")
+        self.hass.bus.async_fire(EVENT_TIMER_FINISHED, {
+            "id": native_id,
+            "name": t["name"],
+            "duration": t.get("duration", 0),
+            "location": loc,
+            "area_name": self._area_name(loc),
+        })
+        self._add_notification(
+            title="Timer complete",
+            message=f"{t['name']} ({self._fmt_duration(t.get('duration', 0))} timer)",
+            severity="info",
+            icon="mdi:timer-check-outline",
+            area=loc,
+            timeout=60,
+            source="timer",
+            snooze={"kind": "timer", "name": t["name"], "area": loc},
+        )
+        self.hass.async_create_task(self._save())
+        self._notify()
+
     @callback
     def _on_elapsed(self, tid, _now=None):
         """Timer duration elapsed — runs in the event loop (via HassJob callback)."""

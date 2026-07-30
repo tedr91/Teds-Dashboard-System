@@ -132,6 +132,24 @@ check_requirements:
   name: Check requirements
   description: Re-run server-side detection of optional dependencies (updates sensor.teds_requirements).
 
+apply_climate:
+  name: Apply climate request
+  description: >-
+    Run Ted's smart thermostat logic (used by the voice intents and the on-screen
+    prompt buttons). Resolves setpoints for single or heat/cool range thermostats,
+    can turn an off thermostat on, and honors the climate_min_delta setting.
+  fields:
+    entity_id: { selector: { entity: { domain: climate } } }
+    zone: { selector: { text: {} } }
+    area: { selector: { area: {} } }
+    kind: { selector: { select: { options: ["absolute", "relative", "mode", "preset"] } } }
+    temperature: { selector: { number: { min: 1, max: 99, step: 0.5, mode: box } } }
+    amount: { selector: { number: { min: 1, max: 20, step: 0.5, mode: box } } }
+    direction: { selector: { select: { options: ["warmer", "cooler"] } } }
+    hvac_mode: { selector: { text: {} } }
+    preset: { selector: { text: {} } }
+    force_on: { selector: { boolean: {} } }
+
 dashboard_customize_view:
   name: Customize dashboard view
   description: Fork a shipped Ted's Dashboard view into your overrides folder so you can edit it (it then stops receiving upstream updates).
