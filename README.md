@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.25
+
+- Bundles Ted's Cards v0.9.22 — browser-based voice Assist: a device runs the Home Assistant Assist pipeline in the dashboard with a self-dismissing voice overlay (push-to-talk mic button + experimental continuous wake word), replacing the Companion app's native Assist dialog. New Voice settings group. Requires the dashboard served over HTTPS (browser microphone requirement). Pairs with Ted's Dashboard v0.9.7+ (navbar mic button).
+
 ### v0.9.24
 
 - Improves the "Assign devices to a room" dialog: a non-admin (kiosk) account now sees only the current screen's device, while admins see the current device pinned to the top with a clear "This device" badge and highlight. Bundles Ted's Cards v0.9.21. Pairs with Ted's Cards v0.9.21+.

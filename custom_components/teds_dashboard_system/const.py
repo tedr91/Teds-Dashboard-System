@@ -189,6 +189,11 @@ SETTINGS_DEFAULTS = {
     # When on, a kiosk (non-admin) wall-panel account may assign its own currently
     # un-scoped device to an Area via the privileged set_device_area WS command.
     "allow_device_area_self_assign": True,
+    # Voice — the browser-based Assist satellite (Ted's Cards runs the HA pipeline in
+    # the dashboard webview so TDS owns the voice UI). Requires the page over HTTPS.
+    "assist_button_enabled": True,
+    "continuous_wakeword_enabled": False,
+    "voice_pipeline": "",
     # Icon set used by Ted's built-in icons (Status/Settings etc.). "auto" = the best
     # installed set by priority; otherwise force a specific set (falls back to mdi).
     "icon_set": "auto",
