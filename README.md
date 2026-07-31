@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.44
+
+- Bundles Ted's Cards v0.9.41 — vision trigger actions reworked into four fixed on/off sections (Display live feed, Toast, Push, Custom). Backend now skips vision actions whose section is toggled off.
+
 ### v0.9.43
 
 - Bundles Ted's Cards v0.9.40 — Vision “Additional actions” reworked into consistent collapsible lists (type chosen from the “+” popup; Toast/Live feed target areas, Push targets notify services by friendly name, Custom adds Automation/Script/Scene/Action). Empty target list means everywhere. Backend action dispatch updated to match.

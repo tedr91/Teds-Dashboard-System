@@ -468,6 +468,8 @@ class VisionEngine:
         message = event["short_summary"] or "Camera event detected."
         notif_sev = _SEVERITY_TO_NOTIF.get(event["severity"], "info")
         for act in trigger.get("actions") or []:
+            if not (act or {}).get("enabled", True):
+                continue
             atype = (act or {}).get("type")
             try:
                 if atype == "toast":
