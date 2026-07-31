@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.40
+
+- Bundles Ted's Cards v0.9.37 — consistent collapsible-section headers across Settings (section icon + name on the left; count pill, icon-only action buttons, chevron, and delete “X” on the right), applied to the Cameras/Calendars/Thermostats lists, the per-camera Vision triggers/actions, and the Announce Predefined messages.
+
 ### v0.9.39
 
 - **Vision Analysis rebuilt around per-camera triggers.** Each camera is configured inline in the Cameras list with a list of triggers (detection type + a multi-select severity filter + cooldown), and each trigger runs its own actions — Toast notification, Push notification, Display live feed, or a Custom action — only when the analyzed severity matches. Bundles Ted's Cards v0.9.36.

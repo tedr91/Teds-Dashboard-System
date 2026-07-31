@@ -3550,7 +3550,7 @@ const e="ted",t="__tedDefineGuardInstalled__",i=`${e}-`;if("undefined"!=typeof c
           ${n?this._renderOverflowCell(t,i.length,o,r,c[o]):Z}
         </div>
       </div>
-    `}_photoPlacement(){const e=this._config?.photo_placement;return"fill"===e||"below_header"===e?e:"top"}_resolvePhotoUrl(){const e=this._config;if(!e)return;if("custom"===e.photo_source)return e.photo_url||void 0;const t=e.photo&&"auto"!==e.photo?e.photo:function(e){if(!e)return;const t=e.toLowerCase();return t.includes("bath")?"bathroom":t.includes("bed")?"bedroom":t.includes("kitchen")?"kitchen":t.includes("living")?"living_room":t.includes("dining")?"dining_room":t.includes("office")?"office":t.includes("media")||t.includes("theater")||t.includes("theatre")||t.includes("cinema")?"media_room":t.includes("family")?"family_room":t.includes("bonus")?"bonus_room":void 0}(e.name||this._areaName());if(!t)return;const i=Ts[t];return i?function(e){return"https://cdn.jsdelivr.net/gh/tedr91/Teds-Cards@v0.9.36/images/room-header-photos/"+encodeURIComponent(e)}(i):void 0}_edgeGradientCss(e){const t=[];return e.includes("top")&&t.push("linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0) 48%)"),e.includes("bottom")&&t.push("linear-gradient(to top, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0) 48%)"),e.includes("left")&&t.push("linear-gradient(to right, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0) 48%)"),e.includes("right")&&t.push("linear-gradient(to left, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0) 48%)"),t.join(", ")}_renderPhoto(){const e=this._config;if(!e||!1===e.show_photo)return Z;const t="camera"===e.photo_source,i=t?void 0:this._resolvePhotoUrl();if(t?!e.photo_camera_entity:!i||this._photoError)return Z;const a=this._photoPlacement(),s="number"==typeof e.photo_opacity?e.photo_opacity:100,o="top"===e.photo_align||"bottom"===e.photo_align?e.photo_align:"center",n="number"==typeof e.photo_height?e.photo_height:"fill"===a?void 0:132,r=0===n?void 0:n,l=e.photo_edge_gradient??Hs(a),c="fill"===a||"number"==typeof r,d=Array.isArray(e.photo_state_entity)?e.photo_state_entity:e.photo_state_entity?[e.photo_state_entity]:[],h=d.length>0&&d.every(e=>{const t=this.hass?.states[e];return!t||Ls.has(String(t.state).toLowerCase())}),u="number"==typeof e.photo_off_opacity?e.photo_off_opacity:25,p=h?u:s,m=h&&!0===e.photo_off_grayscale,_={};"fill"===a?_.inset="0":(_.left="0",_.right="0",_.top="below_header"===a?`${this._headerBottom+this._cardGap()}px`:"0","number"==typeof r&&(_.height=`${r}px`));const g={opacity:String(p/100),objectPosition:`center ${o}`};d.length>0&&(g.filter=m?"grayscale(1)":"none",g.transition="opacity 0.4s ease, filter 0.4s ease"),c?(g.height="100%",g.objectFit="cover"):g.height="auto";const f=this._edgeGradientCss(l);return W`
+    `}_photoPlacement(){const e=this._config?.photo_placement;return"fill"===e||"below_header"===e?e:"top"}_resolvePhotoUrl(){const e=this._config;if(!e)return;if("custom"===e.photo_source)return e.photo_url||void 0;const t=e.photo&&"auto"!==e.photo?e.photo:function(e){if(!e)return;const t=e.toLowerCase();return t.includes("bath")?"bathroom":t.includes("bed")?"bedroom":t.includes("kitchen")?"kitchen":t.includes("living")?"living_room":t.includes("dining")?"dining_room":t.includes("office")?"office":t.includes("media")||t.includes("theater")||t.includes("theatre")||t.includes("cinema")?"media_room":t.includes("family")?"family_room":t.includes("bonus")?"bonus_room":void 0}(e.name||this._areaName());if(!t)return;const i=Ts[t];return i?function(e){return"https://cdn.jsdelivr.net/gh/tedr91/Teds-Cards@v0.9.37/images/room-header-photos/"+encodeURIComponent(e)}(i):void 0}_edgeGradientCss(e){const t=[];return e.includes("top")&&t.push("linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0) 48%)"),e.includes("bottom")&&t.push("linear-gradient(to top, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0) 48%)"),e.includes("left")&&t.push("linear-gradient(to right, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0) 48%)"),e.includes("right")&&t.push("linear-gradient(to left, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0) 48%)"),t.join(", ")}_renderPhoto(){const e=this._config;if(!e||!1===e.show_photo)return Z;const t="camera"===e.photo_source,i=t?void 0:this._resolvePhotoUrl();if(t?!e.photo_camera_entity:!i||this._photoError)return Z;const a=this._photoPlacement(),s="number"==typeof e.photo_opacity?e.photo_opacity:100,o="top"===e.photo_align||"bottom"===e.photo_align?e.photo_align:"center",n="number"==typeof e.photo_height?e.photo_height:"fill"===a?void 0:132,r=0===n?void 0:n,l=e.photo_edge_gradient??Hs(a),c="fill"===a||"number"==typeof r,d=Array.isArray(e.photo_state_entity)?e.photo_state_entity:e.photo_state_entity?[e.photo_state_entity]:[],h=d.length>0&&d.every(e=>{const t=this.hass?.states[e];return!t||Ls.has(String(t.state).toLowerCase())}),u="number"==typeof e.photo_off_opacity?e.photo_off_opacity:25,p=h?u:s,m=h&&!0===e.photo_off_grayscale,_={};"fill"===a?_.inset="0":(_.left="0",_.right="0",_.top="below_header"===a?`${this._headerBottom+this._cardGap()}px`:"0","number"==typeof r&&(_.height=`${r}px`));const g={opacity:String(p/100),objectPosition:`center ${o}`};d.length>0&&(g.filter=m?"grayscale(1)":"none",g.transition="opacity 0.4s ease, filter 0.4s ease"),c?(g.height="100%",g.objectFit="cover"):g.height="auto";const f=this._edgeGradientCss(l);return W`
       <div class="room-photo" style=${$e(_)} aria-hidden="true">
         ${t?this._renderPhotoCamera(e,p,m,d.length>0,c):W`<img src=${i} alt="" style=${$e(g)} @error=${this._onPhotoError} @load=${this._onPhotoLoad} />`}
         ${f?W`<div class="photo-scrim" style=${$e({background:f})}></div>`:Z}
@@ -9121,7 +9121,7 @@ const e="ted",t="__tedDefineGuardInstalled__",i=`${e}-`;if("undefined"!=typeof c
         color: var(--ted-style-muted, var(--secondary-text-color));
         font-size: 0.9em;
       }
-    `],a([_e({attribute:!1})],ll.prototype,"hass",void 0),a([_e({attribute:!1})],ll.prototype,"layout",void 0),a([ge()],ll.prototype,"_config",void 0),a([ge()],ll.prototype,"_maximized",void 0),ll=a([ue(sa)],ll);const cl=["background_mode","background_scroll","background_size","background_align","background_repeat","background_color","background_gradient","background_image","background_recent_images","background_album","background_folder","background_type_pref","background_shuffle","background_cycle_minutes","background_bing_cache_size","background_enhance_readability","background_readability_strength","background_brightness"],dl=[{value:"solid",label:"Solid Color"},{value:"image",label:"Single Image"},{value:"slideshow",label:"Slideshow"},{value:"theme",label:"HA Theme"}],hl=[{value:"original",label:"Original"},{value:"fill",label:"Fill view"},{value:"fit",label:"Fit view"}],ul=[{value:"top-left",label:"Top left"},{value:"top-center",label:"Top center"},{value:"top-right",label:"Top right"},{value:"center-left",label:"Center left"},{value:"center",label:"Center"},{value:"center-right",label:"Center right"},{value:"bottom-left",label:"Bottom left"},{value:"bottom-center",label:"Bottom center"},{value:"bottom-right",label:"Bottom right"}],pl=[{value:"tile",label:"Tile"},{value:"no-repeat",label:"No repeat"}],ml=[{value:"builtin",label:"Built-in"},{value:"folder",label:"Select media folder"},{value:"bing_pod",label:"Bing Photo of the Day"},{value:"favorites",label:"Favorites"}],_l=[{value:"match",label:"On"},{value:"all",label:"Off"},{value:"light",label:"Force Light"},{value:"dark",label:"Force Dark"}];function gl(e,t){return t?`linear-gradient(145deg, ${e} 0%, color-mix(in srgb, ${e} 74%, #000) 45%, color-mix(in srgb, ${e} 48%, #000) 100%)`:e}function fl(e){return Array.isArray(e)?e.filter(e=>"string"==typeof e):[]}function bl(e,t,i,a=0){const s=e.background_mode??"solid";if("theme"===s)return null;const o=Math.max(0,Math.min(1,a)),n=o>0?`linear-gradient(rgba(0,0,0,${o}),rgba(0,0,0,${o}))`:"",r=e.background_size??"fill",l=e.background_align??"center",c=e.background_repeat??"tile",d=function(e){return e?"scroll":"fixed"}(!0===e.background_scroll),h=function(e){const[t,i]=e.split("-");return`${i??"center"} ${t}`}(l),u="original"===r?function(e){return"tile"===e?"repeat":"no-repeat"}(c):"no-repeat",p=function(e){return"fill"===e?"cover":"fit"===e?"contain":"auto"}(r);if("solid"===s){const t="string"==typeof e.background_color?e.background_color:"#57608E";return{image:`${n?`${n}, `:""}${gl(t,!1!==e.background_gradient)}`,size:"auto",position:"center center",repeat:"no-repeat",attachment:d,color:t}}if(!t)return{image:n||"none",size:p,position:h,repeat:u,attachment:d,color:"transparent"};return{image:`${n?`${n}, `:""}${i?`linear-gradient(rgba(${i.color},${i.opacity}),rgba(${i.color},${i.opacity})), `:""}url("${m=t,m.replace(/["\\]/g,"\\$&")}")`,size:p,position:h,repeat:u,attachment:d,color:"transparent"};var m}const vl=32,yl=new Map,wl=new Map;function xl(e){const t=yl.get(e);if(void 0!==t)return Promise.resolve(t);const i=wl.get(e);if(i)return i;const a=async function(e){try{const t=new Image;t.crossOrigin="anonymous",t.decoding="async",t.src=e,await t.decode();const i=document.createElement("canvas");i.width=vl,i.height=vl;const a=i.getContext("2d",{willReadFrequently:!0});if(!a)return null;a.drawImage(t,0,0,vl,vl);const{data:s}=a.getImageData(0,0,vl,vl);let o=0,n=0;for(let e=0;e<s.length;e+=4)0!==s[e+3]&&(o+=.2126*s[e]+.7152*s[e+1]+.0722*s[e+2],n++);return n?o/n/255:null}catch{return null}}(e).then(t=>(yl.set(e,t),wl.delete(e),t));return wl.set(e,a),a}const kl="https://cdn.jsdelivr.net/gh/tedr91/Teds-Dashboard-System@v0.9.39/custom_components/teds_dashboard_system/backgrounds/",$l={general:"general",light:"light-mode",dark:"dark-mode"};let Cl;function Al(e,t,i){t("background_image",i);const a=fl(e("background_recent_images"));t("background_recent_images",[i,...a.filter(e=>e!==i)].slice(0,5))}function Sl(e,t,i){const a=String(e.get(t)??"");return W`<select
+    `],a([_e({attribute:!1})],ll.prototype,"hass",void 0),a([_e({attribute:!1})],ll.prototype,"layout",void 0),a([ge()],ll.prototype,"_config",void 0),a([ge()],ll.prototype,"_maximized",void 0),ll=a([ue(sa)],ll);const cl=["background_mode","background_scroll","background_size","background_align","background_repeat","background_color","background_gradient","background_image","background_recent_images","background_album","background_folder","background_type_pref","background_shuffle","background_cycle_minutes","background_bing_cache_size","background_enhance_readability","background_readability_strength","background_brightness"],dl=[{value:"solid",label:"Solid Color"},{value:"image",label:"Single Image"},{value:"slideshow",label:"Slideshow"},{value:"theme",label:"HA Theme"}],hl=[{value:"original",label:"Original"},{value:"fill",label:"Fill view"},{value:"fit",label:"Fit view"}],ul=[{value:"top-left",label:"Top left"},{value:"top-center",label:"Top center"},{value:"top-right",label:"Top right"},{value:"center-left",label:"Center left"},{value:"center",label:"Center"},{value:"center-right",label:"Center right"},{value:"bottom-left",label:"Bottom left"},{value:"bottom-center",label:"Bottom center"},{value:"bottom-right",label:"Bottom right"}],pl=[{value:"tile",label:"Tile"},{value:"no-repeat",label:"No repeat"}],ml=[{value:"builtin",label:"Built-in"},{value:"folder",label:"Select media folder"},{value:"bing_pod",label:"Bing Photo of the Day"},{value:"favorites",label:"Favorites"}],_l=[{value:"match",label:"On"},{value:"all",label:"Off"},{value:"light",label:"Force Light"},{value:"dark",label:"Force Dark"}];function gl(e,t){return t?`linear-gradient(145deg, ${e} 0%, color-mix(in srgb, ${e} 74%, #000) 45%, color-mix(in srgb, ${e} 48%, #000) 100%)`:e}function fl(e){return Array.isArray(e)?e.filter(e=>"string"==typeof e):[]}function bl(e,t,i,a=0){const s=e.background_mode??"solid";if("theme"===s)return null;const o=Math.max(0,Math.min(1,a)),n=o>0?`linear-gradient(rgba(0,0,0,${o}),rgba(0,0,0,${o}))`:"",r=e.background_size??"fill",l=e.background_align??"center",c=e.background_repeat??"tile",d=function(e){return e?"scroll":"fixed"}(!0===e.background_scroll),h=function(e){const[t,i]=e.split("-");return`${i??"center"} ${t}`}(l),u="original"===r?function(e){return"tile"===e?"repeat":"no-repeat"}(c):"no-repeat",p=function(e){return"fill"===e?"cover":"fit"===e?"contain":"auto"}(r);if("solid"===s){const t="string"==typeof e.background_color?e.background_color:"#57608E";return{image:`${n?`${n}, `:""}${gl(t,!1!==e.background_gradient)}`,size:"auto",position:"center center",repeat:"no-repeat",attachment:d,color:t}}if(!t)return{image:n||"none",size:p,position:h,repeat:u,attachment:d,color:"transparent"};return{image:`${n?`${n}, `:""}${i?`linear-gradient(rgba(${i.color},${i.opacity}),rgba(${i.color},${i.opacity})), `:""}url("${m=t,m.replace(/["\\]/g,"\\$&")}")`,size:p,position:h,repeat:u,attachment:d,color:"transparent"};var m}const vl=32,yl=new Map,wl=new Map;function xl(e){const t=yl.get(e);if(void 0!==t)return Promise.resolve(t);const i=wl.get(e);if(i)return i;const a=async function(e){try{const t=new Image;t.crossOrigin="anonymous",t.decoding="async",t.src=e,await t.decode();const i=document.createElement("canvas");i.width=vl,i.height=vl;const a=i.getContext("2d",{willReadFrequently:!0});if(!a)return null;a.drawImage(t,0,0,vl,vl);const{data:s}=a.getImageData(0,0,vl,vl);let o=0,n=0;for(let e=0;e<s.length;e+=4)0!==s[e+3]&&(o+=.2126*s[e]+.7152*s[e+1]+.0722*s[e+2],n++);return n?o/n/255:null}catch{return null}}(e).then(t=>(yl.set(e,t),wl.delete(e),t));return wl.set(e,a),a}const kl="https://cdn.jsdelivr.net/gh/tedr91/Teds-Dashboard-System@v0.9.40/custom_components/teds_dashboard_system/backgrounds/",$l={general:"general",light:"light-mode",dark:"dark-mode"};let Cl;function Al(e,t,i){t("background_image",i);const a=fl(e("background_recent_images"));t("background_recent_images",[i,...a.filter(e=>e!==i)].slice(0,5))}function Sl(e,t,i){const a=String(e.get(t)??"");return W`<select
     class="sel"
     .value=${a}
     ?disabled=${e.disabled}
@@ -9985,6 +9985,7 @@ const e="ted",t="__tedDefineGuardInstalled__",i=`${e}-`;if("undefined"!=typeof c
       `;const t=this._isAdmin(),i=this._dashViews,a=i?`${i.views.length} shipped · ${i.custom_views.length} custom`:"…";return W`
       <ha-expansion-panel outlined class="sub-panel">
         <div slot="header" class="sub-head">
+          <ha-icon icon="mdi:view-dashboard-outline"></ha-icon>
           <span class="sub-head-label">Dashboard views</span>
           <span class="sub-head-value">${a}</span>
         </div>
@@ -10333,18 +10334,22 @@ const e="ted",t="__tedDefineGuardInstalled__",i=`${e}-`;if("undefined"!=typeof c
           </div>
         </div>
       `;const t=this._isAdmin(),i=this._announceMessages(),a=i.map(e=>e.id),s=e=>i.find(t=>t.id===e);return W`
-      <div class="cam-row">
-        <div class="cam-head">
-          <div class="row-label">
-            <span>Predefined messages</span>
-            <span class="help">Ready-made announcements shown in the Announce view.</span>
-          </div>
+      <ha-expansion-panel outlined class="sub-panel">
+        <div slot="header" class="sub-head">
+          <ha-icon class="sub-head-ico" icon="mdi:bullhorn"></ha-icon>
+          <span class="sub-head-label">Predefined messages</span>
+          <span class="hdr-pill">${a.length}</span>
+          ${t?W`<ha-icon-button
+                class="hdr-btn"
+                title="Add a message"
+                @click=${e=>{e.stopPropagation(),this._addAnnounceMessage()}}
+                ><ha-icon .icon=${this._ui("add")}></ha-icon
+              ></ha-icon-button>`:Z}
         </div>
-        ${t?W`<button class="cam-btn add-list-btn" @click=${()=>this._addAnnounceMessage()}>
-              <ha-icon .icon=${this._ui("add")}></ha-icon><span>Add a message</span>
-            </button>`:Z}
-        ${a.length?this._renderCameraChips(a,"mdi:bullhorn",e=>this._removeAnnounceMessage(e),(e,t)=>this._moveAnnounceMessage(e,t),!t,{isOpen:e=>this._annOptOpen.has(e),toggle:e=>this._toggleAnnOpt(e),body:e=>this._renderAnnounceMessageBody(e),icon:e=>s(e)?.icon||"mdi:bullhorn",name:e=>(s(e)?.label||"").trim()||(s(e)?.text||"").trim()||"Untitled message"}):W`<div class="help">No predefined messages yet — add one above.</div>`}
-      </div>
+        <div class="sub-body cam-panel">
+          ${a.length?this._renderCameraChips(a,"mdi:bullhorn",e=>this._removeAnnounceMessage(e),(e,t)=>this._moveAnnounceMessage(e,t),!t,{isOpen:e=>this._annOptOpen.has(e),toggle:e=>this._toggleAnnOpt(e),body:e=>this._renderAnnounceMessageBody(e),icon:e=>s(e)?.icon||"mdi:bullhorn",name:e=>(s(e)?.label||"").trim()||(s(e)?.text||"").trim()||"Untitled message"}):W`<div class="help">No predefined messages yet — use the Add button in the header.</div>`}
+        </div>
+      </ha-expansion-panel>
     `}_renderAnnounceMessageBody(e){const t=this._announceMessages(),i=t.findIndex(t=>t.id===e),a=t[i];if(!a)return W`${Z}`;const s=this._isAdmin();return W`
       <div class="ann-fields">
         <div class="ann-field">
@@ -10457,12 +10462,14 @@ const e="ted",t="__tedDefineGuardInstalled__",i=`${e}-`;if("undefined"!=typeof c
     `}_renderTriggerPanel(e){const t=this._visionTriggers(e),i=this._visTrigPanelOpen.has(e);return W`
       <div class="vis-panel">
         <div class="vis-phead" @click=${()=>this._visTrigPanelOpen=this._toggleSet(this._visTrigPanelOpen,e)}>
-          <ha-icon .icon=${this._ui(i?"chevronUp":"chevronDown")}></ha-icon>
+          <ha-icon class="vis-sec-ico" icon="mdi:motion-sensor"></ha-icon>
           <span class="vis-ptitle">Trigger on</span>
-          <span class="vis-count">${t.length}</span>
-          <button class="cam-btn vis-addbtn" @click=${t=>{t.stopPropagation(),this._addTrigger(e)}}>
-            <ha-icon .icon=${this._ui("add")}></ha-icon><span>Add</span>
-          </button>
+          <span class="hdr-pill">${t.length}</span>
+          <ha-icon-button class="hdr-btn" title="Add a trigger"
+            @click=${t=>{t.stopPropagation(),this._addTrigger(e)}}
+            ><ha-icon .icon=${this._ui("add")}></ha-icon
+          ></ha-icon-button>
+          <ha-icon class="vis-chev" .icon=${this._ui(i?"chevronUp":"chevronDown")}></ha-icon>
         </div>
         ${i?W`<div class="vis-pbody">
               ${0===t.length?W`<div class="help">No triggers yet — tap “Add”.</div>`:Z}
@@ -10474,12 +10481,13 @@ const e="ted",t="__tedDefineGuardInstalled__",i=`${e}-`;if("undefined"!=typeof c
         <div class="vis-ihead" @click=${()=>this._visTrigOpen=this._toggleSet(this._visTrigOpen,a)}>
           <ha-icon icon="mdi:motion-sensor"></ha-icon>
           <span class="vis-iname">${d}</span>
+          <ha-icon class="vis-chev" .icon=${this._ui(s?"chevronUp":"chevronDown")}></ha-icon>
           <ha-icon-button
+            class="hdr-btn"
             @click=${i=>{i.stopPropagation(),this._removeTrigger(e,t)}}
             title="Remove"
-            ><ha-icon icon="mdi:delete"></ha-icon
+            ><ha-icon .icon=${this._ui("close")}></ha-icon
           ></ha-icon-button>
-          <ha-icon class="vis-chev" .icon=${this._ui(s?"chevronUp":"chevronDown")}></ha-icon>
         </div>
         ${s?W`<div class="vis-ibody">
               ${0===n.length?W`<div class="help">No detection sensors were found on this camera's device; the
@@ -10498,12 +10506,14 @@ const e="ted",t="__tedDefineGuardInstalled__",i=`${e}-`;if("undefined"!=typeof c
     `}_renderActionsPanel(e,t){const i=`${e}#${t}`,a=this._triggerActions(e,t),s=this._visActPanelOpen.has(i);return W`
       <div class="vis-panel">
         <div class="vis-phead" @click=${()=>this._visActPanelOpen=this._toggleSet(this._visActPanelOpen,i)}>
-          <ha-icon .icon=${this._ui(s?"chevronUp":"chevronDown")}></ha-icon>
+          <ha-icon class="vis-sec-ico" icon="mdi:flash-outline"></ha-icon>
           <span class="vis-ptitle">Additional actions</span>
-          <span class="vis-count">${a.length}</span>
-          <button class="cam-btn vis-addbtn" @click=${i=>{i.stopPropagation(),this._addAction(e,t)}}>
-            <ha-icon .icon=${this._ui("add")}></ha-icon><span>Add</span>
-          </button>
+          <span class="hdr-pill">${a.length}</span>
+          <ha-icon-button class="hdr-btn" title="Add an action"
+            @click=${i=>{i.stopPropagation(),this._addAction(e,t)}}
+            ><ha-icon .icon=${this._ui("add")}></ha-icon
+          ></ha-icon-button>
+          <ha-icon class="vis-chev" .icon=${this._ui(s?"chevronUp":"chevronDown")}></ha-icon>
         </div>
         ${s?W`<div class="vis-pbody">${a.map((i,a)=>this._renderAction(e,t,a,i))}</div>`:Z}
       </div>
@@ -10512,8 +10522,8 @@ const e="ted",t="__tedDefineGuardInstalled__",i=`${e}-`;if("undefined"!=typeof c
         <div class="vis-ihead static">
           <ha-icon icon="mdi:flash-outline"></ha-icon>
           <span class="vis-iname">${zc[s]??"Action"}</span>
-          <ha-icon-button @click=${()=>this._removeAction(e,t,i)} title="Remove"
-            ><ha-icon icon="mdi:delete"></ha-icon
+          <ha-icon-button class="hdr-btn" @click=${()=>this._removeAction(e,t,i)} title="Remove"
+            ><ha-icon .icon=${this._ui("close")}></ha-icon
           ></ha-icon-button>
         </div>
         <div class="vis-ibody">
@@ -10537,19 +10547,24 @@ const e="ted",t="__tedDefineGuardInstalled__",i=`${e}-`;if("undefined"!=typeof c
     `}_renderCamerasGlobal(e){const t=this._isAdmin(),i=this._listMeta(e),a=e.entityDomain??"camera",s=this._camerasArray(this._globalValue(e.key)),o=this._allCameras(a).filter(e=>!s.includes(e)),n=t=>this._setGlobal(e.key,t);return W`
       <ha-expansion-panel outlined class="sub-panel">
         <div slot="header" class="sub-head">
-          <span class="sub-head-label">${e.label} — available list and settings</span>
-          <span class="sub-head-value">${s.length}</span>
+          <ha-icon class="sub-head-ico" .icon=${i.icon}></ha-icon>
+          <span class="sub-head-label">${e.label}</span>
+          <span class="hdr-pill">${s.length}</span>
+          ${t?W`<ha-icon-button
+                  class="hdr-btn"
+                  title="Auto-populate"
+                  @click=${t=>{t.stopPropagation(),this._autoPopulateGlobal(e)}}
+                  ><ha-icon .icon=${this._ui("autoFix")}></ha-icon
+                ></ha-icon-button>
+                ${o.length?W`<ha-icon-button
+                      class="hdr-btn"
+                      title="Add a ${i.noun}"
+                      @click=${t=>{t.stopPropagation(),this._openAddList(e)}}
+                      ><ha-icon .icon=${this._ui("add")}></ha-icon
+                    ></ha-icon-button>`:Z}`:Z}
         </div>
         <div class="sub-body cam-panel">
-          ${t?W`<div class="cam-head-actions">
-                <button class="cam-btn" @click=${()=>this._autoPopulateGlobal(e)}>
-                  <ha-icon .icon=${this._ui("autoFix")}></ha-icon><span>Auto-populate</span>
-                </button>
-                ${o.length?W`<button class="cam-btn" @click=${()=>this._openAddList(e)}>
-                      <ha-icon .icon=${this._ui("add")}></ha-icon><span>Add a ${i.noun}</span>
-                    </button>`:Z}
-              </div>`:Z}
-          ${s.length?this._renderCameraChips(s,i.icon,e=>{if(!t)return;const i=[...s];i.splice(e,1),n(i)},(e,i)=>{if(!t)return;const o=[...s];if(o.splice(i,0,o.splice(e,1)[0]),"calendar"===a){const e=this._calendarOptionsMap(),t=o.map(t=>({entity:t,...e[t]??{}}));n(ic(o,t))}else n(o)},!1,t&&"calendar"===a?{isOpen:e=>this._calOptOpen.has(e),toggle:e=>this._toggleCalOpt(e),body:e=>this._renderCalendarOptions(e),icon:e=>this._calendarRowIcon(e),name:e=>this._calendarRowName(e),color:e=>this._calendarRowColor(e),person:e=>this._calendarRowPersonPicture(e),personMuted:e=>this._calendarRowPersonMuted(e),badge:e=>!0===this._calendarOptionsMap()[e]?.virtual,tag:e=>ec(this.hass,e,this._calendarItems()),optionsHidden:e=>!!ec(this.hass,e,this._calendarItems())}:t&&"camera"===a?{isOpen:e=>this._visionOpen.has(e),toggle:e=>this._toggleCamVision(e),body:e=>this._renderCameraVisionBody(e),name:e=>this._visionCamName(e),badge:e=>!0===this._visionCam(e).enabled,badgeIcon:"mdi:eye"}:void 0):W`<div class="help">No ${i.nounPlural} yet — tap “Auto-populate” or “Add a ${i.noun}” above.</div>`}
+          ${s.length?this._renderCameraChips(s,i.icon,e=>{if(!t)return;const i=[...s];i.splice(e,1),n(i)},(e,i)=>{if(!t)return;const o=[...s];if(o.splice(i,0,o.splice(e,1)[0]),"calendar"===a){const e=this._calendarOptionsMap(),t=o.map(t=>({entity:t,...e[t]??{}}));n(ic(o,t))}else n(o)},!1,t&&"calendar"===a?{isOpen:e=>this._calOptOpen.has(e),toggle:e=>this._toggleCalOpt(e),body:e=>this._renderCalendarOptions(e),icon:e=>this._calendarRowIcon(e),name:e=>this._calendarRowName(e),color:e=>this._calendarRowColor(e),person:e=>this._calendarRowPersonPicture(e),personMuted:e=>this._calendarRowPersonMuted(e),badge:e=>!0===this._calendarOptionsMap()[e]?.virtual,tag:e=>ec(this.hass,e,this._calendarItems()),optionsHidden:e=>!!ec(this.hass,e,this._calendarItems())}:t&&"camera"===a?{isOpen:e=>this._visionOpen.has(e),toggle:e=>this._toggleCamVision(e),body:e=>this._renderCameraVisionBody(e),name:e=>this._visionCamName(e),badge:e=>!0===this._visionCam(e).enabled,badgeIcon:"mdi:eye"}:void 0):W`<div class="help">No ${i.nounPlural} yet — use the Auto-populate or Add buttons in the header.</div>`}
         </div>
       </ha-expansion-panel>
     `}_openAddList(e){this._addListQuery="",this._addListField=e}_closeAddList(){this._addListField=void 0}_renderAddListModal(){const e=this._addListField;if(!e)return Z;const t=this._listMeta(e),i=e.entityDomain??"camera",a=this._camerasArray(this._globalValue(e.key)),s=this._addListQuery.trim().toLowerCase(),o=this._allCameras(i).filter(e=>!a.includes(e)).filter(e=>!s||this._cameraName(e).toLowerCase().includes(s)||e.toLowerCase().includes(s)),n=Fe("ted-style"===this._config?.theme?"ted-style":"ha"),r=t=>{this._setGlobal(e.key,[...a,t])};return W`
@@ -11679,21 +11694,9 @@ const e="ted",t="__tedDefineGuardInstalled__",i=`${e}-`;if("undefined"!=typeof c
         color: var(--ted-style-muted, var(--secondary-text-color));
       }
       .vis-ptitle {
+        flex: 1 1 auto;
+        min-width: 0;
         font-weight: 600;
-      }
-      .vis-count {
-        min-width: 20px;
-        text-align: center;
-        padding: 0 6px;
-        border-radius: 999px;
-        font-size: 0.75rem;
-        color: var(--ted-style-muted, var(--secondary-text-color));
-        background: var(--ted-style-surface-3, rgba(120, 120, 120, 0.14));
-      }
-      .vis-addbtn {
-        margin-left: auto;
-        padding: 4px 10px;
-        font-size: 0.8rem;
       }
       .vis-pbody {
         display: flex;
@@ -12047,6 +12050,31 @@ const e="ted",t="__tedDefineGuardInstalled__",i=`${e}-`;if("undefined"!=typeof c
         color: var(--ted-style-muted);
         font-size: 0.9em;
         font-weight: 400;
+      }
+      /* Canonical collapsible-header chrome: section icon (left), then a right-justified
+         cluster of count pill → icon-only action buttons → chevron → delete. */
+      .sub-head-ico {
+        flex: 0 0 auto;
+      }
+      .hdr-pill {
+        flex: 0 0 auto;
+        min-width: 20px;
+        text-align: center;
+        padding: 1px 8px;
+        border-radius: 999px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        color: var(--ted-style-muted, var(--secondary-text-color));
+        background: var(--ted-style-surface-3, rgba(120, 120, 120, 0.14));
+      }
+      .hdr-btn {
+        flex: 0 0 auto;
+        --mdc-icon-button-size: 34px;
+        --mdc-icon-size: 20px;
+        color: var(--ted-style-muted, var(--secondary-text-color));
+      }
+      .hdr-btn:hover {
+        color: var(--primary-color, #3f7cf0);
       }
       .sub-body {
         display: flex;
@@ -12735,7 +12763,7 @@ const e="ted",t="__tedDefineGuardInstalled__",i=`${e}-`;if("undefined"!=typeof c
       .sc-tip-action:hover {
         filter: brightness(1.08);
       }
-    `],a([_e({attribute:!1})],bd.prototype,"hass",void 0),a([ge()],bd.prototype,"_config",void 0),a([ge()],bd.prototype,"_openTip",void 0),a([ge()],bd.prototype,"_maBusy",void 0),bd=gd=a([ue(pd)],bd),console.info("%c TED-CARDS %c 0.9.36 ","color: white; background: #4a90e2; font-weight: 700;","color: #4a90e2; background: white; font-weight: 700;");const vd={light:"mdi:brightness-6",cover:"mdi:window-shutter"};function yd(e,t){return`ted_${e}_mem_${t.split(".")[1]??t}`}function wd(e,t){return`input_number.${yd(e,t)}`}async function xd(e,t,i){const a=wd(t,i);if(e.states[a])return a;try{return`input_number.${(await e.callWS({type:"input_number/create",name:yd(t,i),min:1,max:100,step:1,initial:100,mode:"slider",unit_of_measurement:"%",icon:vd[t]})).id}`}catch(e){return void console.error("[ted-cards] Failed to create memory helper",e)}}const kd={increase:"Increase brightness",decrease:"Decrease brightness",full_on:"Full on (100%)",full_off:"Turn off",toggle:"Toggle",more_info:"More info",none:"Nothing"};let $d=class extends de{constructor(){super(...arguments),this.embedded=!1,this._expanded=new Set,this._computeHelper=e=>{if("width"===e.name||"height"===e.name)return"Only used when the card isn't a direct item in a grid (Sections) view."},this._computeLabel=e=>{switch(e.name){case"entity":return"Entity";case"name":return"Name (optional)";case"icon":return"Icon (optional)";case"theme":return"Visual styling";case"mode":return"Mode";case"orientation":return"Orientation";case"indicator_color":return"Indicator bar color";case"indicator_color_custom":return"Custom indicator color";case"indicator_width":return"Indicator bar width (px)";case"show_indicator":return"Show indicator bar";case"name_color":case"state_color":return"Custom color";case"icon_color":return"Color";case"transparency":return"Transparency";case"blur":return"Background blur";case"background":return"Background color";case"background_on":return"Background color when on";case"brushed":return"Brushed effect";case"rocker":return"Rocker";case"rocker_effect":return"Neumorphic effect";case"shadow":return"Subtle shadow for improved contrast";case"show_name":return"Show name";case"name_scale":return"Name size";case"show_icon":return"Show icon";case"icon_scale":return"Icon size";case"show_state":return"Show entity state";case"state_scale":return"State size";case"show_hint":return"Show hint bar";case"hint_width":return"Hint bar width (px)";case"width":return"Width (px)";case"height":return"Height (px)";case"up_tap":case"down_tap":case"icon_tap":return"Single tap";case"up_double_tap":case"down_double_tap":case"icon_double_tap":return"Double tap";case"up_hold":case"down_hold":case"icon_hold":return"Long press";case"memory_mode":return"Turn on to";case"memory_value":return"Brightness";case"memory_entity":return"Memory helper (input_number / number)";default:return e.name}},this._valueChanged=async e=>{const t=this._config,i={...t,...e.detail.value},a=this.hass;if(a&&i.entity&&"helper"===i.memory_mode&&!i.memory_entity){const e=await xd(a,"light",i.entity);e&&(i.memory_entity=e)}"off"!==i.memory_mode||t?.memory_mode||(delete i.memory_mode,delete i.memory_entity),this._commit(i)},this._elementMoved=e=>{e.stopPropagation();const{oldIndex:t,newIndex:i}=e.detail,a=this._elementOrder();a.splice(i,0,a.splice(t,1)[0]),this._commit({...this._config,element_order:a})},this._onElementChanged=e=>{e.stopPropagation();const t={...this._config,...e.detail.value};for(const e of["name_color","icon_color","state_color"])t[e]||delete t[e];this._commit(t)}}setConfig(e){this._config=e}render(){if(!this.hass||!this._config)return Z;const e={...this._defaults(),...this._config,mode:!1===this._config.rocker?"button":"rocker"},t=this._schema();return W`
+    `],a([_e({attribute:!1})],bd.prototype,"hass",void 0),a([ge()],bd.prototype,"_config",void 0),a([ge()],bd.prototype,"_openTip",void 0),a([ge()],bd.prototype,"_maBusy",void 0),bd=gd=a([ue(pd)],bd),console.info("%c TED-CARDS %c 0.9.37 ","color: white; background: #4a90e2; font-weight: 700;","color: #4a90e2; background: white; font-weight: 700;");const vd={light:"mdi:brightness-6",cover:"mdi:window-shutter"};function yd(e,t){return`ted_${e}_mem_${t.split(".")[1]??t}`}function wd(e,t){return`input_number.${yd(e,t)}`}async function xd(e,t,i){const a=wd(t,i);if(e.states[a])return a;try{return`input_number.${(await e.callWS({type:"input_number/create",name:yd(t,i),min:1,max:100,step:1,initial:100,mode:"slider",unit_of_measurement:"%",icon:vd[t]})).id}`}catch(e){return void console.error("[ted-cards] Failed to create memory helper",e)}}const kd={increase:"Increase brightness",decrease:"Decrease brightness",full_on:"Full on (100%)",full_off:"Turn off",toggle:"Toggle",more_info:"More info",none:"Nothing"};let $d=class extends de{constructor(){super(...arguments),this.embedded=!1,this._expanded=new Set,this._computeHelper=e=>{if("width"===e.name||"height"===e.name)return"Only used when the card isn't a direct item in a grid (Sections) view."},this._computeLabel=e=>{switch(e.name){case"entity":return"Entity";case"name":return"Name (optional)";case"icon":return"Icon (optional)";case"theme":return"Visual styling";case"mode":return"Mode";case"orientation":return"Orientation";case"indicator_color":return"Indicator bar color";case"indicator_color_custom":return"Custom indicator color";case"indicator_width":return"Indicator bar width (px)";case"show_indicator":return"Show indicator bar";case"name_color":case"state_color":return"Custom color";case"icon_color":return"Color";case"transparency":return"Transparency";case"blur":return"Background blur";case"background":return"Background color";case"background_on":return"Background color when on";case"brushed":return"Brushed effect";case"rocker":return"Rocker";case"rocker_effect":return"Neumorphic effect";case"shadow":return"Subtle shadow for improved contrast";case"show_name":return"Show name";case"name_scale":return"Name size";case"show_icon":return"Show icon";case"icon_scale":return"Icon size";case"show_state":return"Show entity state";case"state_scale":return"State size";case"show_hint":return"Show hint bar";case"hint_width":return"Hint bar width (px)";case"width":return"Width (px)";case"height":return"Height (px)";case"up_tap":case"down_tap":case"icon_tap":return"Single tap";case"up_double_tap":case"down_double_tap":case"icon_double_tap":return"Double tap";case"up_hold":case"down_hold":case"icon_hold":return"Long press";case"memory_mode":return"Turn on to";case"memory_value":return"Brightness";case"memory_entity":return"Memory helper (input_number / number)";default:return e.name}},this._valueChanged=async e=>{const t=this._config,i={...t,...e.detail.value},a=this.hass;if(a&&i.entity&&"helper"===i.memory_mode&&!i.memory_entity){const e=await xd(a,"light",i.entity);e&&(i.memory_entity=e)}"off"!==i.memory_mode||t?.memory_mode||(delete i.memory_mode,delete i.memory_entity),this._commit(i)},this._elementMoved=e=>{e.stopPropagation();const{oldIndex:t,newIndex:i}=e.detail,a=this._elementOrder();a.splice(i,0,a.splice(t,1)[0]),this._commit({...this._config,element_order:a})},this._onElementChanged=e=>{e.stopPropagation();const t={...this._config,...e.detail.value};for(const e of["name_color","icon_color","state_color"])t[e]||delete t[e];this._commit(t)}}setConfig(e){this._config=e}render(){if(!this.hass||!this._config)return Z;const e={...this._defaults(),...this._config,mode:!1===this._config.rocker?"button":"rocker"},t=this._schema();return W`
       <div class="editor">
         <ha-form
           .hass=${this.hass}
