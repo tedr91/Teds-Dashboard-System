@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.37
+
+- Bundles Ted's Cards v0.9.34 — the navbar Assist mic now auto-disables on devices loaded over HTTP (where the browser can't use the microphone) and explains, on tap, that voice needs an HTTPS connection.
+
 ### v0.9.36
 
 - Bundles Ted's Cards v0.9.33 — the wallpaper now crossfades when a view first loads and when you switch albums (fading in over the theme background), instead of snapping. Plain navigation with the same wallpaper still repaints instantly.
