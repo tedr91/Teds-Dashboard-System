@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.34
+
+- Bundles Ted's Cards v0.9.31 — vertical (left/right) navbars lay their sections out in normal flow so they can never overlap (fixes the Assist mic overlapping the launcher), and auto-collapse always keeps at least one item per section. Pairs with Ted's Cards v0.9.31+.
+
 ### v0.9.33
 
 - Bundles Ted's Cards v0.9.30 — navbar sections no longer overlap (the launcher folds into its chevron instead of overlapping a side section like the Assist mic), plus default spacers beside the center section. Pairs with Ted's Cards v0.9.30+.
