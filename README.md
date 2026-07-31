@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.45
+
+- Bundles Ted's Cards v0.9.42 — Vision “Display live feed” now navigates targeted screens to the Cameras view and focuses the triggering camera (primary + live stream), plus Settings list-row height fixes.
+
 ### v0.9.44
 
 - Bundles Ted's Cards v0.9.41 — vision trigger actions reworked into four fixed on/off sections (Display live feed, Toast, Push, Custom). Backend now skips vision actions whose section is toggled off.
