@@ -21,7 +21,7 @@ from homeassistant.helpers import device_registry as dr, entity_registry as er
 from homeassistant.helpers.event import async_track_state_change_event
 from homeassistant.util import dt as dt_util
 
-from .const import EVENT_SETTINGS, MEDIA_FOLDER_NAME, VISION_SEVERITIES
+from .const import EVENT_NAVIGATE, EVENT_SETTINGS, MEDIA_FOLDER_NAME, VISION_SEVERITIES
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -34,9 +34,6 @@ _DETECTOR_KEYWORDS: dict[str, tuple[str, ...]] = {
     "package": ("package", "parcel", "delivery"),
 }
 _MOTION_CLASSES = {"motion", "moving", "occupancy", "presence"}
-
-# severity rank for threshold comparisons; "unknown" always passes (handled below).
-_SEVERITY_RANK = {"harmless": 0, "suspicious": 1, "critical": 2}
 # vision severity -> notification severity used for the on-trigger Teds notification.
 _SEVERITY_TO_NOTIF = {
     "critical": "danger",
@@ -179,13 +176,15 @@ class VisionEngine:
             return
         cams = s.get("vision_cameras") or {}
         for cam_id, cfg in cams.items():
-            types = (cfg or {}).get("event_types") or []
-            if not types:
+            if not (cfg or {}).get("enabled"):
+                continue
+            triggers = cfg.get("triggers") or []
+            if not triggers:
                 continue
             detectors = discover_camera_detectors(self.hass, cam_id)
-            for etype in types:
-                for eid in detectors.get(etype, []):
-                    self._watch[eid] = (cam_id, etype)
+            for t_idx, trig in enumerate(triggers):
+                for eid in detectors.get((trig or {}).get("type"), []):
+                    self._watch.setdefault(eid, []).append((cam_id, t_idx))
         if self._watch:
             self._unsub_state = async_track_state_change_event(
                 self.hass, list(self._watch), self._on_state
@@ -193,34 +192,44 @@ class VisionEngine:
 
     @callback
     def _on_state(self, event: Event) -> None:
-        """Detector went active (off -> on) — kick off analysis after a cooldown."""
+        """Detector went active (off -> on) — kick off analysis after a per-trigger cooldown."""
         new = event.data.get("new_state")
         old = event.data.get("old_state")
         if new is None or new.state != "on":
             return
         if old is not None and old.state == "on":
             return
-        pair = self._watch.get(event.data.get("entity_id"))
-        if not pair:
+        pairs = self._watch.get(event.data.get("entity_id"))
+        if not pairs:
             return
-        cam_id, etype = pair
-        cfg = (self._settings().get("vision_cameras") or {}).get(cam_id) or {}
-        cooldown = float(cfg.get("cooldown_seconds", 60) or 0)
+        cams = self._settings().get("vision_cameras") or {}
         now = time.monotonic()
-        last = self._cooldowns.get(cam_id, 0.0)
-        if cooldown and (now - last) < cooldown:
-            return
-        self._cooldowns[cam_id] = now
-        self.hass.async_create_task(
-            self._handle_event(cam_id, etype, trigger_entity=event.data.get("entity_id"))
-        )
+        for cam_id, t_idx in pairs:
+            triggers = (cams.get(cam_id) or {}).get("triggers") or []
+            if t_idx >= len(triggers):
+                continue
+            trig = triggers[t_idx] or {}
+            cooldown = float(trig.get("cooldown_seconds", 60) or 0)
+            key = f"{cam_id}#{t_idx}"
+            if cooldown and (now - self._cooldowns.get(key, 0.0)) < cooldown:
+                continue
+            self._cooldowns[key] = now
+            self.hass.async_create_task(
+                self._handle_event(
+                    cam_id,
+                    (trig.get("type") or "motion"),
+                    trigger_entity=event.data.get("entity_id"),
+                    trigger=trig,
+                )
+            )
 
     async def analyze(self, camera_id: str, event_type: str = "manual") -> dict | None:
         """Manually analyze a camera now (used by the analyze_camera service/test)."""
         return await self._handle_event(camera_id, event_type, trigger_entity=None)
 
     async def _handle_event(
-        self, camera_id: str, event_type: str, trigger_entity: str | None
+        self, camera_id: str, event_type: str, trigger_entity: str | None,
+        trigger: dict | None = None,
     ) -> dict | None:
         event_id = uuid.uuid4().hex
         started = dt_util.utcnow()
@@ -253,7 +262,8 @@ class VisionEngine:
         dropped = await self.manager.add_vision_event(event)
         if dropped:
             await self._cleanup_files(dropped)
-        await self._run_actions(camera_id, event, area_id)
+        if trigger is not None:
+            await self._run_actions(event, trigger, area_id)
         return event
 
     def _camera_context(self, camera_id: str) -> tuple[str | None, str | None, str]:
@@ -447,44 +457,64 @@ class VisionEngine:
         return out if isinstance(out, dict) else None
 
     # ── on-trigger actions ──────────────────────────────────
-    async def _run_actions(self, camera_id: str, event: dict, area_id: str | None) -> None:
-        cfg = (self._settings().get("vision_cameras") or {}).get(camera_id) or {}
-        if not self._passes_threshold(event["severity"], cfg.get("severity_threshold", "harmless")):
+    async def _run_actions(self, event: dict, trigger: dict, area_id: str | None) -> None:
+        """Run a trigger's actions, gated by its severity filter (empty = all severities)."""
+        severities = trigger.get("severities") or []
+        if severities and event["severity"] not in severities:
             return
-        if cfg.get("notify", True):
-            await self.manager.notify(
-                title=f"{event['camera_name']}: {event['event_type'].title()}",
-                message=event["short_summary"] or "Camera event detected.",
-                severity=_SEVERITY_TO_NOTIF.get(event["severity"], "info"),
-                icon="mdi:cctv",
-                area=area_id,
-                source="vision",
-            )
-        for act in cfg.get("actions") or []:
-            service = (act or {}).get("service") or ""
-            if "." not in service:
-                continue
-            domain, name = service.split(".", 1)
+        title = f"{event['camera_name']}: {str(event['event_type']).title()}"
+        message = event["short_summary"] or "Camera event detected."
+        notif_sev = _SEVERITY_TO_NOTIF.get(event["severity"], "info")
+        for act in trigger.get("actions") or []:
+            atype = (act or {}).get("type")
             try:
-                await self.hass.services.async_call(
-                    domain, name, act.get("data") or {}, blocking=False
-                )
-            except Exception:  # noqa: BLE001 - a bad custom action shouldn't crash us
-                _LOGGER.exception("Ted's Vision: custom action %s failed", service)
-        script = cfg.get("script")
-        if script:
-            try:
-                await self.hass.services.async_call(
-                    "homeassistant", "turn_on", {"entity_id": script}, blocking=False
-                )
-            except Exception:  # noqa: BLE001
-                _LOGGER.exception("Ted's Vision: run '%s' failed", script)
+                if atype == "toast":
+                    await self._act_toast(act, title, message, notif_sev, area_id)
+                elif atype == "push":
+                    await self._act_push(act, title, message, event)
+                elif atype == "live_feed":
+                    await self._act_live_feed(act, area_id)
+                elif atype == "custom":
+                    await self._act_custom(act)
+            except Exception:  # noqa: BLE001 - one bad action shouldn't stop the rest
+                _LOGGER.exception("Ted's Vision: action %s failed", atype)
 
-    @staticmethod
-    def _passes_threshold(severity: str, threshold: str) -> bool:
-        if severity == "unknown":
-            return True
-        return _SEVERITY_RANK.get(severity, 0) >= _SEVERITY_RANK.get(threshold, 0)
+    async def _act_toast(
+        self, act: dict, title: str, message: str, severity: str, area_id: str | None
+    ) -> None:
+        areas = act.get("areas") or ([area_id] if area_id else [None])
+        for area in areas:
+            await self.manager.notify(
+                title=title, message=message, severity=severity,
+                icon="mdi:cctv", area=area, source="vision",
+            )
+
+    async def _act_push(self, act: dict, title: str, message: str, event: dict) -> None:
+        service = act.get("service") or ""
+        if "." not in service:
+            return
+        domain, name = service.split(".", 1)
+        data: dict = {"title": title, "message": message}
+        if event.get("thumbnail_url"):
+            data["data"] = {"image": event["thumbnail_url"]}
+        await self.hass.services.async_call(domain, name, data, blocking=False)
+
+    async def _act_live_feed(self, act: dict, area_id: str | None) -> None:
+        areas = act.get("areas") or ([area_id] if area_id else [])
+        for area in areas:
+            self.hass.bus.async_fire(
+                EVENT_NAVIGATE, {"dashboard": "vision_dashboard", "area": area, "device_id": None}
+            )
+
+    async def _act_custom(self, act: dict) -> None:
+        if act.get("script"):
+            await self.hass.services.async_call(
+                "homeassistant", "turn_on", {"entity_id": act["script"]}, blocking=False
+            )
+        service = act.get("service") or ""
+        if "." in service:
+            domain, name = service.split(".", 1)
+            await self.hass.services.async_call(domain, name, act.get("data") or {}, blocking=False)
 
     # ── file cleanup ────────────────────────────────────────
     async def cleanup_event(self, event: dict) -> None:
