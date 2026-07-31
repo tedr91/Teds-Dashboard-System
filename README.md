@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.42
+
+- Bundles Ted's Cards v0.9.39 — thermostat voice aliases moved into the Thermostats list (expand a thermostat → collapsible “Aliases” section); the separate “Voice zone names” section was removed.
+
 ### v0.9.41
 
 - Bundles Ted's Cards v0.9.38 — consistent list-row heights/buttons across the Cameras, Vision, Announce, and Navbar editors; “+ Add” for typed items (Vision triggers/actions, navbar items) opens a type-picker popup; the Vision severity-filter description moved above its checkboxes.
