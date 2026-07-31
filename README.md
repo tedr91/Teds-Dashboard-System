@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.41
+
+- Bundles Ted's Cards v0.9.38 — consistent list-row heights/buttons across the Cameras, Vision, Announce, and Navbar editors; “+ Add” for typed items (Vision triggers/actions, navbar items) opens a type-picker popup; the Vision severity-filter description moved above its checkboxes.
+
 ### v0.9.40
 
 - Bundles Ted's Cards v0.9.37 — consistent collapsible-section headers across Settings (section icon + name on the left; count pill, icon-only action buttons, chevron, and delete “X” on the right), applied to the Cameras/Calendars/Thermostats lists, the per-camera Vision triggers/actions, and the Announce Predefined messages.
