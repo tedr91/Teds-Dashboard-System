@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.35
+
+- Bundles Ted's Cards v0.9.32 — the Nightstand device type trims the navbar to the Home/Music/Alarms-Timers launcher buttons and shows only the Center section. Pairs with Ted's Cards v0.9.32+.
+
 ### v0.9.30
 
 - Bundles Ted's Cards v0.9.27 — the navbar's sections and items are now editable in **Settings → Navbar → Navbar sections** (with a default that matches the dashboard's existing bar), and vertical navbars self-heal the first-load overflow collapse. Adds the `navbar_sections` setting default. Pairs with Ted's Cards v0.9.27+.
