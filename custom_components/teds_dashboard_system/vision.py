@@ -21,7 +21,7 @@ from homeassistant.helpers import device_registry as dr, entity_registry as er
 from homeassistant.helpers.event import async_track_state_change_event
 from homeassistant.util import dt as dt_util
 
-from .const import EVENT_NAVIGATE, EVENT_SETTINGS, MEDIA_FOLDER_NAME, VISION_SEVERITIES
+from .const import DOMAIN, EVENT_NAVIGATE, EVENT_SETTINGS, MEDIA_FOLDER_NAME, VISION_SEVERITIES
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -471,52 +471,68 @@ class VisionEngine:
             atype = (act or {}).get("type")
             try:
                 if atype == "toast":
-                    await self._act_toast(act, title, message, notif_sev, area_id)
+                    await self._act_toast(act, title, message, notif_sev)
                 elif atype == "push":
-                    await self._act_push(act, title, message, event)
+                    await self._act_push(act, title, message)
                 elif atype == "live_feed":
-                    await self._act_live_feed(act, area_id)
+                    await self._act_live_feed(act)
                 elif atype == "custom":
                     await self._act_custom(act)
             except Exception:  # noqa: BLE001 - one bad action shouldn't stop the rest
                 _LOGGER.exception("Ted's Vision: action %s failed", atype)
 
-    async def _act_toast(
-        self, act: dict, title: str, message: str, severity: str, area_id: str | None
-    ) -> None:
-        areas = act.get("areas") or ([area_id] if area_id else [None])
-        for area in areas:
+    async def _act_toast(self, act: dict, title: str, message: str, severity: str) -> None:
+        """In-dashboard toast. Empty areas list = house-wide (everywhere)."""
+        for area in (act.get("areas") or [None]):
             await self.manager.notify(
                 title=title, message=message, severity=severity,
                 icon="mdi:cctv", area=area, source="vision",
             )
 
-    async def _act_push(self, act: dict, title: str, message: str, event: dict) -> None:
-        service = act.get("service") or ""
-        if "." not in service:
-            return
-        domain, name = service.split(".", 1)
-        data: dict = {"title": title, "message": message}
-        if event.get("thumbnail_url"):
-            data["data"] = {"image": event["thumbnail_url"]}
-        await self.hass.services.async_call(domain, name, data, blocking=False)
-
-    async def _act_live_feed(self, act: dict, area_id: str | None) -> None:
-        areas = act.get("areas") or ([area_id] if area_id else [])
-        for area in areas:
+    async def _act_live_feed(self, act: dict) -> None:
+        """Nudge screens to the Vision view. Empty areas list = everywhere."""
+        for area in (act.get("areas") or [None]):
             self.hass.bus.async_fire(
                 EVENT_NAVIGATE, {"dashboard": "vision_dashboard", "area": area, "device_id": None}
             )
 
+    async def _act_push(self, act: dict, title: str, message: str) -> None:
+        """Push via notify entities (notify.send_message). Empty list = all notify entities."""
+        services = act.get("services") or []
+        if not services:
+            services = [s.entity_id for s in self.hass.states.async_all("notify")]
+        if not services:
+            return
+        await self.hass.services.async_call(
+            "notify", "send_message",
+            {"entity_id": services, "message": message, "title": title},
+            blocking=False,
+        )
+
     async def _act_custom(self, act: dict) -> None:
-        if act.get("script"):
-            await self.hass.services.async_call(
-                "homeassistant", "turn_on", {"entity_id": act["script"]}, blocking=False
-            )
-        service = act.get("service") or ""
-        if "." in service:
-            domain, name = service.split(".", 1)
-            await self.hass.services.async_call(domain, name, act.get("data") or {}, blocking=False)
+        for item in act.get("items") or []:
+            kind = (item or {}).get("kind")
+            entity = item.get("entity")
+            try:
+                if kind == "automation" and entity:
+                    await self.hass.services.async_call("automation", "trigger", {"entity_id": entity}, blocking=False)
+                elif kind == "script" and entity:
+                    await self.hass.services.async_call("script", "turn_on", {"entity_id": entity}, blocking=False)
+                elif kind == "scene" and entity:
+                    await self.hass.services.async_call("scene", "turn_on", {"entity_id": entity}, blocking=False)
+                elif kind == "action" and item.get("sequence"):
+                    await self._run_sequence(item["sequence"])
+            except Exception:  # noqa: BLE001 - one bad custom item shouldn't stop the rest
+                _LOGGER.exception("Ted's Vision: custom item %s failed", kind)
+
+    async def _run_sequence(self, sequence) -> None:
+        """Run an `action` selector's sequence (any HA actions) via the Script helper."""
+        from homeassistant.core import Context  # noqa: PLC0415
+        from homeassistant.helpers.script import Script  # noqa: PLC0415
+
+        seq = sequence if isinstance(sequence, list) else [sequence]
+        script = Script(self.hass, seq, "Ted's Vision action", DOMAIN)
+        await script.async_run(context=Context())
 
     # ── file cleanup ────────────────────────────────────────
     async def cleanup_event(self, event: dict) -> None:

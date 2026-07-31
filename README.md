@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.43
+
+- Bundles Ted's Cards v0.9.40 — Vision “Additional actions” reworked into consistent collapsible lists (type chosen from the “+” popup; Toast/Live feed target areas, Push targets notify services by friendly name, Custom adds Automation/Script/Scene/Action). Empty target list means everywhere. Backend action dispatch updated to match.
+
 ### v0.9.42
 
 - Bundles Ted's Cards v0.9.39 — thermostat voice aliases moved into the Thermostats list (expand a thermostat → collapsible “Aliases” section); the separate “Voice zone names” section was removed.
