@@ -123,9 +123,14 @@ SETTINGS_DEFAULTS = {
     # Vision Analysis — AI-analyzed camera detection events. Server-side (global) feature.
     # Master switch: when off, no camera detectors are watched.
     "vision_enabled": False,
-    # ai_task entity used for analysis (None = HA's preferred AI Task entity). Both the
-    # OpenAI and Ollama integrations register ai_task entities; HA abstracts the provider.
+    # ai_task entity for the quick (first) pass. None = smart default: an attachment-capable
+    # entity, provider priority Ollama > OpenAI > Gemini > first found.
     "vision_ai_task_entity": None,
+    # ai_task entity for the detailed (second) pass when two-pass is on. None = the quick
+    # entity if it is video-capable, else a video-capable entity by the same priority.
+    "vision_ai_task_entity_detailed": None,
+    # Run a fast first pass (quick model) then refine details with a second pass.
+    "vision_two_pass": True,
     # Per-camera opt-in config keyed by camera entity id:
     #   {camera_id: {event_types: ["motion"|"person"|"animal"|"car"...],
     #                severity_threshold: one of VISION_SEVERITIES,
@@ -133,12 +138,17 @@ SETTINGS_DEFAULTS = {
     #                actions: [{service: "domain.service", data: {...}}]}}
     # Only event types matched to a discoverable binary_sensor on the camera are offered.
     "vision_cameras": {},
-    # How the event window is captured: clip (record + extract frames) | burst (rapid
-    # snapshots) | snapshot (single frame). All attach one or more stills to the AI task.
-    "vision_capture_mode": "clip",
+    # How the event window is captured: video (record the stream) | clip (stitch stills into
+    # a slideshow) | burst (rapid snapshots) | snapshot (single frame). All attach stills to
+    # the AI task; video also records the real stream for viewing.
+    "vision_capture_mode": "video",
     # Length of the capture window (seconds) and how many stills to grab across it.
-    "vision_clip_seconds": 6,
+    "vision_clip_seconds": 10,
     "vision_frame_count": 3,
+    # What to do when the AI believes an event is a false alarm:
+    #   "off" = ignore (act normally) | "log_only" = store the event but don't fire the
+    #   trigger's actions | "drop" = don't store and don't fire.
+    "vision_false_alarm_mode": "log_only",
     # Cap on stored analyzed events (older pruned, with their snapshot/clip files).
     "vision_retention_max": 200,
     # Temperatures — ordered list of climate entity ids. Global = the available allow-list;

@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.46
+
+- Bundles Ted's Cards v0.9.43 — Vision Analysis gains false-alarm filtering (Off / Log only / Drop) with a “False alarm” tag/filter in the card, real camera-stream recording (default, falls back to stitched frames), and optional two-pass analysis (fast quick pass + detailed refine) with separate AI Task entities per pass and smart provider defaults. Capture window default is now 10s.
+
 ### v0.9.45
 
 - Bundles Ted's Cards v0.9.42 — Vision “Display live feed” now navigates targeted screens to the Cameras view and focuses the triggering camera (primary + live stream), plus Settings list-row height fixes.
