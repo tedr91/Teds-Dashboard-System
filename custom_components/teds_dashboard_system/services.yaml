@@ -182,3 +182,19 @@ dashboard_set_layout:
   fields:
     hidden: { selector: { object: {} } }
     order: { selector: { object: {} } }
+
+analyze_camera:
+  name: Analyze camera (Vision)
+  description: Capture the current view of a camera and run AI Vision Analysis on it now.
+  fields:
+    camera_entity: { required: true, selector: { entity: { domain: camera } } }
+    event_type: { selector: { text: {} } }
+delete_vision_event:
+  name: Delete vision event
+  description: Remove one stored Vision Analysis event (and its snapshot/clip files).
+  fields:
+    id: { required: true, selector: { text: {} } }
+clear_vision_events:
+  name: Clear vision events
+  description: Remove all stored Vision Analysis events and their snapshot/clip files.
+

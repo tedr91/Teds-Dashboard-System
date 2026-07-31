@@ -22,6 +22,7 @@ from .const import (
     EVENT_NOTIFICATION,
     EVENT_SETTINGS,
     EVENT_TIMER_FINISHED,
+    EVENT_VISION_EVENT,
     ASSIST_HISTORY_MAX,
     NOTIFICATIONS_MAX,
     RECENT_ANNOUNCEMENTS_MAX,
@@ -30,6 +31,7 @@ from .const import (
     SETTINGS_KEYS,
     STORAGE_KEY,
     STORAGE_VERSION,
+    VISION_EVENTS_MAX,
 )
 
 
@@ -43,6 +45,8 @@ class TedsManager:
         self.recent: list[dict] = []  # last N timer presets (h/m/s + name)
         self.active: dict[str, dict] = {}  # id -> {name, ends, cancel}
         self.notifications: list[dict] = []  # newest-first notification list
+        # Analyzed camera Vision Analysis events, newest-first (capped VISION_EVENTS_MAX).
+        self.vision_events: list[dict] = []
         # last N announcements (message + targets) for quick re-send, newest-first.
         self.recent_announcements: list[dict] = []
         # Latest Assist-Response answer per target key ("device:<id>" / "area:<id>" /
@@ -74,6 +78,7 @@ class TedsManager:
         self.alarms = data.get("alarms", [])
         self.recent = data.get("recent", [])
         self.notifications = data.get("notifications", [])
+        self.vision_events = data.get("vision_events", [])
         self.recent_announcements = data.get("recent_announcements", [])
         self.assist_responses = dict(data.get("assist_responses") or {})
         self.assist_history = {
@@ -94,6 +99,7 @@ class TedsManager:
             "alarms": self.alarms,
             "recent": self.recent,
             "notifications": self.notifications,
+            "vision_events": self.vision_events,
             "recent_announcements": self.recent_announcements,
             "assist_responses": self.assist_responses,
             "assist_history": self.assist_history,
@@ -431,6 +437,67 @@ class TedsManager:
         toasts close on every device (not just the one that acted)."""
         self.playback.stop(notif_id)
         self.hass.bus.async_fire(EVENT_NOTIFICATION, {"id": notif_id, "dismissed": True})
+
+    # ── vision analysis events ──────────────────────────────
+    async def add_vision_event(self, event: dict) -> list[dict]:
+        """Store a new analyzed camera event (newest-first), cap the list, fire the
+        live event, and return any events dropped past the cap (so the vision engine
+        can delete their snapshot/clip files)."""
+        self.vision_events.insert(0, event)
+        dropped = self.vision_events[VISION_EVENTS_MAX:]
+        del self.vision_events[VISION_EVENTS_MAX:]
+        self.hass.bus.async_fire(EVENT_VISION_EVENT, {"event": self._vision_public(event)})
+        await self._save()
+        self._notify()
+        return dropped
+
+    async def update_vision_event(self, event_id: str, **changes) -> dict | None:
+        """Patch an event in place (e.g. mark reviewed) and broadcast the change."""
+        for e in self.vision_events:
+            if e.get("id") == event_id:
+                e.update(changes)
+                self.hass.bus.async_fire(
+                    EVENT_VISION_EVENT, {"event": self._vision_public(e)}
+                )
+                await self._save()
+                self._notify()
+                return e
+        return None
+
+    async def remove_vision_event(self, event_id: str) -> dict | None:
+        """Remove one event; return it so the engine can clean up its files."""
+        removed = None
+        kept = []
+        for e in self.vision_events:
+            if e.get("id") == event_id and removed is None:
+                removed = e
+            else:
+                kept.append(e)
+        if removed is None:
+            return None
+        self.vision_events = kept
+        self.hass.bus.async_fire(EVENT_VISION_EVENT, {"id": event_id, "deleted": True})
+        await self._save()
+        self._notify()
+        return removed
+
+    async def clear_vision_events(self) -> list[dict]:
+        """Remove all events; return them so the engine can clean up their files."""
+        removed = self.vision_events
+        self.vision_events = []
+        self.hass.bus.async_fire(EVENT_VISION_EVENT, {"cleared": True})
+        await self._save()
+        self._notify()
+        return removed
+
+    @staticmethod
+    def _vision_public(event: dict) -> dict:
+        """A copy of a vision event without internal file bookkeeping."""
+        return {k: v for k, v in event.items() if not k.startswith("_")}
+
+    def vision_events_public(self) -> list[dict]:
+        """All events as frontend-safe copies (newest-first, no internal keys)."""
+        return [self._vision_public(e) for e in self.vision_events]
 
     # ── announcements ───────────────────────────────────────
     async def announce(self, message, title="Announcement", icon=None, areas=None,

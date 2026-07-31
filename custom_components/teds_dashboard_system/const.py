@@ -14,6 +14,9 @@ RECENT_ANNOUNCEMENTS_MAX = 10
 # How many notifications to keep in the store (FIFO, newest kept).
 NOTIFICATIONS_MAX = 50
 
+# How many analyzed camera vision events to keep in the store (FIFO, newest kept).
+VISION_EVENTS_MAX = 200
+
 # How many Assist-Response answers to keep per target for conversation scroll-back.
 ASSIST_HISTORY_MAX = 20
 
@@ -25,6 +28,13 @@ EVENT_NAVIGATE = f"{DOMAIN}_navigate"
 EVENT_ASSIST_RESPONSE = f"{DOMAIN}_assist_response"
 # Fired when a dashboard content update is installed (so clients can auto-refresh).
 EVENT_DASHBOARD_UPDATED = f"{DOMAIN}_dashboard_updated"
+# Fired when a camera Vision Analysis event is created/updated/removed (live card feed).
+EVENT_VISION_EVENT = f"{DOMAIN}_vision_event"
+
+# Ordered severity levels a vision analysis can assign (low -> high). "unknown" is
+# ranked between harmless and suspicious but always passes a severity threshold so a
+# genuinely-uncertain event is never silently dropped.
+VISION_SEVERITIES = ("harmless", "unknown", "suspicious", "critical")
 
 # Custom Assist intent type names (registered in intents.py + sentences/en.yaml).
 INTENT_ADD_ALARM = "TedsAddAlarm"
@@ -110,6 +120,27 @@ SETTINGS_DEFAULTS = {
     "cameras_list": [],
     # How this device arranges its cameras on the Cameras view (single/quad/big-small/auto).
     "cameras_layout": "big-small",
+    # Vision Analysis — AI-analyzed camera detection events. Server-side (global) feature.
+    # Master switch: when off, no camera detectors are watched.
+    "vision_enabled": False,
+    # ai_task entity used for analysis (None = HA's preferred AI Task entity). Both the
+    # OpenAI and Ollama integrations register ai_task entities; HA abstracts the provider.
+    "vision_ai_task_entity": None,
+    # Per-camera opt-in config keyed by camera entity id:
+    #   {camera_id: {event_types: ["motion"|"person"|"animal"|"car"...],
+    #                severity_threshold: one of VISION_SEVERITIES,
+    #                cooldown_seconds: int, notify: bool,
+    #                actions: [{service: "domain.service", data: {...}}]}}
+    # Only event types matched to a discoverable binary_sensor on the camera are offered.
+    "vision_cameras": {},
+    # How the event window is captured: clip (record + extract frames) | burst (rapid
+    # snapshots) | snapshot (single frame). All attach one or more stills to the AI task.
+    "vision_capture_mode": "clip",
+    # Length of the capture window (seconds) and how many stills to grab across it.
+    "vision_clip_seconds": 6,
+    "vision_frame_count": 3,
+    # Cap on stored analyzed events (older pruned, with their snapshot/clip files).
+    "vision_retention_max": 200,
     # Temperatures — ordered list of climate entity ids. Global = the available allow-list;
     # per-device = the curated subset that device shows (empty inherits the global list).
     "climate_list": [],
@@ -313,6 +344,7 @@ SETTINGS_DEFAULTS = {
     "weather_dashboard": "[root]/weather",
     "calendar_dashboard": "[root]/calendar-month",
     "cameras_dashboard": "[root]/cameras",
+    "vision_dashboard": "[root]/vision",
     "climate_dashboard": "[root]/climate",
     "music_dashboard": "[root]/music",
     "photos_dashboard": "[root]/photos",

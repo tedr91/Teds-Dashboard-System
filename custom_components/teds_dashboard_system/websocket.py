@@ -35,6 +35,12 @@ from .const import (
     EVENT_NAVIGATE,
     EVENT_NOTIFICATION,
     EVENT_SETTINGS,
+    EVENT_VISION_EVENT,
+)
+from .vision import (
+    ai_task_entities,
+    discover_camera_detectors,
+    preferred_ai_task_entity,
 )
 
 _REGISTERED = f"{DOMAIN}_ws_registered"
@@ -78,6 +84,13 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, handle_list_dashboard_views)
     websocket_api.async_register_command(hass, handle_create_ma_player)
     websocket_api.async_register_command(hass, handle_set_device_area)
+    websocket_api.async_register_command(hass, handle_subscribe_vision_events)
+    websocket_api.async_register_command(hass, handle_list_vision_events)
+    websocket_api.async_register_command(hass, handle_list_camera_detectors)
+    websocket_api.async_register_command(hass, handle_list_ai_task_entities)
+    websocket_api.async_register_command(hass, handle_mark_vision_reviewed)
+    websocket_api.async_register_command(hass, handle_delete_vision_event)
+    websocket_api.async_register_command(hass, handle_clear_vision_events)
     hass.data[_REGISTERED] = True
 
 
@@ -581,4 +594,125 @@ async def handle_create_ma_player(
         connection.send_error(msg["id"], "unknown_error", str(err))
         return
     connection.send_result(msg["id"], result)
+
+
+@websocket_api.websocket_command(
+    {vol.Required("type"): f"{DOMAIN}/subscribe_vision_events"}
+)
+@callback
+def handle_subscribe_vision_events(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict
+) -> None:
+    """Push the current vision events, then forward new/updated/removed ones."""
+
+    @callback
+    def forward(event: Event) -> None:
+        connection.send_message(websocket_api.event_message(msg["id"], event.data))
+
+    connection.subscriptions[msg["id"]] = hass.bus.async_listen(EVENT_VISION_EVENT, forward)
+    connection.send_result(msg["id"])
+    mgr = _manager(hass)
+    if mgr:
+        connection.send_message(
+            websocket_api.event_message(msg["id"], {"events": mgr.vision_events_public()})
+        )
+
+
+@websocket_api.websocket_command(
+    {vol.Required("type"): f"{DOMAIN}/list_vision_events"}
+)
+@callback
+def handle_list_vision_events(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict
+) -> None:
+    """Return all stored Vision Analysis events (newest-first)."""
+    mgr = _manager(hass)
+    events = mgr.vision_events_public() if mgr else []
+    connection.send_result(msg["id"], {"events": events})
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): f"{DOMAIN}/list_camera_detectors",
+        vol.Required("camera_entity"): str,
+    }
+)
+@callback
+def handle_list_camera_detectors(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict
+) -> None:
+    """Return the detection event types discoverable for a camera (for the opt-in UI)."""
+    detectors = discover_camera_detectors(hass, msg["camera_entity"])
+    connection.send_result(msg["id"], {"detectors": detectors})
+
+
+@websocket_api.websocket_command(
+    {vol.Required("type"): f"{DOMAIN}/list_ai_task_entities"}
+)
+@callback
+def handle_list_ai_task_entities(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict
+) -> None:
+    """List ai_task entities + attachment support + the preferred one (for onboarding)."""
+    connection.send_result(
+        msg["id"],
+        {
+            "entities": ai_task_entities(hass),
+            "preferred": preferred_ai_task_entity(hass),
+        },
+    )
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): f"{DOMAIN}/mark_vision_reviewed",
+        vol.Required("event_id"): str,
+        vol.Optional("reviewed", default=True): bool,
+    }
+)
+@websocket_api.async_response
+async def handle_mark_vision_reviewed(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict
+) -> None:
+    """Mark a vision event reviewed / unreviewed."""
+    mgr = _manager(hass)
+    if mgr:
+        await mgr.update_vision_event(msg["event_id"], reviewed=msg["reviewed"])
+    connection.send_result(msg["id"], {"success": True})
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): f"{DOMAIN}/delete_vision_event",
+        vol.Required("event_id"): str,
+    }
+)
+@websocket_api.async_response
+async def handle_delete_vision_event(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict
+) -> None:
+    """Delete one vision event and its snapshot/clip files."""
+    mgr = _manager(hass)
+    if mgr:
+        removed = await mgr.remove_vision_event(msg["event_id"])
+        if removed and getattr(mgr, "vision", None):
+            await mgr.vision.cleanup_event(removed)
+    connection.send_result(msg["id"], {"success": True})
+
+
+@websocket_api.websocket_command(
+    {vol.Required("type"): f"{DOMAIN}/clear_vision_events"}
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def handle_clear_vision_events(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict
+) -> None:
+    """Delete all vision events and their files (admin — the store is HA-wide)."""
+    mgr = _manager(hass)
+    if mgr:
+        removed = await mgr.clear_vision_events()
+        if removed and getattr(mgr, "vision", None):
+            await mgr.vision.cleanup_events(removed)
+    connection.send_result(msg["id"], {"success": True})
 

@@ -42,9 +42,10 @@ from .const import (
 from .intents import async_register_intents
 from .store import TedsManager
 from .themes import async_install_bundled_themes
+from .vision import VisionEngine
 from .websocket import async_register as async_register_ws
 
-PLATFORMS = [Platform.SENSOR, Platform.UPDATE]
+PLATFORMS = [Platform.CALENDAR, Platform.SENSOR, Platform.UPDATE]
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -66,6 +67,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     manager.announce_cache_dir = await _register_announce_cache_path(hass)
     manager.media_folder = await _ensure_media_folder(hass)
     await _register_media_paths(hass)
+    manager.vision = VisionEngine(hass, manager)
+    manager.vision.cache_dir = await _register_vision_cache_path(hass)
     manager.cards_js_url = await async_setup_cards(hass, manager.version)
     try:
         await async_install_bundled_themes(hass)
@@ -192,6 +195,21 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             location=call.data.get("location"), _set_location=("location" in call.data),
         )
 
+    async def analyze_camera(call: ServiceCall):
+        await manager.vision.analyze(
+            call.data["camera_entity"], call.data.get("event_type", "manual")
+        )
+
+    async def delete_vision_event(call: ServiceCall):
+        removed = await manager.remove_vision_event(call.data["id"])
+        if removed:
+            await manager.vision.cleanup_event(removed)
+
+    async def clear_vision_events(call: ServiceCall):
+        removed = await manager.clear_vision_events()
+        if removed:
+            await manager.vision.cleanup_events(removed)
+
     async def apply_climate_service(call: ServiceCall):
         """Run the smart climate logic (shared by voice intents + prompt buttons)."""
         entity_id = call.data.get("entity_id")
@@ -277,6 +295,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     hass.services.async_register(DOMAIN, "check_requirements", check_requirements, schema=vol.Schema({}))
 
+    hass.services.async_register(DOMAIN, "analyze_camera", analyze_camera, schema=vol.Schema({
+        vol.Required("camera_entity"): cv.entity_id, vol.Optional("event_type"): cv.string}))
+    hass.services.async_register(DOMAIN, "delete_vision_event", delete_vision_event, schema=vol.Schema({
+        vol.Required("id"): cv.string}))
+    hass.services.async_register(DOMAIN, "clear_vision_events", clear_vision_events, schema=vol.Schema({}))
+
     hass.services.async_register(DOMAIN, "apply_climate", apply_climate_service, schema=vol.Schema({
         vol.Optional("entity_id"): cv.entity_id, vol.Optional("zone"): cv.string,
         vol.Optional("area"): vol.Any(None, cv.string),
@@ -326,6 +350,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     )
 
     _setup_action_nudge(hass, entry, manager)
+
+    manager.vision.async_setup(entry)
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
@@ -494,6 +520,33 @@ async def _register_announce_cache_path(hass: HomeAssistant) -> str | None:
     flag = f"{DOMAIN}_announce_cache_registered"
     if not hass.data.get(flag):
         url = "/teds_dashboard_system/announce_cache"
+        try:
+            from homeassistant.components.http import StaticPathConfig
+
+            await hass.http.async_register_static_paths(
+                [StaticPathConfig(url, cache_dir, False)]
+            )
+            hass.data[flag] = True
+        except Exception:  # noqa: BLE001 - fall back for older HA cores
+            try:
+                hass.http.register_static_path(url, cache_dir, False)
+                hass.data[flag] = True
+            except Exception:  # noqa: BLE001
+                return None
+    return cache_dir
+
+
+async def _register_vision_cache_path(hass: HomeAssistant) -> str | None:
+    """Serve Vision Analysis thumbnails/clips at /teds_dashboard_system/vision_cache/*
+    and return the writable cache directory (under the config dir, survives updates)."""
+    cache_dir = hass.config.path(f"{DOMAIN}_vision_cache")
+    try:
+        await hass.async_add_executor_job(lambda: os.makedirs(cache_dir, exist_ok=True))
+    except Exception:  # noqa: BLE001 - if we can't make the dir, capture just skips media
+        return None
+    flag = f"{DOMAIN}_vision_cache_registered"
+    if not hass.data.get(flag):
+        url = "/teds_dashboard_system/vision_cache"
         try:
             from homeassistant.components.http import StaticPathConfig
 
