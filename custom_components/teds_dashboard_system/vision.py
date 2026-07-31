@@ -278,8 +278,10 @@ class VisionEngine:
                 if device:
                     area_id = device.area_id
         state = self.hass.states.get(camera_id)
+        configured = ((self._settings().get("vision_cameras") or {}).get(camera_id) or {}).get("name")
         cam_name = (
-            (state.attributes.get("friendly_name") if state else None)
+            (configured if isinstance(configured, str) and configured else None)
+            or (state.attributes.get("friendly_name") if state else None)
             or (entry.name or entry.original_name if entry else None)
             or camera_id
         )

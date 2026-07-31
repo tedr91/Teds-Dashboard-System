@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.39
+
+- **Vision Analysis rebuilt around per-camera triggers.** Each camera is configured inline in the Cameras list with a list of triggers (detection type + a multi-select severity filter + cooldown), and each trigger runs its own actions — Toast notification, Push notification, Display live feed, or a Custom action — only when the analyzed severity matches. Bundles Ted's Cards v0.9.36.
+
 ### v0.9.38
 
 - **New: Camera Vision Analysis.** Opt cameras into Vision Analysis (Settings → Vision) and their motion / person / animal / vehicle detections are captured and classified by Home Assistant's built-in AI Task (OpenAI, Ollama, …) into a severity plus a short and long summary, with a best-frame thumbnail and a short clip. Adds a Vision timeline card and dashboard view, a `calendar.teds_vision_timeline` entity so you can ask Assist what happened, per-camera opt-in with severity thresholds and on-trigger notifications/actions, and `analyze_camera` / `delete_vision_event` / `clear_vision_events` services. No third-party vision integration required. Bundles Ted's Cards v0.9.35.
