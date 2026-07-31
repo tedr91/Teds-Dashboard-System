@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.36
+
+- Bundles Ted's Cards v0.9.33 — the wallpaper now crossfades when a view first loads and when you switch albums (fading in over the theme background), instead of snapping. Plain navigation with the same wallpaper still repaints instantly.
+
 ### v0.9.35
 
 - Bundles Ted's Cards v0.9.32 — the Nightstand device type trims the navbar to the Home/Music/Alarms-Timers launcher buttons and shows only the Center section. Pairs with Ted's Cards v0.9.32+.
