@@ -477,7 +477,7 @@ class VisionEngine:
                 elif atype == "push":
                     await self._act_push(act, title, message)
                 elif atype == "live_feed":
-                    await self._act_live_feed(act)
+                    await self._act_live_feed(act, event["camera_id"])
                 elif atype == "custom":
                     await self._act_custom(act)
             except Exception:  # noqa: BLE001 - one bad action shouldn't stop the rest
@@ -491,11 +491,15 @@ class VisionEngine:
                 icon="mdi:cctv", area=area, source="vision",
             )
 
-    async def _act_live_feed(self, act: dict) -> None:
-        """Nudge screens to the Vision view. Empty areas list = everywhere."""
+    async def _act_live_feed(self, act: dict, camera_id: str) -> None:
+        """Nudge screens to the Cameras view and focus this camera (primary + live).
+
+        Empty areas list = everywhere.
+        """
         for area in (act.get("areas") or [None]):
             self.hass.bus.async_fire(
-                EVENT_NAVIGATE, {"dashboard": "vision_dashboard", "area": area, "device_id": None}
+                EVENT_NAVIGATE,
+                {"dashboard": "cameras_dashboard", "area": area, "device_id": None, "camera": camera_id},
             )
 
     async def _act_push(self, act: dict, title: str, message: str) -> None:
