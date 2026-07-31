@@ -160,9 +160,9 @@ SETTINGS_DEFAULTS = {
                 }
             ]
         },
-        {"align": "right", "items": [{"type": "spacer", "size": 24}]},
         {"items": []},
-        {"align": "left", "items": [{"type": "spacer", "size": 24}]},
+        {"items": []},
+        {"items": []},
         {
             "items": [
                 {"type": "assist"},
