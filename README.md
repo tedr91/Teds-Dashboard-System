@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.33
+
+- Bundles Ted's Cards v0.9.30 — navbar sections no longer overlap (the launcher folds into its chevron instead of overlapping a side section like the Assist mic), plus default spacers beside the center section. Pairs with Ted's Cards v0.9.30+.
+
 ### v0.9.32
 
 - Bundles Ted's Cards v0.9.29 — vertical navbar layout fixes (floating side bars hug content + center vertically; snap side bars restored to full-height spread) and the Nightstand device type trims the navbar to Home/Music/Alarms-Timers + Center section. Pairs with Ted's Cards v0.9.29+.
