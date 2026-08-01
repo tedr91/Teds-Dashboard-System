@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.50
+
+- Bundles Ted's Cards v0.9.47 — Camera Vision notifications now carry their event reference, so clicking one in the navbar notifications popover plays the event's clip (resolved by id to handle two-pass analysis). Notifications gained a generic `data` payload to support this.
+
 ### v0.9.49
 
 - Bundles Ted's Cards v0.9.46 — the Vision card gains right-aligned “mark all reviewed” and “clear all” buttons, and marking an old event reviewed no longer reorders it to the top of the list.

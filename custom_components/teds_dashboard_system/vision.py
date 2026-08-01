@@ -638,7 +638,7 @@ class VisionEngine:
             atype = (act or {}).get("type")
             try:
                 if atype == "toast":
-                    await self._act_toast(act, title, message, notif_sev)
+                    await self._act_toast(act, event, title, message, notif_sev)
                 elif atype == "push":
                     await self._act_push(act, title, message)
                 elif atype == "live_feed":
@@ -648,12 +648,19 @@ class VisionEngine:
             except Exception:  # noqa: BLE001 - one bad action shouldn't stop the rest
                 _LOGGER.exception("Ted's Vision: action %s failed", atype)
 
-    async def _act_toast(self, act: dict, title: str, message: str, severity: str) -> None:
-        """In-dashboard toast. Empty areas list = house-wide (everywhere)."""
+    async def _act_toast(self, act: dict, event: dict, title: str, message: str, severity: str) -> None:
+        """In-dashboard toast. Empty areas list = house-wide (everywhere). Carries the
+        event reference so clicking the notification can open its clip."""
+        data = {
+            "vision_event_id": event["id"],
+            "clip_url": event.get("clip_url"),
+            "thumbnail_url": event.get("thumbnail_url"),
+            "camera_name": event.get("camera_name"),
+        }
         for area in (act.get("areas") or [None]):
             await self.manager.notify(
                 title=title, message=message, severity=severity,
-                icon="mdi:cctv", area=area, source="vision",
+                icon="mdi:cctv", area=area, source="vision", data=data,
             )
 
     async def _act_live_feed(self, act: dict, camera_id: str) -> None:

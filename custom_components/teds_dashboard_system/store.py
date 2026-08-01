@@ -330,7 +330,7 @@ class TedsManager:
     def _add_notification(self, *, title, message, severity="info", icon=None,
                           area=None, actions=None, notif_id=None, timeout=None,
                           persistence="normal", source="service", snooze=None,
-                          announce_targets=None, play_sound=True):
+                          announce_targets=None, play_sound=True, data=None):
         """Create a notification, fire the event, play sound, and refresh sensors.
 
         `persistence` controls its lifetime:
@@ -361,6 +361,8 @@ class TedsManager:
             "actions": actions or [],
             "source": source,
             "announce_targets": announce_targets,
+            # Free-form context for custom click handlers (e.g. a vision clip reference).
+            "data": data,
         }
         # Transient notifications are never persisted: just deliver the toast + sound.
         if persistence != "transient":
@@ -378,11 +380,11 @@ class TedsManager:
 
     async def notify(self, title, message, severity="info", icon=None, area=None,
                      actions=None, notif_id=None, timeout=None, persistence="normal",
-                     source="service"):
+                     source="service", data=None):
         self._add_notification(
             title=title, message=message, severity=severity, icon=icon, area=area,
             actions=actions, notif_id=notif_id, timeout=timeout, persistence=persistence,
-            source=source,
+            source=source, data=data,
         )
         await self._save()
         self._notify()
