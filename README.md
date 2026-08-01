@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.48
+
+- Bundles Ted's Cards v0.9.45 — Vision false-alarm fixes: events are no longer all tagged as false alarms (boolean coercion bug), “Drop” now discards false alarms flagged during the detailed pass, and the global-only Vision Analysis settings are hidden from the “This device” tab.
+
 ### v0.9.47
 
 - Bundles Ted's Cards v0.9.44 — collapsible list rows now show the chevron at the far right with a trash-can delete button immediately to its left (consistent across Settings/Navbar editors), and the Settings, Announce, and Notification Center cards are hidden from the “Add card” chooser.

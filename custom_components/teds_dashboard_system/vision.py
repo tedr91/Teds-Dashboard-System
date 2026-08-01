@@ -182,6 +182,14 @@ def _entity_supports_video(hass: HomeAssistant, entity_id: str | None) -> bool:
     return bool(entity_id) and _ai_task_platform(hass, entity_id) in VIDEO_CAPABLE_PLATFORMS
 
 
+def _as_bool(value: object) -> bool:
+    """Coerce an ai_task structured value to bool — providers may return the string 'false',
+    and bool('false') is True, which would flag every event as a false alarm."""
+    if isinstance(value, str):
+        return value.strip().lower() in ("true", "1", "yes", "y")
+    return bool(value)
+
+
 
 class VisionEngine:
     """Owns detector subscriptions, capture, AI analysis, and event storage."""
@@ -300,7 +308,7 @@ class VisionEngine:
         severity = (analysis or {}).get("severity") or "unknown"
         if severity not in VISION_SEVERITIES:
             severity = "unknown"
-        false_alarm = bool((analysis or {}).get("false_alarm"))
+        false_alarm = _as_bool((analysis or {}).get("false_alarm"))
         event = {
             "id": event_id,
             "camera_id": camera_id,
@@ -360,9 +368,14 @@ class VisionEngine:
                 if rsev in VISION_SEVERITIES:
                     patch["severity"] = rsev
                 if "false_alarm" in refined:
-                    patch["false_alarm"] = bool(refined["false_alarm"])
+                    patch["false_alarm"] = _as_bool(refined["false_alarm"])
             await self.manager.update_vision_event(event_id, **patch)
             event.update(patch)
+            # The detailed pass can flip the verdict — re-apply "drop" on the final result.
+            if event["false_alarm"] and fa_mode == "drop":
+                await self.manager.remove_vision_event(event_id)
+                await self._cleanup_files([event])
+                return None
         return event
 
     def _detailed_entity(self, settings: dict, quick_entity: str | None) -> str | None:
