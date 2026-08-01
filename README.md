@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.49
+
+- Bundles Ted's Cards v0.9.46 — the Vision card gains right-aligned “mark all reviewed” and “clear all” buttons, and marking an old event reviewed no longer reorders it to the top of the list.
+
 ### v0.9.48
 
 - Bundles Ted's Cards v0.9.45 — Vision false-alarm fixes: events are no longer all tagged as false alarms (boolean coercion bug), “Drop” now discards false alarms flagged during the detailed pass, and the global-only Vision Analysis settings are hidden from the “This device” tab.
