@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.63
+
+- Bundles Ted's Cards v0.9.60 — the **Tablet — Portrait** device profile's navbar now omits the weather and clock items by default. The portrait **Home (Wall Panel)** view's calendar is now auto-height (sizes to its agenda), letting the Room Card take the remaining space.
+
 ### v0.9.62
 
 - Bundles Ted's Cards v0.9.59 — Room Card editor refreshes after Auto-populate (no stale fields), the Music card's mini mode shows a non-interactive playback strip along the card's bottom edge, and the Calendar card gains `agenda_evening_lookahead`. The portrait **Home (Wall Panel)** view now uses it so the agenda extends through tomorrow only from 5pm.

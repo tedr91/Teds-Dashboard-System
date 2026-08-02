@@ -32,10 +32,10 @@ cards:
           gap: 12px;
         }
         #root > * { margin: 0 !important; }
-        /* Calendar (2nd) + Room Card (3rd) share the flexible space; the clock sits
-           at the top and the mini Music bar at the bottom. */
-        #root > *:nth-child(2) { flex: 1 1 0; min-height: 0; }
-        #root > *:nth-child(3) { flex: 1.4 1 0; min-height: 0; }
+        /* The clock, auto-height Calendar, and mini Music bar size to content; the
+           Room Card (3rd) takes the remaining flexible space. */
+        #root > *:nth-child(2) { flex: 0 0 auto; }
+        #root > *:nth-child(3) { flex: 1 1 0; min-height: 0; }
     cards:
       - type: custom:ted-clock-weather-card
         theme: ted-style
@@ -55,7 +55,6 @@ cards:
         dashboard_integration: true
         default_view: agenda
         show_header: false
-        fill: true
         agenda_evening_lookahead: true
       - type: custom:ted-room-card
         dashboard_integration: true
