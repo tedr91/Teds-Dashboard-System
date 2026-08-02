@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.65
+
+- Bundles Ted's Cards v0.9.61 — the Calendar card gains `agenda_day_height` / `agenda_evening_height`. The portrait **Home (Wall Panel)** view uses them so the agenda is 40vh before 5pm and 80vh from 5pm (pairing with its evening 2-day lookahead).
+
 ### v0.9.64
 
 - Reverts the portrait **Home (Wall Panel)** calendar to its filled layout — the auto-height change made the embedded agenda card render at full intrinsic height, pushing the Room Card and Music player off-screen. The calendar and Room Card again share the flexible column space.
