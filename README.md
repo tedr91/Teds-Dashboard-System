@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.52
+
+- Bundles Ted's Cards v0.9.49 — Room Card auto-populate refinements (compact light/cover tiles, name+state buttons, multi-speaker Media icon, tabbed layout for 2+ sections) and the editor Auto-populate confirmation now renders above the card editor.
+
 ### v0.9.51
 
 - Bundles Ted's Cards v0.9.48 — the Room Card can auto-populate from a room's entities: a standalone **Auto-populate from area** editor button, and a `dashboard_integration` mode that adopts the device's area and fills in status items + control sections automatically (hiding when the device has no area).
