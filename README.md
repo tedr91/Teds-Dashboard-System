@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.62
+
+- Bundles Ted's Cards v0.9.59 — Room Card editor refreshes after Auto-populate (no stale fields), the Music card's mini mode shows a non-interactive playback strip along the card's bottom edge, and the Calendar card gains `agenda_evening_lookahead`. The portrait **Home (Wall Panel)** view now uses it so the agenda extends through tomorrow only from 5pm.
+
 ### v0.9.61
 
 - Bundles Ted's Cards v0.9.58 — Room Card auto-populate strips the room's area name from **Controls** and **Scenes** item names (e.g. in a “Kitchen” room, “Kitchen Ceiling Lights” becomes “Ceiling Lights”). Light/Cover cards default the Neumorphic effect off, and light-name header text stays legible over a top-scrimmed header photo.

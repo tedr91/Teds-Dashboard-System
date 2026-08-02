@@ -56,8 +56,7 @@ cards:
         default_view: agenda
         show_header: false
         fill: true
-        calendar_config:
-          rolling_days_agenda: 2
+        agenda_evening_lookahead: true
       - type: custom:ted-room-card
         dashboard_integration: true
       - type: custom:ted-music-card
