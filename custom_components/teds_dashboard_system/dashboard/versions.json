@@ -19,7 +19,7 @@
     "view-weather": "1.0.1",
     "view-home-handheld": "1.0.0",
     "view-home-nightstand": "1.0.0",
-    "view-home-wallpanel-h": "1.0.0",
+    "view-home-wallpanel-h": "1.1.0",
     "view-home-wallpanel-v": "1.0.0"
   },
   "layout": {

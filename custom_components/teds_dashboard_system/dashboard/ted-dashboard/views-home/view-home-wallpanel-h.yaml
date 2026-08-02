@@ -1,19 +1,70 @@
-# View: Home (Wall Panel — Landscape) — placeholder (custom:grid-layout). path: home-wallpanel-h
-# Uses the Welcome view's clock + content layout. The content area holds a
-# MessageBox card as the placeholder. Navbar is a plain card (position:fixed).
+# View: Home (Wall Panel — Landscape). path: home-wallpanel-h
+# Two-column landscape home: LEFT column stacks a clock/weather header, an
+# area-aware Room Card, and a compact Music player; RIGHT column is a full-height
+# agenda Calendar. The Room Card is `dashboard_integration: true` with no
+# sections, so it adopts THIS device's area and auto-populates — and hides itself
+# (its slot collapses) when the device has no area. Navbar + background are the
+# usual shared includes.
 type: custom:grid-layout
 path: home-wallpanel-h
 title: Home (Wall Panel Landscape)
 icon: mdi:home
-layout: !include ../shared/layout-clock-content.yaml
+layout:
+  height: calc(100dvh - var(--ted-navbar-header-reserve, var(--kiosk-header-height, var(--header-height, 56px))) - var(--safe-area-inset-top, 0px) - var(--ted-navbar-bottom-reserve, 48px) - 24px)
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1fr)
+  grid-template-rows: minmax(0, 1fr)
+  grid-template-areas: |
+    "left calendar"
+  grid-gap: 12px
+  padding: 12px
+  box-sizing: border-box
+  "--masonry-view-card-margin": "0px"
 cards:
-  - !include ../shared/clock-header.yaml
-  - type: custom:ted-messagebox-card
+  - type: vertical-stack
     view_layout:
-      grid-area: content
-    severity: info
-    icon: mdi:home
-    title: Home (Wall Panel — Landscape)
-    message: This is a placeholder view. Content coming soon.
+      grid-area: left
+    card_mod:
+      style: |
+        :host { height: 100%; }
+        #root {
+          height: 100%;
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
+        #root > * { margin: 0 !important; }
+        /* Room Card (2nd child) fills the middle; the mini Music bar sits at the
+           bottom. When the Room Card hides (no device area) its slot still holds
+           the flex space, keeping the clock at the top and Music at the bottom. */
+        #root > *:nth-child(2) { flex: 1 1 auto; min-height: 0; }
+    cards:
+      - type: custom:ted-clock-weather-card
+        theme: ted-style
+        transparency: 100
+        dashboard_integration: true
+        clock_size: custom
+        clock_size_custom: 95
+        weather_size: custom
+        weather_size_custom: 95
+        date_size: custom
+        date_size_custom: 95
+        # Custom H:MM / h:MM — the hour follows HA's 12/24-hour system setting.
+        time_format: custom
+        time_format_custom: h:MM
+        hug_content: true
+        card_mod:
+          style: |
+            .cwc { padding: 8px !important; }
+      - type: custom:ted-room-card
+        dashboard_integration: true
+      - type: custom:ted-music-card
+        player_source: settings
+        mode: mini
+  - type: custom:ted-calendar-card
+    view_layout:
+      grid-area: calendar
+    calendar_source: settings
+    default_view: agenda
+    fill: true
   - !include ../shared/navbar.yaml
   - !include ../shared/background.yaml
