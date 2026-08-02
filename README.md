@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.54
+
+- Bundles Ted's Cards v0.9.51 — auto-populated Room Card light and cover tiles are now double-height with default name/icon/state styling.
+
 ### v0.9.53
 
 - Bundles Ted's Cards v0.9.50 — the clock's custom time format now follows HA's 12/24-hour setting, and the self-contained confirmation/prompt dialogs are now interactive above the card editor. Also ships the new landscape **Home (Wall Panel)** view: an area-aware Room Card + compact Music player alongside a clock, with a full-height agenda calendar.
