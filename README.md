@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.64
+
+- Reverts the portrait **Home (Wall Panel)** calendar to its filled layout — the auto-height change made the embedded agenda card render at full intrinsic height, pushing the Room Card and Music player off-screen. The calendar and Room Card again share the flexible column space.
+
 ### v0.9.63
 
 - Bundles Ted's Cards v0.9.60 — the **Tablet — Portrait** device profile's navbar now omits the weather and clock items by default. The portrait **Home (Wall Panel)** view's calendar is now auto-height (sizes to its agenda), letting the Room Card take the remaining space.
