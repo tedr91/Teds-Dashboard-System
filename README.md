@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.58
+
+- Bundles Ted's Cards v0.9.55 — a global **Theme** setting (Settings → General) now drives all dashboard-integrated cards (replacing the per-Calendars Theme setting). Room Card defaults to HA theme; auto-populate routes Browser Mod entities to Others, orders Controls lights by role, and styles Scenes as icon + name.
+
 ### v0.9.57
 
 - Bundles Ted's Cards v0.9.54 — the Calendar card's header is now colored to match each theme (steel blue for Ted's, theme primary for HA), lightly translucent.
