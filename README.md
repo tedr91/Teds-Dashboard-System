@@ -51,6 +51,11 @@ frontend:
 
 ## Changelog
 
+### v0.9.70
+
+- Vision “False alarm” is now flagged only when the analysis concludes no genuine activity was detected (a spurious trigger like shadows, rain, or a swaying tree) — not merely uninteresting activity.
+- Stopped the recorder warnings about `sensor.teds_vision_events` and `sensor.teds_settings` attributes exceeding 16 KB: their large payloads (read live by the cards over WebSocket) are now excluded from database recording.
+
 ### v0.9.69
 
 - Bundles Ted's Cards v0.9.65 — fixes a full-screen black overlay that could appear on devices whose browser lacks Popover API support (regression from the v0.9.64 Vision live-feed overlay).
