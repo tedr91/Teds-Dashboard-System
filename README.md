@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.61
+
+- Bundles Ted's Cards v0.9.58 — Room Card auto-populate strips the room's area name from **Controls** and **Scenes** item names (e.g. in a “Kitchen” room, “Kitchen Ceiling Lights” becomes “Ceiling Lights”). Light/Cover cards default the Neumorphic effect off, and light-name header text stays legible over a top-scrimmed header photo.
+
 ### v0.9.60
 
 - Bundles Ted's Cards v0.9.57 — device type presets: Landscape tablet auto-hides the navbar, Portrait tablet keeps it shown. Adds the single-column portrait **Home (Wall Panel)** view (clock, 2-day agenda calendar, area-aware Room Card, compact Music).
