@@ -32,8 +32,8 @@ cards:
           gap: 12px;
         }
         #root > * { margin: 0 !important; }
-        /* The Calendar (2nd) sets its own height by time of day (agenda_day_height /
-           agenda_evening_height); the Room Card (3rd) takes the remaining space. */
+        /* Fixed-height Calendar (2nd); the Room Card (3rd) takes the remaining space. */
+        #root > *:nth-child(2) { flex: 0 0 24vh; min-height: 0; }
         #root > *:nth-child(3) { flex: 1 1 0; min-height: 0; }
     cards:
       - type: custom:ted-clock-weather-card
@@ -55,9 +55,8 @@ cards:
         default_view: agenda
         show_header: false
         fill: true
-        agenda_evening_lookahead: true
-        agenda_day_height: 40vh
-        agenda_evening_height: 80vh
+        calendar_config:
+          rolling_days_agenda: 1
       - type: custom:ted-room-card
         dashboard_integration: true
       - type: custom:ted-music-card

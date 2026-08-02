@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.66
+
+- Bundles Ted's Cards v0.9.62. The portrait **Home (Wall Panel)** calendar now always shows a day ahead and uses a fixed 24vh height (dropping the earlier time-of-day sizing).
+
 ### v0.9.65
 
 - Bundles Ted's Cards v0.9.61 — the Calendar card gains `agenda_day_height` / `agenda_evening_height`. The portrait **Home (Wall Panel)** view uses them so the agenda is 40vh before 5pm and 80vh from 5pm (pairing with its evening 2-day lookahead).
