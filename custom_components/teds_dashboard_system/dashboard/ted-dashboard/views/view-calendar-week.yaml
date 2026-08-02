@@ -25,7 +25,7 @@ cards:
     fill: true
     card:
       type: custom:ted-calendar-card
-      calendar_source: settings
+      dashboard_integration: true
       default_view: week
       fill: true
       calendar_config:

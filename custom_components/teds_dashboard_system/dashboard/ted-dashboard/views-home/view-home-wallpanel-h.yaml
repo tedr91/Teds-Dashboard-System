@@ -63,7 +63,7 @@ cards:
   - type: custom:ted-calendar-card
     view_layout:
       grid-area: calendar
-    calendar_source: settings
+    dashboard_integration: true
     default_view: agenda
     fill: true
   - !include ../shared/navbar.yaml

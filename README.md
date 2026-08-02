@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.55
+
+- Bundles Ted's Cards v0.9.52 — Room Card gains a 1.5x button height and independently scrolling button sections; the Calendar card's “Calendar source” is replaced by a `dashboard_integration` flag and its Header editor gains a Show controls toggle. The Calendar views now use `dashboard_integration: true`.
+
 ### v0.9.54
 
 - Bundles Ted's Cards v0.9.51 — auto-populated Room Card light and cover tiles are now double-height with default name/icon/state styling.

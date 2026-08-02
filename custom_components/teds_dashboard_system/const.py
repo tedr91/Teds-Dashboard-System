@@ -169,9 +169,9 @@ SETTINGS_DEFAULTS = {
     "calendars_list": [],
     # Per-calendar display options keyed by calendar entity id (global/calendar-wide):
     # {entity_id: {name?, readonly?, person?, icon?, icon_source?, color?}}. Applied by
-    # Ted's Calendar card in `calendar_source: settings` mode.
+    # Ted's Calendar card when `dashboard_integration: true`.
     "calendar_options": {},
-    # Card-level Calendar appearance (used by Ted's Calendar card in settings mode when
+    # Card-level Calendar appearance (used by Ted's Calendar card with dashboard_integration when
     # the card's own YAML doesn't set the corresponding option).
     "calendar_name": "Family Calendar",  # calendar title ("" = no title)
     "calendar_theme": "ted-style",  # ha | ted-style
