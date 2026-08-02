@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.68
+
+- Bundles Ted's Cards v0.9.64 — Vision “Display live feed” now pops open a muted full-screen live stream of the triggering camera on targeted screens (no navigation, WebRTC-preferred, auto-closes after 60s or on tap).
+
 ### v0.9.67
 
 - Bundles Ted's Cards v0.9.63. The wall-panel **Home** views' Room Cards now use `auto_max_rows`, so each section shows only as many rows of controls as fit the card and tucks the rest into the "…" menu.

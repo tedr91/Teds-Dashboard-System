@@ -664,14 +664,14 @@ class VisionEngine:
             )
 
     async def _act_live_feed(self, act: dict, camera_id: str) -> None:
-        """Nudge screens to the Cameras view and focus this camera (primary + live).
+        """Open a muted live view of this camera on target screens (no navigation).
 
         Empty areas list = everywhere.
         """
         for area in (act.get("areas") or [None]):
             self.hass.bus.async_fire(
                 EVENT_NAVIGATE,
-                {"dashboard": "cameras_dashboard", "area": area, "device_id": None, "camera": camera_id},
+                {"open_camera": camera_id, "area": area, "device_id": None},
             )
 
     async def _act_push(self, act: dict, title: str, message: str) -> None:
