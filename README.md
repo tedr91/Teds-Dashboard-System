@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.69
+
+- Bundles Ted's Cards v0.9.65 — fixes a full-screen black overlay that could appear on devices whose browser lacks Popover API support (regression from the v0.9.64 Vision live-feed overlay).
+
 ### v0.9.68
 
 - Bundles Ted's Cards v0.9.64 — Vision “Display live feed” now pops open a muted full-screen live stream of the triggering camera on targeted screens (no navigation, WebRTC-preferred, auto-closes after 60s or on tap).
