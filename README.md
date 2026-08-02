@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.51
+
+- Bundles Ted's Cards v0.9.48 — the Room Card can auto-populate from a room's entities: a standalone **Auto-populate from area** editor button, and a `dashboard_integration` mode that adopts the device's area and fills in status items + control sections automatically (hiding when the device has no area).
+
 ### v0.9.50
 
 - Bundles Ted's Cards v0.9.47 — Camera Vision notifications now carry their event reference, so clicking one in the navbar notifications popover plays the event's clip (resolved by id to handle two-pass analysis). Notifications gained a generic `data` payload to support this.
