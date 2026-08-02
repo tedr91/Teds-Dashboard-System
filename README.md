@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.57
+
+- Bundles Ted's Cards v0.9.54 — the Calendar card's header is now colored to match each theme (steel blue for Ted's, theme primary for HA), lightly translucent.
+
 ### v0.9.56
 
 - Bundles Ted's Cards v0.9.53 — the Calendar card gains three consistent theme options (Home Assistant, Ted's, SuperDingo's). The landscape Home wall-panel now hides the calendar's navigation controls.
