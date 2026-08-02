@@ -65,6 +65,7 @@ cards:
       grid-area: calendar
     dashboard_integration: true
     default_view: agenda
+    show_controls: false
     fill: true
   - !include ../shared/navbar.yaml
   - !include ../shared/background.yaml

@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.56
+
+- Bundles Ted's Cards v0.9.53 — the Calendar card gains three consistent theme options (Home Assistant, Ted's, SuperDingo's). The landscape Home wall-panel now hides the calendar's navigation controls.
+
 ### v0.9.55
 
 - Bundles Ted's Cards v0.9.52 — Room Card gains a 1.5x button height and independently scrolling button sections; the Calendar card's “Calendar source” is replaced by a `dashboard_integration` flag and its Header editor gains a Show controls toggle. The Calendar views now use `dashboard_integration: true`.
