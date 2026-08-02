@@ -59,6 +59,7 @@ cards:
           rolling_days_agenda: 1
       - type: custom:ted-room-card
         dashboard_integration: true
+        auto_max_rows: true
       - type: custom:ted-music-card
         player_source: settings
         mode: mini

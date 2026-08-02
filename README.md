@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.67
+
+- Bundles Ted's Cards v0.9.63. The wall-panel **Home** views' Room Cards now use `auto_max_rows`, so each section shows only as many rows of controls as fit the card and tucks the rest into the "…" menu.
+
 ### v0.9.66
 
 - Bundles Ted's Cards v0.9.62. The portrait **Home (Wall Panel)** calendar now always shows a day ahead and uses a fixed 24vh height (dropping the earlier time-of-day sizing).
