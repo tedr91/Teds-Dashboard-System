@@ -174,7 +174,6 @@ SETTINGS_DEFAULTS = {
     # Card-level Calendar appearance (used by Ted's Calendar card with dashboard_integration when
     # the card's own YAML doesn't set the corresponding option).
     "calendar_name": "Family Calendar",  # calendar title ("" = no title)
-    "calendar_theme": "ted-style",  # ha | ted-style
     "calendar_view": "month",     # month | week | schedule | agenda
     # When true, add a day_styles rule that dims weekends so weekdays stand out.
     "calendar_emphasize_weekdays": True,
@@ -310,6 +309,8 @@ SETTINGS_DEFAULTS = {
     # Per-device profile: None | "nightstand" | "tablet-landscape" | "tablet-portrait" | "handheld".
     # Picking one cascades a preset of navbar/home/fullscreen device settings (frontend applies it).
     "device_type": None,
+    # Visual style for Ted's cards with dashboard_integration (ha | ted-style).
+    "theme": "ha",
     # Internal: default maximized state for content Fullscreen cards on this device, seeded by the
     # device type. Whitelisted for writes.
     "fullscreen_default": False,

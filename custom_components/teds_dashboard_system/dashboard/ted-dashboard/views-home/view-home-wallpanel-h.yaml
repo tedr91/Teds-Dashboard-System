@@ -48,9 +48,6 @@ cards:
         weather_size_custom: 95
         date_size: custom
         date_size_custom: 95
-        # Custom H:MM / h:MM — the hour follows HA's 12/24-hour system setting.
-        time_format: custom
-        time_format_custom: h:MM
         hug_content: true
         card_mod:
           style: |
