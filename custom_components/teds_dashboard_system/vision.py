@@ -50,9 +50,12 @@ _ANALYSIS_INSTRUCTIONS = (
     "'suspicious' for unexpected or concerning activity worth a human review; "
     "'harmless' for routine or expected activity (residents, pets, deliveries, "
     "passing cars); 'unknown' only if the frames are too unclear to judge.\n"
-    "- false_alarm: true ONLY if the detector fired but nothing of genuine interest is "
-    "actually present (e.g. shifting shadows, rain, insects on the lens, lighting or "
-    "exposure changes, a moving tree/flag); otherwise false.\n"
+    "- false_alarm: true ONLY if, after analysis, no genuine activity was actually "
+    "detected in the frames — the detector fired but nothing is really happening "
+    "(e.g. shifting shadows, rain, insects on the lens, lighting or exposure changes, "
+    "a swaying tree or flag with no subject present). If ANY real activity or subject "
+    "is present (a person, animal, vehicle, package, or other genuine movement), set "
+    "false — even if the activity is routine or harmless.\n"
     "- short_summary: one concise sentence describing what the clip shows.\n"
     "- long_summary: a detailed paragraph covering who or what is present, what "
     "they are doing, and any notable details."
@@ -594,7 +597,8 @@ class VisionEngine:
                     "selector": {"select": {"options": list(VISION_SEVERITIES)}},
                 },
                 "false_alarm": {
-                    "description": "True if the detection is very likely a false alarm.",
+                    "description": "True only if the analysis concluded no genuine "
+                    "activity was detected (the detection was spurious).",
                     "required": True,
                     "selector": {"boolean": {}},
                 },
