@@ -1,19 +1,67 @@
-# View: Home (Wall Panel — Portrait) — placeholder (custom:grid-layout). path: home-wallpanel-v
-# Uses the Welcome view's clock + content layout. The content area holds a
-# MessageBox card as the placeholder. Navbar is a plain card (position:fixed).
+# View: Home (Wall Panel — Portrait). path: home-wallpanel-v
+# Single-column portrait home stacked top-to-bottom: clock/weather, a compact
+# 2-day agenda Calendar (no header), an area-aware Room Card, and a compact Music
+# player. The Room Card is `dashboard_integration: true` with no sections, so it
+# adopts THIS device's area and auto-populates (hiding when the device has no
+# area). Navbar + background are the usual shared includes.
 type: custom:grid-layout
 path: home-wallpanel-v
 title: Home (Wall Panel Portrait)
 icon: mdi:home
-layout: !include ../shared/layout-clock-content.yaml
+layout:
+  height: calc(100dvh - var(--ted-navbar-header-reserve, var(--kiosk-header-height, var(--header-height, 56px))) - var(--safe-area-inset-top, 0px) - var(--ted-navbar-bottom-reserve, 48px) - 24px)
+  grid-template-columns: minmax(0, 1fr)
+  grid-template-rows: minmax(0, 1fr)
+  grid-template-areas: |
+    "content"
+  grid-gap: 12px
+  padding: 12px
+  box-sizing: border-box
+  "--masonry-view-card-margin": "0px"
 cards:
-  - !include ../shared/clock-header.yaml
-  - type: custom:ted-messagebox-card
+  - type: vertical-stack
     view_layout:
       grid-area: content
-    severity: info
-    icon: mdi:home
-    title: Home (Wall Panel — Portrait)
-    message: This is a placeholder view. Content coming soon.
+    card_mod:
+      style: |
+        :host { height: 100%; }
+        #root {
+          height: 100%;
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
+        #root > * { margin: 0 !important; }
+        /* Calendar (2nd) + Room Card (3rd) share the flexible space; the clock sits
+           at the top and the mini Music bar at the bottom. */
+        #root > *:nth-child(2) { flex: 1 1 0; min-height: 0; }
+        #root > *:nth-child(3) { flex: 1.4 1 0; min-height: 0; }
+    cards:
+      - type: custom:ted-clock-weather-card
+        theme: ted-style
+        transparency: 100
+        dashboard_integration: true
+        clock_size: custom
+        clock_size_custom: 95
+        weather_size: custom
+        weather_size_custom: 95
+        date_size: custom
+        date_size_custom: 95
+        hug_content: true
+        card_mod:
+          style: |
+            .cwc { padding: 8px !important; }
+      - type: custom:ted-calendar-card
+        dashboard_integration: true
+        default_view: agenda
+        show_header: false
+        fill: true
+        calendar_config:
+          rolling_days_agenda: 2
+      - type: custom:ted-room-card
+        dashboard_integration: true
+      - type: custom:ted-music-card
+        player_source: settings
+        mode: mini
   - !include ../shared/navbar.yaml
   - !include ../shared/background.yaml

@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.60
+
+- Bundles Ted's Cards v0.9.57 — device type presets: Landscape tablet auto-hides the navbar, Portrait tablet keeps it shown. Adds the single-column portrait **Home (Wall Panel)** view (clock, 2-day agenda calendar, area-aware Room Card, compact Music).
+
 ### v0.9.59
 
 - Bundles Ted's Cards v0.9.56 — the Settings card hides the Global tab from non-administrator users (forcing the This device scope).
