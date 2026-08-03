@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.72
+
+- Updated the bundled Ted's Cards to v0.9.67: the Music Player “mini” mode’s “…” menu gained a “Party Mode!” item that opens Music Assistant’s fullscreen party dashboard for the current player (requires MA 2.8+ Party plugin), plus a reusable Web View card.
+
 ### v0.9.71
 
 - Updated the bundled Ted's Cards to v0.9.66: the Music Player “mini” mode now has a “…” menu (Media, Queue, Volume) in place of the volume button. Media and Queue open a pop-up of the full player’s tab, and Volume opens a compact slider (tap the speaker to mute).
