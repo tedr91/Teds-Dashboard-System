@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.71
+
+- Updated the bundled Ted's Cards to v0.9.66: the Music Player “mini” mode now has a “…” menu (Media, Queue, Volume) in place of the volume button. Media and Queue open a pop-up of the full player’s tab, and Volume opens a compact slider (tap the speaker to mute).
+
 ### v0.9.70
 
 - Vision “False alarm” is now flagged only when the analysis concludes no genuine activity was detected (a spurious trigger like shadows, rain, or a swaying tree) — not merely uninteresting activity.
