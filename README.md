@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.73
+
+- Updated the bundled Ted's Cards to v0.9.68: fixed the mini Music Player “…” menu opening off-screen (it now opens upward on a bottom-pinned player).
+
 ### v0.9.72
 
 - Updated the bundled Ted's Cards to v0.9.67: the Music Player “mini” mode’s “…” menu gained a “Party Mode!” item that opens Music Assistant’s fullscreen party dashboard for the current player (requires MA 2.8+ Party plugin), plus a reusable Web View card.
