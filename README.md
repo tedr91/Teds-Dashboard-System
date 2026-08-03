@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.75
+
+- Updated the bundled Ted's Cards to v0.9.70: the mini Music Player vertical volume slider now fills its popout.
+
 ### v0.9.74
 
 - Updated the bundled Ted's Cards to v0.9.69: the mini Music Player volume popout is now a vertical slider.
