@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from homeassistant.components.sensor import SensorEntity
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import MATCH_ALL
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
@@ -17,6 +18,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, add: AddEnt
 
 class _Base(SensorEntity):
     _attr_should_poll = False
+    # These sensors carry large, frequently-changing JSON blobs (alarms, timers,
+    # notifications, vision events, settings, …) read live by the cards. They're
+    # push channels, not history — several exceed the recorder's 16 KB attribute
+    # cap — so keep their attributes out of the database entirely.
+    _unrecorded_attributes = frozenset({MATCH_ALL})
 
     def __init__(self, manager) -> None:
         self._m = manager

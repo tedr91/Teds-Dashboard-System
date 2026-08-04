@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.77
+
+- Stopped `sensor.teds_vision_events`, `sensor.teds_settings`, and the other Teds status sensors from writing their large JSON attribute blobs to the recorder database — clears the repeated "State attributes … exceed maximum size of 16384 bytes" log warnings. These sensors are live push channels for the cards, so their attribute history had no value.
+
 ### v0.9.76
 
 - Updated the bundled Ted's Cards to v0.9.71 and added a `subscribe_dashboard_updated` WebSocket command so non-admin (kiosk/Wallpanel) panels can auto-refresh on update without triggering repeated `Unauthorized` / `Refusing to allow … to subscribe to event` log errors.
