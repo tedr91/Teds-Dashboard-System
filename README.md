@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.78
+
+- Updated the bundled Ted's Cards to v0.9.72: tapping a notification in the Notification Center card now opens the full event in a centered detail modal (matching the navbar notifications popup) instead of only marking it read.
+
 ### v0.9.77
 
 - Stopped `sensor.teds_vision_events`, `sensor.teds_settings`, and the other Teds status sensors from writing their large JSON attribute blobs to the recorder database — clears the repeated "State attributes … exceed maximum size of 16384 bytes" log warnings. These sensors are live push channels for the cards, so their attribute history had no value.
