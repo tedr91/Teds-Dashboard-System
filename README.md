@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.82
+
+- Updated the bundled Ted's Cards to v0.9.76: camera card substream matching is now device-aware — auto-detection and Auto populate only pair feeds on the same parent device with a related entity name, correctly linking renamed cameras to their substreams while keeping distinct feeds (e.g. doorbell package cameras) separate.
+
 ### v0.9.81
 
 - Updated the bundled Ted's Cards to v0.9.75: the camera card's “Auto populate” now collapses high/medium/low substream variants of the same camera into one entry (recognizing Reolink `_high/medium/low_resolution_channel` naming), and the device-Settings “Camera source” selector is now YAML-only.
