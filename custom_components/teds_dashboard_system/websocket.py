@@ -32,6 +32,7 @@ from .const import (
     DASHBOARDS_DIR,
     DOMAIN,
     EVENT_ASSIST_RESPONSE,
+    EVENT_DASHBOARD_UPDATED,
     EVENT_NAVIGATE,
     EVENT_NOTIFICATION,
     EVENT_SETTINGS,
@@ -70,6 +71,7 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, handle_subscribe_settings)
     websocket_api.async_register_command(hass, handle_subscribe_navigate)
     websocket_api.async_register_command(hass, handle_subscribe_assist_responses)
+    websocket_api.async_register_command(hass, handle_subscribe_dashboard_updated)
     websocket_api.async_register_command(hass, handle_register_device)
     websocket_api.async_register_command(hass, handle_list_backgrounds)
     websocket_api.async_register_command(hass, handle_list_sounds)
@@ -218,6 +220,30 @@ def handle_subscribe_assist_responses(
 
     connection.subscriptions[msg["id"]] = hass.bus.async_listen(
         EVENT_ASSIST_RESPONSE, forward
+    )
+    connection.send_result(msg["id"])
+
+
+@websocket_api.websocket_command(
+    {vol.Required("type"): f"{DOMAIN}/subscribe_dashboard_updated"}
+)
+@callback
+def handle_subscribe_dashboard_updated(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict
+) -> None:
+    """Forward dashboard-update signals so non-admin panels can auto-refresh.
+
+    Non-admin (kiosk/Wallpanel) users can't ``subscribe_events`` for custom event
+    types, so they subscribe through this command instead of listening to
+    ``EVENT_DASHBOARD_UPDATED`` directly.
+    """
+
+    @callback
+    def forward(event: Event) -> None:
+        connection.send_message(websocket_api.event_message(msg["id"], event.data))
+
+    connection.subscriptions[msg["id"]] = hass.bus.async_listen(
+        EVENT_DASHBOARD_UPDATED, forward
     )
     connection.send_result(msg["id"])
 

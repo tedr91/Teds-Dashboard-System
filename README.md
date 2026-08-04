@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.76
+
+- Updated the bundled Ted's Cards to v0.9.71 and added a `subscribe_dashboard_updated` WebSocket command so non-admin (kiosk/Wallpanel) panels can auto-refresh on update without triggering repeated `Unauthorized` / `Refusing to allow … to subscribe to event` log errors.
+
 ### v0.9.75
 
 - Updated the bundled Ted's Cards to v0.9.70: the mini Music Player vertical volume slider now fills its popout.
