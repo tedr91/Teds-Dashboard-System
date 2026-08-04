@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.79
+
+- Updated the bundled Ted's Cards to v0.9.73: the camera card can now use lower-resolution substreams for small feeds — low for the small Multi tiles, medium for the Multi primary and Quad/Auto-grid tiles, and the full feed for Single, with fallback to the main camera.
+
 ### v0.9.78
 
 - Updated the bundled Ted's Cards to v0.9.72: tapping a notification in the Notification Center card now opens the full event in a centered detail modal (matching the navbar notifications popup) instead of only marking it read.
