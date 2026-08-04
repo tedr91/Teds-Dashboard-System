@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.80
+
+- Updated the bundled Ted's Cards to v0.9.74: the camera card now auto-detects lower-resolution substream entities by naming convention (UniFi Protect `_high/_medium/_low`, Reolink `_clear/_balanced/_fluent`, generic `_main/_sub`), so small tiles use lighter feeds with no manual setup.
+
 ### v0.9.79
 
 - Updated the bundled Ted's Cards to v0.9.73: the camera card can now use lower-resolution substreams for small feeds — low for the small Multi tiles, medium for the Multi primary and Quad/Auto-grid tiles, and the full feed for Single, with fallback to the main camera.
