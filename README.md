@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.83
+
+- Updated the bundled Ted's Cards to v0.9.77: camera card editor substream polish — Medium/Low pickers show the auto-detected feed as a muted placeholder, and the main “Camera entity” picker hides redundant medium/low substreams (keeping main feeds).
+
 ### v0.9.82
 
 - Updated the bundled Ted's Cards to v0.9.76: camera card substream matching is now device-aware — auto-detection and Auto populate only pair feeds on the same parent device with a related entity name, correctly linking renamed cameras to their substreams while keeping distinct feeds (e.g. doorbell package cameras) separate.
