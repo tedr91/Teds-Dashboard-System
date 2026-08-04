@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.81
+
+- Updated the bundled Ted's Cards to v0.9.75: the camera card's “Auto populate” now collapses high/medium/low substream variants of the same camera into one entry (recognizing Reolink `_high/medium/low_resolution_channel` naming), and the device-Settings “Camera source” selector is now YAML-only.
+
 ### v0.9.80
 
 - Updated the bundled Ted's Cards to v0.9.74: the camera card now auto-detects lower-resolution substream entities by naming convention (UniFi Protect `_high/_medium/_low`, Reolink `_clear/_balanced/_fluent`, generic `_main/_sub`), so small tiles use lighter feeds with no manual setup.
