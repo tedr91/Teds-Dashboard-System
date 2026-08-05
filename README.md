@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.85
+
+- Updated the bundled Ted's Cards to v0.9.79: notifications now show a thumbnail image when provided (e.g. a vision event snapshot) in the navbar notifications popup, the Notification Center card, and the toast.
+
 ### v0.9.84
 
 - Updated the bundled Ted's Cards to v0.9.78: Settings → Cameras auto-populate now collapses high/medium/low substream channels into one entry per camera (keeping the highest-res) and cleans up redundant substreams, and the “Add a camera” picker hides redundant substreams.
