@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.87
+
+- **Direct Frigate support.** When the Frigate integration is installed and exposing cameras, Ted's Dashboard can use those cameras as its camera source. If this dashboard has no cameras configured yet, it adopts your Frigate cameras automatically; if you already have a camera list, it offers a one-tap switch (on the Welcome page, in Settings → Cameras, and via a one-time notification) that does a one-time clear of your list and replaces it with your Frigate cameras. Bundles Ted's Cards v0.9.81.
+
 ### v0.9.86
 
 - Updated the bundled Ted's Cards to v0.9.80: removing a Bing “Photo of the Day” now removes it from every device's wallpaper slideshow live — a Remove on one tablet drops the photo on all the others at once, instead of it lingering until each device reloaded.

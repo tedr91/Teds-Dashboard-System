@@ -132,6 +132,16 @@ check_requirements:
   name: Check requirements
   description: Re-run server-side detection of optional dependencies (updates sensor.teds_requirements).
 
+adopt_frigate_cameras:
+  name: Use Frigate cameras
+  description: >-
+    Adopt Frigate as the camera source: one-time clear of the global camera list,
+    then repopulate it with the cameras exposed by the Frigate integration.
+
+dismiss_frigate_prompt:
+  name: Dismiss Frigate camera offer
+  description: Decline the Frigate camera-source offer so it stops prompting on every surface.
+
 apply_climate:
   name: Apply climate request
   description: >-

@@ -99,6 +99,26 @@ cards:
             entity: sensor.teds_requirements
             attribute: all_met
             state: "false"
+      # Frigate is installed and exposing cameras while this dashboard already has its
+      # own camera list — offer a one-time switch to Frigate. (With no camera list yet,
+      # the backend auto-adopts silently, so this box never appears in that case.)
+      - type: custom:ted-messagebox-card
+        theme: ted-style
+        severity: tip
+        icon: mdi:cctv
+        title: Use Frigate as your camera source?
+        message: >-
+          Frigate is installed and exposing cameras. Ted's Dashboard can switch to them
+          as your camera source. This does a one-time clear of your current camera list
+          and replaces it with your Frigate cameras.
+        visible_when:
+          - condition: state
+            entity: sensor.teds_requirements
+            attribute: frigate
+            state: available
+        actions:
+          - { label: Use Frigate cameras, icon: mdi:cctv, action: perform-action, perform_action: teds_dashboard_system.adopt_frigate_cameras, variant: primary }
+          - { label: No thanks, action: perform-action, perform_action: teds_dashboard_system.dismiss_frigate_prompt }
       # Backend integration — the funnel; shows only when it's absent (which is
       # also what unlocks every other check below).
       - type: custom:ted-messagebox-card

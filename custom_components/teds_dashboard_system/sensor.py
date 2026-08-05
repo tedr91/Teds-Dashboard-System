@@ -178,5 +178,13 @@ class TedsRequirementsSensor(_Base):
         # `all_met` is stricter than `ok`: True only when EVERY requirement is "ok"
         # (so a downloaded-but-not-added "setup" state still counts as not-yet-met).
         all_met = bool(reqs) and all(v == "ok" for v in reqs.values())
-        return {**reqs, "missing": missing, "ok": not missing, "all_met": all_met, "version": self._m.version}
+        fr = self._m.frigate or {}
+        return {
+            **reqs, "missing": missing, "ok": not missing, "all_met": all_met,
+            # Optional Frigate capability (absent/available/adopted/dismissed) + its
+            # cameras — lets a MessageBox gate the camera-source adoption offer.
+            "frigate": fr.get("capability", "absent"),
+            "frigate_cameras": list(fr.get("cameras") or []),
+            "version": self._m.version,
+        }
 

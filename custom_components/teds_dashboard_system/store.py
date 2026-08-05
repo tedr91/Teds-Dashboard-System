@@ -63,6 +63,13 @@ class TedsManager:
         self.area_nudged_devices: set[str] = set()
         # Server-side dependency detection results (req_id -> ok/missing/unknown).
         self.requirements: dict[str, str] = {}
+        # Optional Frigate camera-source adoption. `answered` stops re-prompting;
+        # `adopted` means Frigate is the chosen source; `notified` guards the
+        # one-time startup notification. `frigate` caches the latest detection.
+        self.frigate_answered: bool = False
+        self.frigate_adopted: bool = False
+        self.frigate_prompt_notified: bool = False
+        self.frigate: dict = {"installed": False, "cameras": [], "capability": "absent"}
         # This integration's version (from the manifest), for status displays.
         self.version: str | None = None
         # media-source URI of the dedicated "Ted Dash System" wallpaper folder.
@@ -91,6 +98,9 @@ class TedsManager:
         }
         self.device_registry = {k: dict(v) for k, v in (data.get("devices") or {}).items()}
         self.area_nudged_devices = set(data.get("area_nudged_devices") or [])
+        self.frigate_answered = bool(data.get("frigate_answered"))
+        self.frigate_adopted = bool(data.get("frigate_adopted"))
+        self.frigate_prompt_notified = bool(data.get("frigate_prompt_notified"))
         # Per-minute alarm check.
         self._listeners.append(async_track_time_change(self.hass, self._tick, second=0))
 
@@ -106,6 +116,9 @@ class TedsManager:
             "settings": self.settings,
             "devices": self.device_registry,
             "area_nudged_devices": sorted(self.area_nudged_devices),
+            "frigate_answered": self.frigate_answered,
+            "frigate_adopted": self.frigate_adopted,
+            "frigate_prompt_notified": self.frigate_prompt_notified,
         })
 
     def shutdown(self) -> None:
@@ -793,6 +806,73 @@ class TedsManager:
     async def refresh_requirements(self) -> None:
         """Re-run server-side dependency detection and update the sensor."""
         from .requirements import compute_requirements
+        from .frigate import detect_frigate, frigate_capability
 
         self.requirements = await compute_requirements(self.hass)
+        det = detect_frigate(self.hass)
+        # Auto opt-in: Frigate is present with cameras but this install has no camera
+        # list of its own yet — adopt it silently (no prompt) so cameras work out of
+        # the box. When a list already exists, leave it and prompt instead.
+        if (
+            det["installed"] and det["cameras"] and not self.frigate_answered
+            and not (self.settings.get("global") or {}).get("cameras_list")
+        ):
+            await self._adopt_frigate_cameras(det["cameras"])
+        self.frigate = {
+            "installed": det["installed"],
+            "cameras": det["cameras"],
+            "capability": frigate_capability(
+                installed=det["installed"], cameras=det["cameras"],
+                adopted=self.frigate_adopted, answered=self.frigate_answered,
+            ),
+        }
         self._notify()
+
+    async def _adopt_frigate_cameras(self, cameras: list[str] | None = None) -> None:
+        """One-shot: replace the global camera list with Frigate's cameras."""
+        if cameras is None:
+            from .frigate import detect_frigate
+            cameras = detect_frigate(self.hass)["cameras"]
+        self.settings["global"]["cameras_list"] = list(cameras)
+        self.frigate_adopted = True
+        self.frigate_answered = True
+        await self._save()
+        self._fire_settings()
+        self._notify()
+
+    async def adopt_frigate_cameras(self) -> None:
+        """User accepted the offer: adopt Frigate cameras, then refresh the sensor."""
+        await self._adopt_frigate_cameras()
+        await self.refresh_requirements()
+
+    async def dismiss_frigate_prompt(self) -> None:
+        """User declined the offer: stop prompting on every surface (and after restart)."""
+        if self.frigate_answered:
+            return
+        self.frigate_answered = True
+        await self._save()
+        await self.refresh_requirements()
+
+    async def maybe_notify_frigate(self) -> None:
+        """Fire a one-time notification offering Frigate camera adoption."""
+        if self.frigate_prompt_notified or self.frigate_answered:
+            return
+        if (self.frigate or {}).get("capability") != "available":
+            return
+        self.frigate_prompt_notified = True
+        await self.notify(
+            "Use Frigate cameras?",
+            "Frigate is installed and exposing cameras. Ted's Dashboard can switch to "
+            "them as your camera source \u2014 this does a one-time clear of your current "
+            "camera list and replaces it with your Frigate cameras.",
+            severity="info",
+            icon="mdi:cctv",
+            notif_id="frigate-adopt",
+            persistence="sticky",
+            actions=[
+                {"label": "Use Frigate cameras", "action": "call-service",
+                 "service": "teds_dashboard_system.adopt_frigate_cameras"},
+                {"label": "No thanks", "action": "call-service",
+                 "service": "teds_dashboard_system.dismiss_frigate_prompt"},
+            ],
+        )

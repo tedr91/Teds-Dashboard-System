@@ -295,6 +295,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     hass.services.async_register(DOMAIN, "check_requirements", check_requirements, schema=vol.Schema({}))
 
+    async def adopt_frigate_cameras(call: ServiceCall):
+        await manager.adopt_frigate_cameras()
+
+    async def dismiss_frigate_prompt(call: ServiceCall):
+        await manager.dismiss_frigate_prompt()
+
+    hass.services.async_register(DOMAIN, "adopt_frigate_cameras", adopt_frigate_cameras, schema=vol.Schema({}))
+    hass.services.async_register(DOMAIN, "dismiss_frigate_prompt", dismiss_frigate_prompt, schema=vol.Schema({}))
+
     hass.services.async_register(DOMAIN, "analyze_camera", analyze_camera, schema=vol.Schema({
         vol.Required("camera_entity"): cv.entity_id, vol.Optional("event_type"): cv.string}))
     hass.services.async_register(DOMAIN, "delete_vision_event", delete_vision_event, schema=vol.Schema({
@@ -316,6 +325,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     async def _refresh_reqs(*_):
         await manager.refresh_requirements()
         _check_unassigned_devices(hass)
+        await manager.maybe_notify_frigate()
 
     entry.async_on_unload(async_at_started(hass, _refresh_reqs))
     entry.async_on_unload(hass.bus.async_listen("lovelace_updated", _refresh_reqs))

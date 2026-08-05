@@ -3593,7 +3593,7 @@ const e="ted",t="__tedDefineGuardInstalled__",i=`${e}-`;if("undefined"!=typeof c
           ${n?this._renderOverflowCell(t,i.length,o,r,c[o]):Z}
         </div>
       </div>
-    `}_photoPlacement(){const e=this._config?.photo_placement;return"fill"===e||"below_header"===e?e:"top"}_resolvePhotoUrl(){const e=this._config;if(!e)return;if("custom"===e.photo_source)return e.photo_url||void 0;const t=e.photo&&"auto"!==e.photo?e.photo:function(e){if(!e)return;const t=e.toLowerCase();return t.includes("bath")?"bathroom":t.includes("bed")?"bedroom":t.includes("kitchen")?"kitchen":t.includes("living")?"living_room":t.includes("dining")?"dining_room":t.includes("office")?"office":t.includes("media")||t.includes("theater")||t.includes("theatre")||t.includes("cinema")?"media_room":t.includes("family")?"family_room":t.includes("bonus")?"bonus_room":void 0}(e.name||this._areaName());if(!t)return;const i=io[t];return i?function(e){return"https://cdn.jsdelivr.net/gh/tedr91/Teds-Cards@v0.9.72/images/room-header-photos/"+encodeURIComponent(e)}(i):void 0}_edgeGradientCss(e){const t=[];return e.includes("top")&&t.push("linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0) 48%)"),e.includes("bottom")&&t.push("linear-gradient(to top, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0) 48%)"),e.includes("left")&&t.push("linear-gradient(to right, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0) 48%)"),e.includes("right")&&t.push("linear-gradient(to left, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0) 48%)"),t.join(", ")}_renderPhoto(){const e=this._config;if(!e||!1===e.show_photo)return Z;const t="camera"===e.photo_source,i=t?void 0:this._resolvePhotoUrl();if(t?!e.photo_camera_entity:!i||this._photoError)return Z;const a=this._photoPlacement(),s="number"==typeof e.photo_opacity?e.photo_opacity:100,o="top"===e.photo_align||"bottom"===e.photo_align?e.photo_align:"center",n="number"==typeof e.photo_height?e.photo_height:"fill"===a?void 0:132,r=0===n?void 0:n,l=e.photo_edge_gradient??so(a),c="fill"===a||"number"==typeof r,d=Array.isArray(e.photo_state_entity)?e.photo_state_entity:e.photo_state_entity?[e.photo_state_entity]:[],h=d.length>0&&d.every(e=>{const t=this.hass?.states[e];return!t||yo.has(String(t.state).toLowerCase())}),u="number"==typeof e.photo_off_opacity?e.photo_off_opacity:25,p=h?u:s,m=h&&!0===e.photo_off_grayscale,_={};"fill"===a?_.inset="0":(_.left="0",_.right="0",_.top="below_header"===a?`${this._headerBottom+this._cardGap()}px`:"0","number"==typeof r&&(_.height=`${r}px`));const g={opacity:String(p/100),objectPosition:`center ${o}`};d.length>0&&(g.filter=m?"grayscale(1)":"none",g.transition="opacity 0.4s ease, filter 0.4s ease"),c?(g.height="100%",g.objectFit="cover"):g.height="auto";const f=this._edgeGradientCss(l);return W`
+    `}_photoPlacement(){const e=this._config?.photo_placement;return"fill"===e||"below_header"===e?e:"top"}_resolvePhotoUrl(){const e=this._config;if(!e)return;if("custom"===e.photo_source)return e.photo_url||void 0;const t=e.photo&&"auto"!==e.photo?e.photo:function(e){if(!e)return;const t=e.toLowerCase();return t.includes("bath")?"bathroom":t.includes("bed")?"bedroom":t.includes("kitchen")?"kitchen":t.includes("living")?"living_room":t.includes("dining")?"dining_room":t.includes("office")?"office":t.includes("media")||t.includes("theater")||t.includes("theatre")||t.includes("cinema")?"media_room":t.includes("family")?"family_room":t.includes("bonus")?"bonus_room":void 0}(e.name||this._areaName());if(!t)return;const i=io[t];return i?function(e){return"https://cdn.jsdelivr.net/gh/tedr91/Teds-Cards@v0.9.81/images/room-header-photos/"+encodeURIComponent(e)}(i):void 0}_edgeGradientCss(e){const t=[];return e.includes("top")&&t.push("linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0) 48%)"),e.includes("bottom")&&t.push("linear-gradient(to top, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0) 48%)"),e.includes("left")&&t.push("linear-gradient(to right, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0) 48%)"),e.includes("right")&&t.push("linear-gradient(to left, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0) 48%)"),t.join(", ")}_renderPhoto(){const e=this._config;if(!e||!1===e.show_photo)return Z;const t="camera"===e.photo_source,i=t?void 0:this._resolvePhotoUrl();if(t?!e.photo_camera_entity:!i||this._photoError)return Z;const a=this._photoPlacement(),s="number"==typeof e.photo_opacity?e.photo_opacity:100,o="top"===e.photo_align||"bottom"===e.photo_align?e.photo_align:"center",n="number"==typeof e.photo_height?e.photo_height:"fill"===a?void 0:132,r=0===n?void 0:n,l=e.photo_edge_gradient??so(a),c="fill"===a||"number"==typeof r,d=Array.isArray(e.photo_state_entity)?e.photo_state_entity:e.photo_state_entity?[e.photo_state_entity]:[],h=d.length>0&&d.every(e=>{const t=this.hass?.states[e];return!t||yo.has(String(t.state).toLowerCase())}),u="number"==typeof e.photo_off_opacity?e.photo_off_opacity:25,p=h?u:s,m=h&&!0===e.photo_off_grayscale,_={};"fill"===a?_.inset="0":(_.left="0",_.right="0",_.top="below_header"===a?`${this._headerBottom+this._cardGap()}px`:"0","number"==typeof r&&(_.height=`${r}px`));const g={opacity:String(p/100),objectPosition:`center ${o}`};d.length>0&&(g.filter=m?"grayscale(1)":"none",g.transition="opacity 0.4s ease, filter 0.4s ease"),c?(g.height="100%",g.objectFit="cover"):g.height="auto";const f=this._edgeGradientCss(l);return W`
       <div class="room-photo" style=${$e(_)} aria-hidden="true">
         ${t?this._renderPhotoCamera(e,p,m,d.length>0,c):W`<img src=${i} alt="" style=${$e(g)} @error=${this._onPhotoError} @load=${this._onPhotoLoad} />`}
         ${f?W`<div class="photo-scrim" style=${$e({background:f})}></div>`:Z}
@@ -10517,7 +10517,32 @@ const e="ted",t="__tedDefineGuardInstalled__",i=`${e}-`;if("undefined"!=typeof c
               </button>
             </div>`:Z}
       </div>
-    `}async _browseSound(e){if(!this.hass)return;const t=await Mc(this,this.hass,{accept:["audio/*"]});t&&e(t)}async _previewSound(e,t){if(!this.hass)return;this._stopSoundPreview();let i=t&&t!==dd?t:this._resolvedDefaultSound(e.key);if(yc(i)&&(i=await wc(this.hass,i)),!i)return;const a=this._soundAudio??=new Audio;a.onended=()=>this._soundPlaying=void 0,a.onerror=()=>this._soundPlaying=void 0,a.src=i,this._soundPlaying=e.key;try{await a.play()}catch{this._soundPlaying=void 0}}_stopSoundPreview(){this._soundAudio&&(this._soundAudio.pause(),this._soundAudio.currentTime=0),this._soundPlaying=void 0}_renderFields(e,t){const i=e=>"global"===t?this._renderGlobalRow(e):this._renderDeviceRow(e);e=e.filter(e=>this._fieldVisible(e)),"device"===t&&(e=e.filter(e=>!e.globalOnly));const a=e.filter(e=>!e.subsection),s=[];for(const t of e)t.subsection&&!s.includes(t.subsection)&&s.push(t.subsection);return W`
+    `}async _browseSound(e){if(!this.hass)return;const t=await Mc(this,this.hass,{accept:["audio/*"]});t&&e(t)}async _previewSound(e,t){if(!this.hass)return;this._stopSoundPreview();let i=t&&t!==dd?t:this._resolvedDefaultSound(e.key);if(yc(i)&&(i=await wc(this.hass,i)),!i)return;const a=this._soundAudio??=new Audio;a.onended=()=>this._soundPlaying=void 0,a.onerror=()=>this._soundPlaying=void 0,a.src=i,this._soundPlaying=e.key;try{await a.play()}catch{this._soundPlaying=void 0}}_stopSoundPreview(){this._soundAudio&&(this._soundAudio.pause(),this._soundAudio.currentTime=0),this._soundPlaying=void 0}_renderFrigateBanner(e){if("Cameras"!==e)return Z;const t=this.hass?.states?.["sensor.teds_requirements"]?.attributes?.frigate;return"available"!==t?Z:W`
+      <div class="frigate-banner">
+        <ha-icon icon="mdi:cctv"></ha-icon>
+        <div class="fb-body">
+          <div class="fb-title">Use Frigate as your camera source?</div>
+          <div class="fb-text">
+            Frigate is installed and exposing cameras. This does a one-time clear of your
+            current camera list and replaces it with your Frigate cameras.
+          </div>
+          <div class="fb-actions">
+            <button
+              class="fb-primary"
+              @click=${()=>this.hass?.callService("teds_dashboard_system","adopt_frigate_cameras",{})}
+            >
+              Use Frigate cameras
+            </button>
+            <button
+              class="fb-secondary"
+              @click=${()=>this.hass?.callService("teds_dashboard_system","dismiss_frigate_prompt",{})}
+            >
+              No thanks
+            </button>
+          </div>
+        </div>
+      </div>
+    `}_renderFields(e,t){const i=e=>"global"===t?this._renderGlobalRow(e):this._renderDeviceRow(e);e=e.filter(e=>this._fieldVisible(e)),"device"===t&&(e=e.filter(e=>!e.globalOnly));const a=e.filter(e=>!e.subsection),s=[];for(const t of e)t.subsection&&!s.includes(t.subsection)&&s.push(t.subsection);return W`
       ${a.map(i)}
       ${s.map(t=>W`<ha-expansion-panel outlined class="sub-panel">
           <div slot="header" class="sub-head">
@@ -11573,7 +11598,9 @@ const e="ted",t="__tedDefineGuardInstalled__",i=`${e}-`;if("undefined"!=typeof c
                   </div>
                 </div>
                 <div class="groups">
-                  ${o?W`<div class="group">${this._renderFields(o.fields,t)}</div>`:Z}
+                  ${o?W`<div class="group">
+                        ${this._renderFrigateBanner(o.group)}${this._renderFields(o.fields,t)}
+                      </div>`:Z}
                 </div>
               `}
         </ha-card>
@@ -11597,7 +11624,7 @@ const e="ted",t="__tedDefineGuardInstalled__",i=`${e}-`;if("undefined"!=typeof c
                 ${m.map(e=>W`
                     <div class="group">
                       <div class="group-title">${e.group}</div>
-                      ${this._renderFields(e.fields,u)}
+                      ${this._renderFrigateBanner(e.group)}${this._renderFields(e.fields,u)}
                     </div>
                   `)}
               </div>
@@ -11853,6 +11880,53 @@ const e="ted",t="__tedDefineGuardInstalled__",i=`${e}-`;if("undefined"!=typeof c
         background: color-mix(in srgb, var(--ted-style-accent, var(--primary-color)) 16%, transparent);
         color: var(--ted-style-text, var(--primary-text-color));
         font-size: 0.82rem;
+      }
+      .frigate-banner {
+        display: flex;
+        gap: 10px;
+        align-items: flex-start;
+        padding: 10px 12px;
+        margin-bottom: 10px;
+        border-radius: 10px;
+        background: color-mix(in srgb, var(--ted-style-accent, var(--primary-color)) 14%, transparent);
+        color: var(--ted-style-text, var(--primary-text-color));
+      }
+      .frigate-banner > ha-icon {
+        flex: none;
+        color: var(--ted-style-accent, var(--primary-color));
+        --mdc-icon-size: 22px;
+      }
+      .fb-title {
+        font-weight: 600;
+        font-size: 0.9rem;
+      }
+      .fb-text {
+        margin-top: 2px;
+        font-size: 0.8rem;
+        color: var(--ted-style-muted, var(--secondary-text-color));
+      }
+      .fb-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 8px;
+      }
+      .fb-primary,
+      .fb-secondary {
+        padding: 5px 12px;
+        border-radius: 8px;
+        font-size: 0.8rem;
+        cursor: pointer;
+      }
+      .fb-primary {
+        border: none;
+        background: var(--ted-style-accent, var(--primary-color));
+        color: var(--ted-style-on-accent, var(--text-primary-color, #fff));
+      }
+      .fb-secondary {
+        border: 1px solid var(--ted-style-divider, var(--divider-color));
+        background: none;
+        color: var(--ted-style-text, var(--primary-text-color));
       }
       .dash-sub {
         margin-top: 4px;
@@ -13435,7 +13509,7 @@ const e="ted",t="__tedDefineGuardInstalled__",i=`${e}-`;if("undefined"!=typeof c
       .sc-tip-action:hover {
         filter: brightness(1.08);
       }
-    `],a([_e({attribute:!1})],sh.prototype,"hass",void 0),a([ge()],sh.prototype,"_config",void 0),a([ge()],sh.prototype,"_openTip",void 0),a([ge()],sh.prototype,"_maBusy",void 0),sh=ih=a([ue(Xd)],sh),console.info("%c TED-CARDS %c 0.9.80 ","color: white; background: #4a90e2; font-weight: 700;","color: #4a90e2; background: white; font-weight: 700;");const oh={light:"mdi:brightness-6",cover:"mdi:window-shutter"};function nh(e,t){return`ted_${e}_mem_${t.split(".")[1]??t}`}function rh(e,t){return`input_number.${nh(e,t)}`}async function lh(e,t,i){const a=rh(t,i);if(e.states[a])return a;try{return`input_number.${(await e.callWS({type:"input_number/create",name:nh(t,i),min:1,max:100,step:1,initial:100,mode:"slider",unit_of_measurement:"%",icon:oh[t]})).id}`}catch(e){return void console.error("[ted-cards] Failed to create memory helper",e)}}const ch={increase:"Increase brightness",decrease:"Decrease brightness",full_on:"Full on (100%)",full_off:"Turn off",toggle:"Toggle",more_info:"More info",none:"Nothing"};let dh=class extends de{constructor(){super(...arguments),this.embedded=!1,this._expanded=new Set,this._computeHelper=e=>{if("width"===e.name||"height"===e.name)return"Only used when the card isn't a direct item in a grid (Sections) view."},this._computeLabel=e=>{switch(e.name){case"entity":return"Entity";case"name":return"Name (optional)";case"icon":return"Icon (optional)";case"theme":return"Visual styling";case"mode":return"Mode";case"orientation":return"Orientation";case"indicator_color":return"Indicator bar color";case"indicator_color_custom":return"Custom indicator color";case"indicator_width":return"Indicator bar width (px)";case"show_indicator":return"Show indicator bar";case"name_color":case"state_color":return"Custom color";case"icon_color":return"Color";case"transparency":return"Transparency";case"blur":return"Background blur";case"background":return"Background color";case"background_on":return"Background color when on";case"brushed":return"Brushed effect";case"rocker":return"Rocker";case"rocker_effect":return"Neumorphic effect";case"shadow":return"Subtle shadow for improved contrast";case"show_name":return"Show name";case"name_scale":return"Name size";case"show_icon":return"Show icon";case"icon_scale":return"Icon size";case"show_state":return"Show entity state";case"state_scale":return"State size";case"show_hint":return"Show hint bar";case"hint_width":return"Hint bar width (px)";case"width":return"Width (px)";case"height":return"Height (px)";case"up_tap":case"down_tap":case"icon_tap":return"Single tap";case"up_double_tap":case"down_double_tap":case"icon_double_tap":return"Double tap";case"up_hold":case"down_hold":case"icon_hold":return"Long press";case"memory_mode":return"Turn on to";case"memory_value":return"Brightness";case"memory_entity":return"Memory helper (input_number / number)";default:return e.name}},this._valueChanged=async e=>{const t=this._config,i={...t,...e.detail.value},a=this.hass;if(a&&i.entity&&"helper"===i.memory_mode&&!i.memory_entity){const e=await lh(a,"light",i.entity);e&&(i.memory_entity=e)}"off"!==i.memory_mode||t?.memory_mode||(delete i.memory_mode,delete i.memory_entity),this._commit(i)},this._elementMoved=e=>{e.stopPropagation();const{oldIndex:t,newIndex:i}=e.detail,a=this._elementOrder();a.splice(i,0,a.splice(t,1)[0]),this._commit({...this._config,element_order:a})},this._onElementChanged=e=>{e.stopPropagation();const t={...this._config,...e.detail.value};for(const e of["name_color","icon_color","state_color"])t[e]||delete t[e];this._commit(t)}}setConfig(e){this._config=e}render(){if(!this.hass||!this._config)return Z;const e={...this._defaults(),...this._config,mode:!1===this._config.rocker?"button":"rocker"},t=this._schema();return W`
+    `],a([_e({attribute:!1})],sh.prototype,"hass",void 0),a([ge()],sh.prototype,"_config",void 0),a([ge()],sh.prototype,"_openTip",void 0),a([ge()],sh.prototype,"_maBusy",void 0),sh=ih=a([ue(Xd)],sh),console.info("%c TED-CARDS %c 0.9.81 ","color: white; background: #4a90e2; font-weight: 700;","color: #4a90e2; background: white; font-weight: 700;");const oh={light:"mdi:brightness-6",cover:"mdi:window-shutter"};function nh(e,t){return`ted_${e}_mem_${t.split(".")[1]??t}`}function rh(e,t){return`input_number.${nh(e,t)}`}async function lh(e,t,i){const a=rh(t,i);if(e.states[a])return a;try{return`input_number.${(await e.callWS({type:"input_number/create",name:nh(t,i),min:1,max:100,step:1,initial:100,mode:"slider",unit_of_measurement:"%",icon:oh[t]})).id}`}catch(e){return void console.error("[ted-cards] Failed to create memory helper",e)}}const ch={increase:"Increase brightness",decrease:"Decrease brightness",full_on:"Full on (100%)",full_off:"Turn off",toggle:"Toggle",more_info:"More info",none:"Nothing"};let dh=class extends de{constructor(){super(...arguments),this.embedded=!1,this._expanded=new Set,this._computeHelper=e=>{if("width"===e.name||"height"===e.name)return"Only used when the card isn't a direct item in a grid (Sections) view."},this._computeLabel=e=>{switch(e.name){case"entity":return"Entity";case"name":return"Name (optional)";case"icon":return"Icon (optional)";case"theme":return"Visual styling";case"mode":return"Mode";case"orientation":return"Orientation";case"indicator_color":return"Indicator bar color";case"indicator_color_custom":return"Custom indicator color";case"indicator_width":return"Indicator bar width (px)";case"show_indicator":return"Show indicator bar";case"name_color":case"state_color":return"Custom color";case"icon_color":return"Color";case"transparency":return"Transparency";case"blur":return"Background blur";case"background":return"Background color";case"background_on":return"Background color when on";case"brushed":return"Brushed effect";case"rocker":return"Rocker";case"rocker_effect":return"Neumorphic effect";case"shadow":return"Subtle shadow for improved contrast";case"show_name":return"Show name";case"name_scale":return"Name size";case"show_icon":return"Show icon";case"icon_scale":return"Icon size";case"show_state":return"Show entity state";case"state_scale":return"State size";case"show_hint":return"Show hint bar";case"hint_width":return"Hint bar width (px)";case"width":return"Width (px)";case"height":return"Height (px)";case"up_tap":case"down_tap":case"icon_tap":return"Single tap";case"up_double_tap":case"down_double_tap":case"icon_double_tap":return"Double tap";case"up_hold":case"down_hold":case"icon_hold":return"Long press";case"memory_mode":return"Turn on to";case"memory_value":return"Brightness";case"memory_entity":return"Memory helper (input_number / number)";default:return e.name}},this._valueChanged=async e=>{const t=this._config,i={...t,...e.detail.value},a=this.hass;if(a&&i.entity&&"helper"===i.memory_mode&&!i.memory_entity){const e=await lh(a,"light",i.entity);e&&(i.memory_entity=e)}"off"!==i.memory_mode||t?.memory_mode||(delete i.memory_mode,delete i.memory_entity),this._commit(i)},this._elementMoved=e=>{e.stopPropagation();const{oldIndex:t,newIndex:i}=e.detail,a=this._elementOrder();a.splice(i,0,a.splice(t,1)[0]),this._commit({...this._config,element_order:a})},this._onElementChanged=e=>{e.stopPropagation();const t={...this._config,...e.detail.value};for(const e of["name_color","icon_color","state_color"])t[e]||delete t[e];this._commit(t)}}setConfig(e){this._config=e}render(){if(!this.hass||!this._config)return Z;const e={...this._defaults(),...this._config,mode:!1===this._config.rocker?"button":"rocker"},t=this._schema();return W`
       <div class="editor">
         <ha-form
           .hass=${this.hass}
