@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.88
+
+- **Tighter Frigate integration.** When Frigate is the adopted camera source, TDS now taps its native detection and events: Frigate review **alerts** become Ted's notifications with the event thumbnail and clip; for two-pass Vision, Frigate's own object detection **seeds the quick pass** so only the detailed pass calls the AI (still a full-clip summary); and the Cameras view gains Frigate **controls** (detect/recordings/snapshots), a **Recordings** link, and **status chips**. All toggleable under Settings → Cameras → Frigate. Bundles Ted's Cards v0.9.82.
+
 ### v0.9.87
 
 - **Direct Frigate support.** When the Frigate integration is installed and exposing cameras, Ted's Dashboard can use those cameras as its camera source. If this dashboard has no cameras configured yet, it adopts your Frigate cameras automatically; if you already have a camera list, it offers a one-tap switch (on the Welcome page, in Settings → Cameras, and via a one-time notification) that does a one-time clear of your list and replaces it with your Frigate cameras. Bundles Ted's Cards v0.9.81.

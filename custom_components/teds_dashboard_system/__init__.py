@@ -37,6 +37,7 @@ from .const import (
     DEFAULT_DASHBOARD_REPO,
     DOMAIN,
     EVENT_NAVIGATE,
+    EVENT_SETTINGS,
     MEDIA_FOLDER_NAME,
 )
 from .intents import async_register_intents
@@ -362,6 +363,19 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     _setup_action_nudge(hass, entry, manager)
 
     manager.vision.async_setup(entry)
+
+    # Frigate review-alert → notification bridge. Re-evaluate whenever settings change
+    # (the frigate_notifications toggle) and on each requirements refresh (adoption).
+    from .frigate import FrigateEventBridge
+
+    manager.frigate_bridge = FrigateEventBridge(hass, manager)
+    entry.async_on_unload(manager.frigate_bridge.shutdown)
+
+    @callback
+    def _frigate_bridge_sync(_event: Event | None = None) -> None:
+        hass.async_create_task(manager.frigate_bridge.async_update())
+
+    entry.async_on_unload(hass.bus.async_listen(EVENT_SETTINGS, _frigate_bridge_sync))
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True

@@ -185,6 +185,7 @@ class TedsRequirementsSensor(_Base):
             # cameras — lets a MessageBox gate the camera-source adoption offer.
             "frigate": fr.get("capability", "absent"),
             "frigate_cameras": list(fr.get("cameras") or []),
+            "frigate_url": fr.get("url"),
             "version": self._m.version,
         }
 

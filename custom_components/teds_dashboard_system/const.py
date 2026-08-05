@@ -153,6 +153,17 @@ SETTINGS_DEFAULTS = {
     "vision_false_alarm_mode": "log_only",
     # Cap on stored analyzed events (older pruned, with their snapshot/clip files).
     "vision_retention_max": 200,
+    # Frigate integration (only meaningful when Frigate is the adopted camera source):
+    # when two-pass Vision is on, use Frigate's own object detection to seed the quick
+    # first pass (skipping that AI call) while the detailed second pass still analyzes the
+    # full clip for a rich summary. When off, Frigate cameras use the normal AI passes.
+    "frigate_native_detection": True,
+    # Turn Frigate review *alerts* into Ted's notifications (with a real thumbnail + clip).
+    "frigate_notifications": True,
+    # Show Frigate detect/recordings/snapshots toggle chips on the Cameras view tiles.
+    "frigate_controls": True,
+    # Show Frigate status chips (review status, object counts) on the Cameras view tiles.
+    "frigate_health": True,
     # Temperatures — ordered list of climate entity ids. Global = the available allow-list;
     # per-device = the curated subset that device shows (empty inherits the global list).
     "climate_list": [],

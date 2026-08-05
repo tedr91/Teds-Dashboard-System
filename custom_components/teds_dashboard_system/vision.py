@@ -34,6 +34,14 @@ _DETECTOR_KEYWORDS: dict[str, tuple[str, ...]] = {
     "package": ("package", "parcel", "delivery"),
 }
 _MOTION_CLASSES = {"motion", "moving", "occupancy", "presence"}
+# Severity assigned to a Frigate-native (no-AI) event, by detected object type.
+_FRIGATE_NATIVE_SEVERITY = {
+    "person": "suspicious",
+    "package": "suspicious",
+    "car": "harmless",
+    "animal": "harmless",
+    "motion": "harmless",
+}
 # vision severity -> notification severity used for the on-trigger Teds notification.
 _SEVERITY_TO_NOTIF = {
     "critical": "danger",
@@ -298,20 +306,39 @@ class VisionEngine:
         started = dt_util.utcnow()
         area_id, area_name, cam_name = self._camera_context(camera_id)
         s = self._settings()
+        from .frigate import is_frigate_camera  # noqa: PLC0415
+
         two_pass = bool(s.get("vision_two_pass", True))
         mode = s.get("vision_capture_mode") or "video"
+        # Frigate already classified the object on-device. With two-pass on, use that to
+        # SEED pass 1 (skip the quick AI call) — the detailed second pass still runs the
+        # full-clip AI analysis for a rich summary. Single-pass keeps the normal AI path.
+        frigate_seed = (
+            two_pass
+            and bool(s.get("frigate_native_detection", True))
+            and is_frigate_camera(self.hass, camera_id)
+        )
         quick_entity = s.get("vision_ai_task_entity") or preferred_image_ai_task_entity(self.hass)
 
         # Pass 1 — one fast frame when two-pass, else the full configured capture.
         attachments, files = await self._capture(camera_id, event_id, quick=two_pass)
         files.update(await self._finalize_media(event_id, files, "snapshot" if two_pass else mode))
-        analysis = await self._analyze(
-            camera_id, cam_name, area_name, event_type, attachments, entity_id=quick_entity
-        )
-        severity = (analysis or {}).get("severity") or "unknown"
-        if severity not in VISION_SEVERITIES:
-            severity = "unknown"
-        false_alarm = _as_bool((analysis or {}).get("false_alarm"))
+        if frigate_seed:
+            analysis = None
+            severity = _FRIGATE_NATIVE_SEVERITY.get(event_type, "unknown")
+            false_alarm = False
+            short_summary = f"{event_type.replace('_', ' ').title()} detected by Frigate."
+        else:
+            analysis = await self._analyze(
+                camera_id, cam_name, area_name, event_type, attachments, entity_id=quick_entity
+            )
+            severity = (analysis or {}).get("severity") or "unknown"
+            if severity not in VISION_SEVERITIES:
+                severity = "unknown"
+            false_alarm = _as_bool((analysis or {}).get("false_alarm"))
+            short_summary = (analysis or {}).get("short_summary") or (
+                "Analysis unavailable — check the AI Task setup." if analysis is None else ""
+            )
         event = {
             "id": event_id,
             "camera_id": camera_id,
@@ -324,8 +351,7 @@ class VisionEngine:
             "ts_end": dt_util.utcnow().isoformat(),
             "severity": severity,
             "false_alarm": false_alarm,
-            "short_summary": (analysis or {}).get("short_summary")
-            or ("Analysis unavailable — check the AI Task setup." if analysis is None else ""),
+            "short_summary": short_summary,
             "long_summary": (analysis or {}).get("long_summary") or "",
             "thumbnail_url": files.get("thumbnail_url"),
             "clip_url": files.get("clip_url"),

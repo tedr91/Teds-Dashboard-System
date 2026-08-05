@@ -70,6 +70,8 @@ class TedsManager:
         self.frigate_adopted: bool = False
         self.frigate_prompt_notified: bool = False
         self.frigate: dict = {"installed": False, "cameras": [], "capability": "absent"}
+        # Frigate MQTT review -> notification bridge (created in __init__.py setup).
+        self.frigate_bridge = None
         # This integration's version (from the manifest), for status displays.
         self.version: str | None = None
         # media-source URI of the dedicated "Ted Dash System" wallpaper folder.
@@ -806,7 +808,7 @@ class TedsManager:
     async def refresh_requirements(self) -> None:
         """Re-run server-side dependency detection and update the sensor."""
         from .requirements import compute_requirements
-        from .frigate import detect_frigate, frigate_capability
+        from .frigate import detect_frigate, frigate_capability, frigate_url
 
         self.requirements = await compute_requirements(self.hass)
         det = detect_frigate(self.hass)
@@ -821,11 +823,14 @@ class TedsManager:
         self.frigate = {
             "installed": det["installed"],
             "cameras": det["cameras"],
+            "url": frigate_url(self.hass),
             "capability": frigate_capability(
                 installed=det["installed"], cameras=det["cameras"],
                 adopted=self.frigate_adopted, answered=self.frigate_answered,
             ),
         }
+        if self.frigate_bridge is not None:
+            await self.frigate_bridge.async_update()
         self._notify()
 
     async def _adopt_frigate_cameras(self, cameras: list[str] | None = None) -> None:
