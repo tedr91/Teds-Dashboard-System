@@ -24,18 +24,13 @@ from homeassistant.util import dt as dt_util
 
 from .const import DOMAIN, EVENT_NAVIGATE, EVENT_SETTINGS, MEDIA_FOLDER_NAME, VISION_SEVERITIES
 from .frigate import frigate_camera_entity, is_frigate_camera
+from .vision_classify import (
+    DETECTOR_KEYWORDS as _DETECTOR_KEYWORDS,
+    classify_detector_type,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
-# Detection event types we can classify a camera's binary_sensors into. Matched by
-# device_class + entity-id/name keywords (Frigate/Reolink/UniFi Protect conventions).
-_DETECTOR_KEYWORDS: dict[str, tuple[str, ...]] = {
-    "person": ("person", "human", "people"),
-    "animal": ("animal", "pet", "dog", "cat"),
-    "car": ("vehicle", "car", "truck"),
-    "package": ("package", "parcel", "delivery"),
-}
-_MOTION_CLASSES = {"motion", "moving", "occupancy", "presence"}
 # Severity assigned to a Frigate-native (no-AI) event, by detected object type.
 _FRIGATE_NATIVE_SEVERITY = {
     "person": "suspicious",
@@ -53,22 +48,27 @@ _SEVERITY_TO_NOTIF = {
 }
 
 _ANALYSIS_INSTRUCTIONS = (
-    "You are a home security camera analyst. The attached images are sequential "
-    "frames from a {event_type} event on the '{camera_name}' camera{area_phrase}. "
-    "Analyze what is happening and classify it.\n"
-    "- severity: 'critical' for an active threat, break-in, or emergency; "
-    "'suspicious' for unexpected or concerning activity worth a human review; "
-    "'harmless' for routine or expected activity (residents, pets, deliveries, "
-    "passing cars); 'unknown' only if the frames are too unclear to judge.\n"
-    "- false_alarm: true ONLY if, after analysis, no genuine activity was actually "
-    "detected in the frames — the detector fired but nothing is really happening "
-    "(e.g. shifting shadows, rain, insects on the lens, lighting or exposure changes, "
-    "a swaying tree or flag with no subject present). If ANY real activity or subject "
-    "is present (a person, animal, vehicle, package, or other genuine movement), set "
-    "false — even if the activity is routine or harmless.\n"
-    "- short_summary: one concise sentence describing what the clip shows.\n"
-    "- long_summary: a detailed paragraph covering who or what is present, what "
-    "they are doing, and any notable details."
+    "You are a home security camera analyst. The attached images are sequential frames "
+    "captured on the '{camera_name}' camera{area_phrase}. A motion or occupancy sensor "
+    "reported a possible '{event_type}', but that is an UNVERIFIED hint that is often "
+    "wrong (shadows, sunlight, rain, a static object, or even the camera's own name can "
+    "trigger it). Judge ONLY by what is actually visible in the frames.\n"
+    "- Do NOT report a person, vehicle, animal, or package just because the sensor hint "
+    "or the camera name mentions it — report an object only if you can actually see it "
+    "in the frames.\n"
+    "- false_alarm: set TRUE whenever the hinted activity is not genuinely visible — the "
+    "sensor fired but no real subject or activity is present (an empty scene, only "
+    "shadows / light changes / weather, or a static object). This is the EXPECTED result "
+    "for spurious triggers, so use it freely. Set FALSE only when a real subject or "
+    "genuine activity is clearly visible.\n"
+    "- severity: 'critical' for an active threat, break-in, or emergency; 'suspicious' "
+    "for unexpected or concerning activity worth a human review; 'harmless' for routine "
+    "or expected activity (residents, pets, deliveries, passing cars); 'unknown' only if "
+    "the frames are too unclear to judge.\n"
+    "- short_summary: one concise sentence describing what the frames actually show "
+    "(state plainly if nothing is happening).\n"
+    "- long_summary: a detailed paragraph covering who or what is visible and what they "
+    "are doing — or that the scene appears empty if no real subject is present."
 )
 
 # ai_task provider platforms (entity-registry platform) in preference order for smart
@@ -92,29 +92,26 @@ def discover_camera_detectors(hass: HomeAssistant, camera_id: str) -> dict[str, 
     dev_reg = dr.async_get(hass)
     if dev_reg.async_get(cam_entry.device_id) is None:
         return {}
+    cam_object_id = camera_id.split(".", 1)[-1]
     result: dict[str, list[str]] = {}
     for ent in er.async_entries_for_device(ent_reg, cam_entry.device_id, include_disabled_entities=False):
         if ent.domain != "binary_sensor":
             continue
-        etype = _classify_detector(hass, ent)
+        etype = _classify_detector(hass, ent, cam_object_id)
         if etype:
             result.setdefault(etype, []).append(ent.entity_id)
     return result
 
 
-def _classify_detector(hass: HomeAssistant, ent: er.RegistryEntry) -> str | None:
-    """Map a binary_sensor to a detection event type via keywords / device_class."""
-    haystack = f"{ent.entity_id} {(ent.original_name or ent.name or '')}".lower()
-    for etype, words in _DETECTOR_KEYWORDS.items():
-        if any(w in haystack for w in words):
-            return etype
+def _classify_detector(hass: HomeAssistant, ent: er.RegistryEntry, cam_object_id: str) -> str | None:
+    """Map a camera binary_sensor to a detection type, ignoring the camera's own name."""
     dev_class = ent.device_class or ent.original_device_class
-    state = hass.states.get(ent.entity_id)
-    if state is not None and not dev_class:
-        dev_class = state.attributes.get("device_class")
-    if dev_class in _MOTION_CLASSES or "motion" in haystack or "movement" in haystack:
-        return "motion"
-    return None
+    if not dev_class:
+        state = hass.states.get(ent.entity_id)
+        if state is not None:
+            dev_class = state.attributes.get("device_class")
+    object_id = ent.entity_id.split(".", 1)[-1]
+    return classify_detector_type(object_id, cam_object_id, dev_class)
 
 
 def _frigate_label_type(label: str) -> str:
@@ -277,7 +274,14 @@ class VisionEngine:
             triggers = cfg.get("triggers") or []
             if not triggers:
                 continue
-            if native_on and mqtt_present and is_frigate_camera(self.hass, cam_id):
+            frigate = is_frigate_camera(self.hass, cam_id)
+            _LOGGER.debug(
+                "Ted's Vision: %s -> %s (frigate_native_detection=%s, mqtt=%s, is_frigate_camera=%s)",
+                cam_id,
+                "Frigate event-driven" if (native_on and mqtt_present and frigate) else "binary_sensor",
+                native_on, mqtt_present, frigate,
+            )
+            if native_on and mqtt_present and frigate:
                 native_cams.add(cam_id)
                 continue
             detectors = discover_camera_detectors(self.hass, cam_id)

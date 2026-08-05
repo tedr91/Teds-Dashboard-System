@@ -51,6 +51,12 @@ frontend:
 
 ## Changelog
 
+### v0.9.89
+
+- **Frigate-native Vision, done right.** For Frigate cameras, TDS now drives Vision from Frigate's own tracked events instead of re-recording: it logs the event using **Frigate's thumbnail + clip** (nothing captured or stored locally) and runs the AI only to describe that clip. The entry appears **the instant Frigate reports the object** — firing your “Display live feed” / chime actions immediately, while the activity is happening — then upgrades in place with the clip and a detailed summary when the event ends.
+- **Fewer false detections.** Fixed a classifier bug where a camera named after an object (e.g. `front_door_package`) misfiled its motion sensor as that object, and de-primed the AI prompt so it treats the sensor's object type as an unverified hint and reports only what's actually visible.
+- Bundles Ted's Cards v0.9.83 (the “Analyzing…” badge).
+
 ### v0.9.88
 
 - **Tighter Frigate integration.** When Frigate is the adopted camera source, TDS now taps its native detection and events: Frigate review **alerts** become Ted's notifications with the event thumbnail and clip; for two-pass Vision, Frigate's own object detection **seeds the quick pass** so only the detailed pass calls the AI (still a full-clip summary); and the Cameras view gains Frigate **controls** (detect/recordings/snapshots), a **Recordings** link, and **status chips**. All toggleable under Settings → Cameras → Frigate. Bundles Ted's Cards v0.9.82.
