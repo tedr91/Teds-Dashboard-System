@@ -30,6 +30,8 @@ EVENT_ASSIST_RESPONSE = f"{DOMAIN}_assist_response"
 EVENT_DASHBOARD_UPDATED = f"{DOMAIN}_dashboard_updated"
 # Fired when a camera Vision Analysis event is created/updated/removed (live card feed).
 EVENT_VISION_EVENT = f"{DOMAIN}_vision_event"
+# Fired when a Bing "Photo of the Day" is removed, so every device drops it live.
+EVENT_BING_REMOVED = f"{DOMAIN}_bing_removed"
 
 # Ordered severity levels a vision analysis can assign (low -> high). "unknown" is
 # ranked between harmless and suspicious but always passes a severity threshold so a

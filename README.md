@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.86
+
+- Updated the bundled Ted's Cards to v0.9.80: removing a Bing “Photo of the Day” now removes it from every device's wallpaper slideshow live — a Remove on one tablet drops the photo on all the others at once, instead of it lingering until each device reloaded.
+
 ### v0.9.85
 
 - Updated the bundled Ted's Cards to v0.9.79: notifications now show a thumbnail image when provided (e.g. a vision event snapshot) in the navbar notifications popup, the Notification Center card, and the toast.

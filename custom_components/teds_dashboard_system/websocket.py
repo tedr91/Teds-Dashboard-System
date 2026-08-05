@@ -32,6 +32,7 @@ from .const import (
     DASHBOARDS_DIR,
     DOMAIN,
     EVENT_ASSIST_RESPONSE,
+    EVENT_BING_REMOVED,
     EVENT_DASHBOARD_UPDATED,
     EVENT_NAVIGATE,
     EVENT_NOTIFICATION,
@@ -79,6 +80,7 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, handle_clear_bing_photos_cache)
     websocket_api.async_register_command(hass, handle_favorite_bing_photo)
     websocket_api.async_register_command(hass, handle_remove_bing_photo)
+    websocket_api.async_register_command(hass, handle_subscribe_bing_removed)
     websocket_api.async_register_command(hass, handle_favorite_photo)
     websocket_api.async_register_command(hass, handle_store_background_photo)
     websocket_api.async_register_command(hass, handle_list_favorites)
@@ -402,9 +404,37 @@ async def handle_favorite_bing_photo(
 async def handle_remove_bing_photo(
     hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict
 ) -> None:
-    """Delete a single cached Bing image from the cache."""
+    """Delete a single cached Bing image from the cache and tell every device to
+    drop it from its live slideshow."""
     ok = await remove_bing_photo(hass, msg["filename"])
+    if ok:
+        hass.bus.async_fire(EVENT_BING_REMOVED, {"filename": msg["filename"]})
     connection.send_result(msg["id"], {"success": ok})
+
+
+@websocket_api.websocket_command(
+    {vol.Required("type"): f"{DOMAIN}/subscribe_bing_removed"}
+)
+@callback
+def handle_subscribe_bing_removed(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict
+) -> None:
+    """Forward Bing photo-removed signals so every device drops the image live.
+
+    Each event is ``{filename}``; the background engine removes that image from its
+    in-memory slideshow (advancing if it was the current slide). Non-admin (kiosk /
+    Wallpanel) users can't ``subscribe_events`` for custom event types, so they
+    subscribe through this command instead.
+    """
+
+    @callback
+    def forward(event: Event) -> None:
+        connection.send_message(websocket_api.event_message(msg["id"], event.data))
+
+    connection.subscriptions[msg["id"]] = hass.bus.async_listen(
+        EVENT_BING_REMOVED, forward
+    )
+    connection.send_result(msg["id"])
 
 
 @websocket_api.websocket_command(
