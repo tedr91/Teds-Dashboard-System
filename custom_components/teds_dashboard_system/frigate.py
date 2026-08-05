@@ -60,6 +60,11 @@ def _frigate_camera_entity(hass: HomeAssistant, cam_name: str) -> str | None:
     return None
 
 
+def frigate_camera_entity(hass: HomeAssistant, cam_name: str) -> str | None:
+    """Public alias of :func:`_frigate_camera_entity` for other modules."""
+    return _frigate_camera_entity(hass, cam_name)
+
+
 def detect_frigate(hass: HomeAssistant) -> dict:
     """Return Frigate presence and the camera entity ids it exposes.
 

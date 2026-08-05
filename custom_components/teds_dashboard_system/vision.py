@@ -10,6 +10,7 @@ served to the Vision timeline card. No third-party vision integration required.
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 import os
 import time
@@ -22,6 +23,7 @@ from homeassistant.helpers.event import async_track_state_change_event
 from homeassistant.util import dt as dt_util
 
 from .const import DOMAIN, EVENT_NAVIGATE, EVENT_SETTINGS, MEDIA_FOLDER_NAME, VISION_SEVERITIES
+from .frigate import frigate_camera_entity, is_frigate_camera
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -113,6 +115,15 @@ def _classify_detector(hass: HomeAssistant, ent: er.RegistryEntry) -> str | None
     if dev_class in _MOTION_CLASSES or "motion" in haystack or "movement" in haystack:
         return "motion"
     return None
+
+
+def _frigate_label_type(label: str) -> str:
+    """Map a Frigate object label (person/car/dog/...) to a Vision detector type."""
+    low = label.lower()
+    for etype, words in _DETECTOR_KEYWORDS.items():
+        if low in words or any(w in low for w in words):
+            return etype
+    return "motion"
 
 
 def ai_task_entities(hass: HomeAssistant) -> list[dict]:
@@ -211,8 +222,12 @@ class VisionEngine:
         self.cache_dir: str | None = None  # served /teds_dashboard_system/vision_cache
         self._unsub_state = None
         self._unsub_settings = None
+        self._unsub_events = None  # Frigate MQTT events subscription (native cameras)
         self._watch: dict[str, tuple[str, str]] = {}  # sensor eid -> (camera_id, event_type)
         self._cooldowns: dict[str, float] = {}        # camera_id -> monotonic last trigger
+        self._native_cams: set[str] = set()           # Frigate cameras driven by events, not sensors
+        self._frigate_pending: dict[str, str] = {}    # frigate event id -> provisional TDS event id
+        self._frigate_seen: set[str] = set()          # frigate event ids we've handled a `new` for
 
     @callback
     def async_setup(self, entry: ConfigEntry) -> None:
@@ -228,6 +243,11 @@ class VisionEngine:
         if self._unsub_settings:
             self._unsub_settings()
             self._unsub_settings = None
+        if self._unsub_events:
+            self._unsub_events()
+            self._unsub_events = None
+        self._frigate_pending.clear()
+        self._frigate_seen.clear()
 
     def _settings(self) -> dict:
         return self.manager.effective_settings()
@@ -246,20 +266,30 @@ class VisionEngine:
         if not s.get("vision_enabled"):
             return
         cams = s.get("vision_cameras") or {}
+        # A Frigate camera with native detection + MQTT is driven by Frigate's own tracked
+        # events (real clip/thumbnail, no local capture) rather than its binary_sensors.
+        native_on = bool(s.get("frigate_native_detection", True))
+        mqtt_present = "mqtt" in self.hass.config.components
+        native_cams: set[str] = set()
         for cam_id, cfg in cams.items():
             if not (cfg or {}).get("enabled"):
                 continue
             triggers = cfg.get("triggers") or []
             if not triggers:
                 continue
+            if native_on and mqtt_present and is_frigate_camera(self.hass, cam_id):
+                native_cams.add(cam_id)
+                continue
             detectors = discover_camera_detectors(self.hass, cam_id)
             for t_idx, trig in enumerate(triggers):
                 for eid in detectors.get((trig or {}).get("type"), []):
                     self._watch.setdefault(eid, []).append((cam_id, t_idx))
+        self._native_cams = native_cams
         if self._watch:
             self._unsub_state = async_track_state_change_event(
                 self.hass, list(self._watch), self._on_state
             )
+        self.hass.async_create_task(self._sync_frigate_events(bool(native_cams)))
 
     @callback
     def _on_state(self, event: Event) -> None:
@@ -294,6 +324,277 @@ class VisionEngine:
                 )
             )
 
+    # ── Frigate event-driven path (tight integration) ───────
+    async def _sync_frigate_events(self, want: bool) -> None:
+        """Subscribe/unsubscribe to Frigate's MQTT event stream for native cameras."""
+        if want and self._unsub_events is None and "mqtt" in self.hass.config.components:
+            from homeassistant.components import mqtt  # noqa: PLC0415
+
+            from .frigate import frigate_topic_prefix  # noqa: PLC0415
+
+            topic = f"{frigate_topic_prefix(self.hass)}/events"
+            try:
+                self._unsub_events = await mqtt.async_subscribe(
+                    self.hass, topic, self._on_frigate_event, encoding=None
+                )
+            except Exception:  # noqa: BLE001 - MQTT not ready; retried on the next rebuild
+                self._unsub_events = None
+        elif not want and self._unsub_events is not None:
+            self._unsub_events()
+            self._unsub_events = None
+
+    @callback
+    def _on_frigate_event(self, msg) -> None:
+        """React to a Frigate tracked object: create a provisional Vision event (and fire
+        the trigger's actions) on `new`, then refine that same entry with the finished clip
+        + AI summary on `end`."""
+        try:
+            data = json.loads(msg.payload)
+        except (ValueError, TypeError):
+            return
+        phase = data.get("type")
+        if phase not in ("new", "end"):
+            return
+        after = data.get("after") or {}
+        camera, event_id = after.get("camera"), after.get("id")
+        if not camera or not event_id:
+            return
+        cam_id = frigate_camera_entity(self.hass, str(camera))
+        if not cam_id or cam_id not in self._native_cams:
+            return
+        event_id = str(event_id)
+        etype = _frigate_label_type(str(after.get("label") or ""))
+        triggers = ((self._settings().get("vision_cameras") or {}).get(cam_id) or {}).get("triggers") or []
+        t_idx, trig = self._match_trigger(triggers, etype)
+        if trig is None:
+            return
+        if phase == "new":
+            if event_id in self._frigate_seen:
+                return  # Frigate re-sent `new` for the same object
+            self._frigate_seen.add(event_id)
+            key = f"{cam_id}#{t_idx}"
+            now = time.monotonic()
+            cooldown = int(trig.get("cooldown_seconds") or 0)
+            if cooldown and (now - self._cooldowns.get(key, 0)) < cooldown:
+                return  # suppressed — recorded in _frigate_seen so `end` skips it too
+            self._cooldowns[key] = now
+            self.hass.async_create_task(self._frigate_event_new(cam_id, etype, event_id, trig))
+        else:
+            self.hass.async_create_task(
+                self._frigate_event_end(cam_id, etype, event_id, bool(after.get("has_clip")))
+            )
+
+    @staticmethod
+    def _match_trigger(triggers: list, etype: str) -> tuple[int | None, dict | None]:
+        """Pick the trigger for a Frigate object type: an exact-type trigger, else a
+        'motion' trigger as a catch-all. Returns (index, trigger) or (None, None)."""
+        fallback: tuple[int | None, dict | None] = (None, None)
+        for i, trig in enumerate(triggers):
+            ttype = (trig or {}).get("type")
+            if ttype == etype:
+                return i, trig
+            if ttype == "motion" and fallback[1] is None:
+                fallback = (i, trig)
+        return fallback
+
+    async def _frigate_event_new(self, camera_id: str, event_type: str, event_id: str, trigger: dict) -> None:
+        """Create the provisional Vision event from Frigate's live thumbnail and fire the
+        trigger's actions immediately — the timely moment (driver approaching), before the
+        clip even exists. Frigate only emits `new` once the object isn't a false positive."""
+        tds_id = uuid.uuid4().hex
+        self._frigate_pending[event_id] = tds_id
+        started = dt_util.utcnow()
+        area_id, area_name, cam_name = self._camera_context(camera_id)
+        event = {
+            "id": tds_id,
+            "camera_id": camera_id,
+            "camera_name": cam_name,
+            "area": area_id,
+            "area_name": area_name,
+            "event_type": event_type,
+            "created": started.isoformat(),
+            "ts_start": started.isoformat(),
+            "ts_end": started.isoformat(),
+            "severity": _FRIGATE_NATIVE_SEVERITY.get(event_type, "unknown"),
+            "false_alarm": False,
+            "short_summary": f"{event_type.replace('_', ' ').title()} detected by Frigate.",
+            "long_summary": "",
+            "thumbnail_url": f"/api/frigate/notifications/{event_id}/thumbnail.jpg",
+            "clip_url": None,  # the clip doesn't exist until the object's event ends
+            "reviewed": False,
+            "trigger_entity": None,
+            "frigate_event_id": event_id,
+            "analyzing": True,
+            "_files": {},
+        }
+        dropped = await self.manager.add_vision_event(event)
+        if dropped:
+            await self._cleanup_files(dropped)
+        await self._run_actions(event, trigger, area_id)
+
+    async def _frigate_event_end(
+        self, camera_id: str, event_type: str, event_id: str, has_clip: bool,
+    ) -> None:
+        """Refine the provisional event with the finished clip + AI summary. If we never saw
+        the object's start (e.g. TDS started mid-event), create a complete entry now instead
+        — but without firing actions late, since the timely moment has passed."""
+        tds_id = self._frigate_pending.pop(event_id, None)
+        suppressed = event_id in self._frigate_seen
+        self._frigate_seen.discard(event_id)
+        if tds_id is None and suppressed:
+            return  # the object's start was cooldown-suppressed — no entry to make
+        s = self._settings()
+        area_id, area_name, cam_name = self._camera_context(camera_id)
+        analysis = await self._analyze_frigate(
+            camera_id, cam_name, area_name, event_type, event_id, has_clip, s
+        )
+        clip_url = f"/api/frigate/notifications/{event_id}/clip.mp4" if has_clip else None
+        false_alarm = _as_bool((analysis or {}).get("false_alarm"))
+        fa_mode = s.get("vision_false_alarm_mode") or "log_only"
+        severity = (analysis or {}).get("severity")
+        if severity not in VISION_SEVERITIES:
+            severity = _FRIGATE_NATIVE_SEVERITY.get(event_type, "unknown")
+
+        if tds_id is None:
+            # Joined mid-event: create the finished entry (no late actions).
+            if false_alarm and fa_mode == "drop":
+                return
+            now = dt_util.utcnow()
+            event = {
+                "id": uuid.uuid4().hex,
+                "camera_id": camera_id,
+                "camera_name": cam_name,
+                "area": area_id,
+                "area_name": area_name,
+                "event_type": event_type,
+                "created": now.isoformat(),
+                "ts_start": now.isoformat(),
+                "ts_end": now.isoformat(),
+                "severity": severity,
+                "false_alarm": false_alarm,
+                "short_summary": (analysis or {}).get("short_summary")
+                or f"{event_type.replace('_', ' ').title()} detected by Frigate.",
+                "long_summary": (analysis or {}).get("long_summary") or "",
+                "thumbnail_url": f"/api/frigate/notifications/{event_id}/thumbnail.jpg",
+                "clip_url": clip_url,
+                "reviewed": False,
+                "trigger_entity": None,
+                "frigate_event_id": event_id,
+                "analyzing": False,
+                "_files": {},
+            }
+            dropped = await self.manager.add_vision_event(event)
+            if dropped:
+                await self._cleanup_files(dropped)
+            return
+
+        # Refine the provisional entry in place (the row visibly upgrades on the timeline).
+        if false_alarm and fa_mode == "drop":
+            await self.manager.remove_vision_event(tds_id)
+            return
+        patch: dict = {"clip_url": clip_url, "ts_end": dt_util.utcnow().isoformat(), "analyzing": False}
+        if analysis:
+            patch["long_summary"] = analysis.get("long_summary") or ""
+            if analysis.get("short_summary"):
+                patch["short_summary"] = analysis["short_summary"]
+            if analysis.get("severity") in VISION_SEVERITIES:
+                patch["severity"] = analysis["severity"]
+            patch["false_alarm"] = false_alarm
+        await self.manager.update_vision_event(tds_id, **patch)
+
+    async def _analyze_frigate(
+        self, camera_id: str, cam_name: str, area_name: str | None,
+        event_type: str, event_id: str, has_clip: bool, settings: dict,
+    ) -> dict | None:
+        """Run the AI analysis on Frigate's clip/snapshot. Downloads the media to a temp
+        location only for the AI call, then deletes it — nothing is retained by TDS."""
+        entity = self._detailed_entity(
+            settings,
+            settings.get("vision_ai_task_entity") or preferred_image_ai_task_entity(self.hass),
+        )
+        media = self._media_source_dir()
+        attachments: list[dict] = []
+        tmp_dir: str | None = None
+        if media:
+            tmp_rel = f"{MEDIA_FOLDER_NAME}/frigate/{event_id}"
+            tmp_dir = os.path.join(media[1], tmp_rel)
+            asset = "clip.mp4" if has_clip else "snapshot.jpg"
+            blob = await self._download_frigate(event_id, asset)
+            if blob is not None:
+                await self.hass.async_add_executor_job(lambda: os.makedirs(tmp_dir, exist_ok=True))
+                local = os.path.join(tmp_dir, asset)
+                await self.hass.async_add_executor_job(_write_bytes, local, blob)
+                if not has_clip:
+                    attachments = [{
+                        "media_content_id": f"media-source://media_source/{media[0]}/{tmp_rel}/{asset}",
+                        "media_content_type": "image/jpeg",
+                    }]
+                elif _entity_supports_video(self.hass, entity):
+                    attachments = [{
+                        "media_content_id": f"media-source://media_source/{media[0]}/{tmp_rel}/clip.mp4",
+                        "media_content_type": "video/mp4",
+                    }]
+                else:
+                    count = max(1, int(settings.get("vision_frame_count") or 3))
+                    for fp in await self._extract_frames(local, tmp_dir, count):
+                        attachments.append({
+                            "media_content_id": f"media-source://media_source/{media[0]}/{tmp_rel}/{os.path.basename(fp)}",
+                            "media_content_type": "image/jpeg",
+                        })
+        if not attachments:
+            # Couldn't fetch Frigate media — analyze a live snapshot so we still get a summary.
+            attachments = [{
+                "media_content_id": f"media-source://camera/{camera_id}",
+                "media_content_type": "image/jpeg",
+            }]
+        try:
+            return await self._analyze(
+                camera_id, cam_name, area_name, event_type, attachments, entity_id=entity
+            )
+        finally:
+            if tmp_dir:
+                await self.hass.async_add_executor_job(_rmtree_quiet, tmp_dir)
+
+    async def _download_frigate(self, event_id: str, asset: str) -> bytes | None:
+        """Fetch a Frigate notification-API asset (clip.mp4 / snapshot.jpg) over HTTP."""
+        from homeassistant.helpers.aiohttp_client import async_get_clientsession  # noqa: PLC0415
+        from homeassistant.helpers.network import NoURLAvailableError, get_url  # noqa: PLC0415
+
+        try:
+            base = get_url(self.hass, allow_internal=True, prefer_external=False)
+        except NoURLAvailableError:
+            return None
+        url = f"{base}/api/frigate/notifications/{event_id}/{asset}"
+        try:
+            async with async_get_clientsession(self.hass).get(url) as resp:
+                if resp.status != 200:
+                    return None
+                return await resp.read()
+        except Exception:  # noqa: BLE001 - media may not be ready yet; fall back gracefully
+            return None
+
+    async def _extract_frames(self, clip_path: str, out_dir: str, count: int) -> list[str]:
+        """ffmpeg-extract up to `count` stills from a clip for AI analysis (best-effort)."""
+        pattern = os.path.join(out_dir, "ff_%02d.jpg")
+        try:
+            from homeassistant.components import ffmpeg  # noqa: PLC0415
+
+            binary = ffmpeg.get_ffmpeg_manager(self.hass).binary
+            proc = await asyncio.create_subprocess_exec(
+                binary, "-y", "-i", clip_path, "-vf", "fps=1", "-frames:v", str(count), pattern,
+                stdout=asyncio.subprocess.DEVNULL, stderr=asyncio.subprocess.DEVNULL,
+            )
+            await proc.communicate()
+        except Exception:  # noqa: BLE001 - no ffmpeg / bad clip -> no frames
+            return []
+
+        def _list() -> list[str]:
+            return sorted(
+                os.path.join(out_dir, f) for f in os.listdir(out_dir) if f.startswith("ff_")
+            )
+
+        return await self.hass.async_add_executor_job(_list)
+
     async def analyze(self, camera_id: str, event_type: str = "manual") -> dict | None:
         """Manually analyze a camera now (used by the analyze_camera service/test)."""
         return await self._handle_event(camera_id, event_type, trigger_entity=None)
@@ -306,8 +607,6 @@ class VisionEngine:
         started = dt_util.utcnow()
         area_id, area_name, cam_name = self._camera_context(camera_id)
         s = self._settings()
-        from .frigate import is_frigate_camera  # noqa: PLC0415
-
         two_pass = bool(s.get("vision_two_pass", True))
         mode = s.get("vision_capture_mode") or "video"
         # Frigate already classified the object on-device. With two-pass on, use that to
@@ -780,6 +1079,12 @@ def _remove_quiet(path: str) -> None:
         os.remove(path)
     except OSError:
         pass
+
+
+def _rmtree_quiet(path: str) -> None:
+    import shutil  # noqa: PLC0415
+
+    shutil.rmtree(path, ignore_errors=True)
 
 
 def _cleanup_paths(paths: list[str], dirs: list[str]) -> None:
