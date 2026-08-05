@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.84
+
+- Updated the bundled Ted's Cards to v0.9.78: Settings → Cameras auto-populate now collapses high/medium/low substream channels into one entry per camera (keeping the highest-res) and cleans up redundant substreams, and the “Add a camera” picker hides redundant substreams.
+
 ### v0.9.83
 
 - Updated the bundled Ted's Cards to v0.9.77: camera card editor substream polish — Medium/Low pickers show the auto-detected feed as a muted placeholder, and the main “Camera entity” picker hides redundant medium/low substreams (keeping main feeds).
