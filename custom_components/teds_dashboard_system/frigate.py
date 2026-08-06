@@ -28,6 +28,28 @@ def frigate_url(hass: HomeAssistant) -> str | None:
     return None
 
 
+async def async_mark_frigate_reviewed(hass: HomeAssistant, review_ids: list[str]) -> bool:
+    """Best-effort: mark Frigate review segment(s) as reviewed via Frigate's HTTP API
+    (``POST /api/reviews/viewed``). No-op when Frigate isn't configured; never raises."""
+    from homeassistant.helpers.aiohttp_client import async_get_clientsession  # noqa: PLC0415
+
+    ids = [str(r) for r in review_ids if r]
+    base = frigate_url(hass)
+    if not ids or not base:
+        return False
+    try:
+        async with async_get_clientsession(hass).post(
+            f"{base}/api/reviews/viewed", json={"ids": ids}
+        ) as resp:
+            if resp.status != 200:
+                _LOGGER.debug("Frigate mark-reviewed returned %s for %s", resp.status, ids)
+                return False
+            return True
+    except Exception:  # noqa: BLE001 - Frigate unreachable / auth; non-fatal
+        _LOGGER.debug("Frigate mark-reviewed failed for %s", ids, exc_info=True)
+        return False
+
+
 def frigate_topic_prefix(hass: HomeAssistant) -> str:
     """Frigate's MQTT ``topic_prefix`` (default ``frigate``), read from its config."""
     for value in (hass.data.get(FRIGATE_DOMAIN) or {}).values():

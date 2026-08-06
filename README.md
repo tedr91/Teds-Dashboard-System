@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.98
+
+- **Marking a Vision event reviewed now marks it reviewed in Frigate too.** For a Frigate-native event, tapping “Mark reviewed” in the Vision timeline also clears it from Frigate's review inbox (via Frigate's API), so the two stay in sync. Best-effort — if Frigate is unreachable the TDS review still succeeds.
+
 ### v0.9.97
 
 - **No more silently-dropped Frigate alerts.** Frigate already decides what's alert-worthy, so TDS no longer re-filters its alerts against a hand-kept per-object trigger list. Frigate-native cameras now always have a built-in **“Any Frigate alert”** catch-all (server-side too, so existing configs are covered without any migration); object triggers are optional refinements for per-object cooldowns/actions. Previously an alert for an object with no matching trigger (e.g. a `car` on a camera set up only for `person`) produced no timeline entry and no notification.

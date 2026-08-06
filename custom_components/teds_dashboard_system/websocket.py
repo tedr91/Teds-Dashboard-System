@@ -39,6 +39,7 @@ from .const import (
     EVENT_SETTINGS,
     EVENT_VISION_EVENT,
 )
+from .frigate import async_mark_frigate_reviewed
 from .vision import (
     ai_task_entities,
     discover_camera_detectors,
@@ -740,10 +741,12 @@ def handle_list_ai_task_entities(
 async def handle_mark_vision_reviewed(
     hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict
 ) -> None:
-    """Mark a vision event reviewed / unreviewed."""
+    """Mark a vision event reviewed / unreviewed. Reviewing a Frigate-native event also
+    marks the underlying Frigate review as reviewed in Frigate."""
     mgr = _manager(hass)
-    if mgr:
-        await mgr.update_vision_event(msg["event_id"], reviewed=msg["reviewed"])
+    event = await mgr.update_vision_event(msg["event_id"], reviewed=msg["reviewed"]) if mgr else None
+    if event and msg["reviewed"] and event.get("frigate_review_id"):
+        await async_mark_frigate_reviewed(hass, [event["frigate_review_id"]])
     connection.send_result(msg["id"], {"success": True})
 
 
