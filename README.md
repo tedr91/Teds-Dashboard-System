@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.92
+
+- Bundles Ted's Cards v0.9.86 (Calendar Card Agenda view tuned to a Calendar Card Pro look: larger day date, high-temp-only forecast with a matched condition icon, tighter day/event spacing, and slightly larger event titles).
+
 ### v0.9.91
 
 - **Vision analysis is now staged, with live progress.** A camera event is logged and its actions (live feed, chime, notifications) fire the **instant** it's detected — from a fast placeholder snapshot, before any AI runs — then the row upgrades from **In progress…** to **Analyzing…** to its final summary. The clip is captured once and, with two-pass on, a quick early-window pass and the detailed full-clip pass run concurrently (the quick one posts a preliminary summary only if it beats the detailed one). Applies to both Frigate-native and binary-sensor cameras.
