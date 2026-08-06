@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.100
+
+- Bundles Ted's Cards v0.9.91 (Vision card **“Hide viewed”** toggle — the timeline hides events you've already reviewed by default).
+
 ### v0.9.99
 
 - **Vision “reviewed” and its notification now stay in sync, everywhere.** Marking a Vision event reviewed (e.g. on your desktop) clears its notification from the notification center on every device, including wall panels; and reading, dismissing, or clearing that notification marks the Vision timeline entry reviewed. Vision events and notifications are global, so either action reflects on all your screens.
