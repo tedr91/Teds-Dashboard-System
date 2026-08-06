@@ -405,7 +405,12 @@ class TedsManager:
         self._notify()
 
     async def dismiss_notification(self, notif_id):
+        vision_ids = {
+            (n.get("data") or {}).get("vision_event_id")
+            for n in self.notifications if n["id"] == notif_id
+        }
         self.notifications = [n for n in self.notifications if n["id"] != notif_id]
+        self._mark_vision_events_reviewed(vision_ids)
         self._fire_dismissed(notif_id)
         await self._save()
         self._notify()
@@ -418,6 +423,7 @@ class TedsManager:
         matching toast, so acting on one device clears it everywhere.
         """
         affected = []
+        vision_ids: set = set()
         remaining = []
         for n in self.notifications:
             match = (notif_id is None or n["id"] == notif_id) and (
@@ -427,11 +433,13 @@ class TedsManager:
                 remaining.append(n)
                 continue
             affected.append(n["id"])
+            vision_ids.add((n.get("data") or {}).get("vision_event_id"))
             if n.get("persistence") == "sticky":
                 n["read"] = True
                 remaining.append(n)
             # normal → dropped (auto-clear on interaction)
         self.notifications = remaining
+        self._mark_vision_events_reviewed(vision_ids)
         for nid in affected:
             self._fire_dismissed(nid)
         await self._save()
@@ -439,13 +447,16 @@ class TedsManager:
 
     async def clear_notifications(self, area=None):
         if area is None:
-            removed = [n["id"] for n in self.notifications]
+            cleared = list(self.notifications)
             self.notifications = []
         else:
-            removed = [n["id"] for n in self.notifications if n.get("area") == area]
+            cleared = [n for n in self.notifications if n.get("area") == area]
             self.notifications = [n for n in self.notifications if n.get("area") != area]
-        for nid in removed:
-            self._fire_dismissed(nid)
+        self._mark_vision_events_reviewed(
+            {(n.get("data") or {}).get("vision_event_id") for n in cleared}
+        )
+        for n in cleared:
+            self._fire_dismissed(n["id"])
         await self._save()
         self._notify()
 
@@ -454,6 +465,36 @@ class TedsManager:
         toasts close on every device (not just the one that acted)."""
         self.playback.stop(notif_id)
         self.hass.bus.async_fire(EVENT_NOTIFICATION, {"id": notif_id, "dismissed": True})
+
+    def _mark_vision_events_reviewed(self, vision_ids: set) -> None:
+        """Flag the given vision events reviewed in place + broadcast, so reading/dismissing
+        a vision toast also marks its timeline entry reviewed (globally, every device)."""
+        for e in self.vision_events:
+            if e.get("id") in vision_ids and not e.get("reviewed"):
+                e["reviewed"] = True
+                self.hass.bus.async_fire(EVENT_VISION_EVENT, {"event": self._vision_public(e)})
+
+    async def dismiss_vision_notifications(self, vision_event_id: str) -> None:
+        """Read/dismiss the notification(s) a vision event's toast created (matched by
+        data.vision_event_id) — same as the user acting on the toast, on every device, so
+        marking the event reviewed also clears the notification center on the wallpanel."""
+        affected = []
+        remaining = []
+        for n in self.notifications:
+            if (n.get("data") or {}).get("vision_event_id") == vision_event_id:
+                affected.append(n["id"])
+                if n.get("persistence") == "sticky":
+                    n["read"] = True
+                    remaining.append(n)
+            else:
+                remaining.append(n)
+        if not affected:
+            return
+        self.notifications = remaining
+        for nid in affected:
+            self._fire_dismissed(nid)
+        await self._save()
+        self._notify()
 
     # ── vision analysis events ──────────────────────────────
     async def add_vision_event(self, event: dict) -> list[dict]:

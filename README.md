@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.99
+
+- **Vision “reviewed” and its notification now stay in sync, everywhere.** Marking a Vision event reviewed (e.g. on your desktop) clears its notification from the notification center on every device, including wall panels; and reading, dismissing, or clearing that notification marks the Vision timeline entry reviewed. Vision events and notifications are global, so either action reflects on all your screens.
+
 ### v0.9.98
 
 - **Marking a Vision event reviewed now marks it reviewed in Frigate too.** For a Frigate-native event, tapping “Mark reviewed” in the Vision timeline also clears it from Frigate's review inbox (via Frigate's API), so the two stay in sync. Best-effort — if Frigate is unreachable the TDS review still succeeds.

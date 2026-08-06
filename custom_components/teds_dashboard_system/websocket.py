@@ -745,8 +745,11 @@ async def handle_mark_vision_reviewed(
     marks the underlying Frigate review as reviewed in Frigate."""
     mgr = _manager(hass)
     event = await mgr.update_vision_event(msg["event_id"], reviewed=msg["reviewed"]) if mgr else None
-    if event and msg["reviewed"] and event.get("frigate_review_id"):
-        await async_mark_frigate_reviewed(hass, [event["frigate_review_id"]])
+    if event and msg["reviewed"]:
+        if event.get("frigate_review_id"):
+            await async_mark_frigate_reviewed(hass, [event["frigate_review_id"]])
+        # Clear the toast this event created so the notification center clears everywhere.
+        await mgr.dismiss_vision_notifications(msg["event_id"])
     connection.send_result(msg["id"], {"success": True})
 
 
