@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.93
+
+- Bundles Ted's Cards v0.9.87 (Nightstand device type now defaults the navbar to the right with the Left/Right sections kept but weather and date/time items removed; Calendar Card Agenda view groups the weekday/forecast tightly around a slightly larger date number).
+
 ### v0.9.92
 
 - Bundles Ted's Cards v0.9.86 (Calendar Card Agenda view tuned to a Calendar Card Pro look: larger day date, high-temp-only forecast with a matched condition icon, tighter day/event spacing, and slightly larger event titles).
