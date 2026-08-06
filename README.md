@@ -51,6 +51,12 @@ frontend:
 
 ## Changelog
 
+### v0.9.91
+
+- **Vision analysis is now staged, with live progress.** A camera event is logged and its actions (live feed, chime, notifications) fire the **instant** it's detected — from a fast placeholder snapshot, before any AI runs — then the row upgrades from **In progress…** to **Analyzing…** to its final summary. The clip is captured once and, with two-pass on, a quick early-window pass and the detailed full-clip pass run concurrently (the quick one posts a preliminary summary only if it beats the detailed one). Applies to both Frigate-native and binary-sensor cameras.
+- Sharpened the analysis prompt to describe what changes throughout the clip and to avoid inventing a story or flagging static objects.
+- Bundles Ted's Cards v0.9.85 (the In progress / Analyzing status badge).
+
 ### v0.9.90
 
 - **Vision: act immediately, discard after analysis.** Trigger actions (live feed, chime, notifications) now fire the instant an event is detected instead of waiting on severity. Once the full AI analysis completes, the event is discarded if it turns out to be a false alarm or its final severity matches the trigger's new **“Discard events if severity matches”** list — discarded events are logged-only or dropped per your **Filter out false alarms** setting. Applies to both Frigate-native and binary-sensor Vision paths.

@@ -54,7 +54,7 @@ _ANALYSIS_INSTRUCTIONS = (
     "motion or occupancy sensor reported a possible '{event_type}', but that hint is "
     "UNVERIFIED and often wrong (shadows, sunlight, rain, a static object, or even the "
     "camera's own name can trigger it). Judge ONLY by what the frames actually show.\n"
-    "Describe the ACTION — what CHANGES from the first frame to the last: who or what "
+    "Describe the ACTION — what CHANGES throughout the clip: who or what "
     "arrives, the direction and path they move, what they do, and how it ends. Do NOT "
     "just describe a static scene or a parked object; report the sequence of events over "
     "time. (Good: 'A dark SUV pulls into the driveway and continues forward into the "
@@ -62,6 +62,11 @@ _ANALYSIS_INSTRUCTIONS = (
     "leave.' Bad: 'A parked car in the driveway.' / 'Two cars in the garage.')\n"
     "- Do NOT report a person, vehicle, animal, or package unless it is actually visible "
     "and moving/acting in the frames — the sensor hint or camera name is not evidence.\n"
+    "- Do NOT invent a story or assume a motive; report only what is actually visible in the frames.\n"
+    "- Do NOT report a static object that never moves, even if it is a person, vehicle, animal, or package.\n"
+    "- false_alarm: default FALSE unless the frames genuinely show nothing meaningful "
+    "happening (an empty scene, only shadows / light changes / weather, or a static object "
+    "that never moves).\n"
     "- false_alarm: set TRUE when nothing genuinely happens across the frames (an empty "
     "scene, only shadows / light changes / weather, or a static object that never moves). "
     "This is the EXPECTED result for spurious triggers, so use it freely. Set FALSE only "
@@ -453,7 +458,7 @@ class VisionEngine:
             "trigger_entity": None,
             "frigate_event_id": event_id,
             "frigate_review_id": review_id,
-            "analyzing": True,
+            "status": "in_progress",
             "_files": {},
         }
         dropped = await self.manager.add_vision_event(event)
@@ -475,19 +480,32 @@ class VisionEngine:
             return  # cooldown-suppressed, or the review never became an alert
         s = self._settings()
         area_id, area_name, cam_name = self._camera_context(camera_id)
-        analysis = await self._analyze_frigate(
-            camera_id, cam_name, area_name, event_type, event_id, True, s
-        )
         clip_url = f"/api/frigate/notifications/{event_id}/clip.mp4"
+
+        # The clip is finalized: move the row to "analyzing", and (for two-pass) let the
+        # quick pass publish a preliminary summary before the detailed pass finishes.
+        on_quick = None
+        if tds_id is not None:
+            await self.manager.update_vision_event(tds_id, status="analyzing", clip_url=clip_url)
+
+            async def _push_quick(patch: dict) -> None:
+                await self.manager.update_vision_event(tds_id, status="analyzing", **patch)
+
+            on_quick = _push_quick
+
+        analysis = await self._analyze_frigate(
+            camera_id, cam_name, area_name, event_type, event_id, True, s, on_quick=on_quick
+        )
         false_alarm = _as_bool((analysis or {}).get("false_alarm"))
         fa_mode = s.get("vision_false_alarm_mode") or "log_only"
         severity = (analysis or {}).get("severity")
         if severity not in VISION_SEVERITIES:
             severity = _FRIGATE_NATIVE_SEVERITY.get(event_type, "unknown")
+        discarded = self._is_discarded(discard_list, severity, false_alarm)
 
         if tds_id is None:
             # Joined mid-review that ended as an alert: create the finished entry (no actions).
-            if self._is_discarded(discard_list, severity, false_alarm) and fa_mode == "drop":
+            if discarded and fa_mode == "drop":
                 return
             now = dt_util.utcnow()
             event = {
@@ -511,7 +529,8 @@ class VisionEngine:
                 "trigger_entity": None,
                 "frigate_event_id": event_id,
                 "frigate_review_id": review_id,
-                "analyzing": False,
+                "status": "complete",
+                "discarded": discarded,
                 "_files": {},
             }
             dropped = await self.manager.add_vision_event(event)
@@ -520,18 +539,21 @@ class VisionEngine:
             return
 
         # Refine the provisional entry in place (the row visibly upgrades on the timeline).
-        if self._is_discarded(discard_list, severity, false_alarm) and fa_mode == "drop":
+        if discarded and fa_mode == "drop":
             await self.manager.remove_vision_event(tds_id)
             return
-        patch: dict = {"clip_url": clip_url, "ts_end": dt_util.utcnow().isoformat(), "analyzing": False}
+        patch: dict = {
+            "clip_url": clip_url,
+            "ts_end": dt_util.utcnow().isoformat(),
+            "status": "complete",
+            "severity": severity,
+            "false_alarm": false_alarm,
+        }
         if analysis:
             patch["long_summary"] = analysis.get("long_summary") or ""
             if analysis.get("short_summary"):
                 patch["short_summary"] = analysis["short_summary"]
-            if analysis.get("severity") in VISION_SEVERITIES:
-                patch["severity"] = analysis["severity"]
-            patch["false_alarm"] = false_alarm
-        if self._is_discarded(discard_list, severity, false_alarm):
+        if discarded:
             patch["discarded"] = True  # kept but flagged (log-only discard)
         await self.manager.update_vision_event(tds_id, **patch)
         # Fold the finished clip + summary into the toast's stored notification (if the
@@ -543,15 +565,17 @@ class VisionEngine:
     async def _analyze_frigate(
         self, camera_id: str, cam_name: str, area_name: str | None,
         event_type: str, event_id: str, has_clip: bool, settings: dict,
+        on_quick=None,
     ) -> dict | None:
         """Run the AI analysis on Frigate's clip/snapshot. Downloads the media to a temp
-        location only for the AI call, then deletes it — nothing is retained by TDS."""
-        entity = self._detailed_entity(
-            settings,
-            settings.get("vision_ai_task_entity") or preferred_image_ai_task_entity(self.hass),
-        )
+        location ONCE, builds a quick (early-frames) and detailed (full-clip) attachment set
+        for two-pass, runs them, then deletes the temp — nothing is retained by TDS."""
+        quick_entity = settings.get("vision_ai_task_entity") or preferred_image_ai_task_entity(self.hass)
+        detailed_entity = self._detailed_entity(settings, quick_entity)
+        two_pass = bool(settings.get("vision_two_pass", True))
         media = self._media_source_dir()
-        attachments: list[dict] = []
+        full_attach: list[dict] = []
+        quick_attach: list[dict] = []
         tmp_dir: str | None = None
         if media:
             tmp_rel = f"{MEDIA_FOLDER_NAME}/frigate/{event_id}"
@@ -563,31 +587,38 @@ class VisionEngine:
                 local = os.path.join(tmp_dir, asset)
                 await self.hass.async_add_executor_job(_write_bytes, local, blob)
                 if not has_clip:
-                    attachments = [{
+                    full_attach = quick_attach = [{
                         "media_content_id": f"media-source://media_source/{media[0]}/{tmp_rel}/{asset}",
                         "media_content_type": "image/jpeg",
                     }]
-                elif _entity_supports_video(self.hass, entity):
-                    attachments = [{
-                        "media_content_id": f"media-source://media_source/{media[0]}/{tmp_rel}/clip.mp4",
-                        "media_content_type": "video/mp4",
-                    }]
                 else:
                     count = max(1, int(settings.get("vision_frame_count") or 3))
-                    for fp in await self._extract_frames(local, tmp_dir, count):
-                        attachments.append({
+                    frame_attach = [
+                        {
                             "media_content_id": f"media-source://media_source/{media[0]}/{tmp_rel}/{os.path.basename(fp)}",
                             "media_content_type": "image/jpeg",
-                        })
-        if not attachments:
+                        }
+                        for fp in await self._extract_frames(local, tmp_dir, count)
+                    ]
+                    if _entity_supports_video(self.hass, detailed_entity):
+                        full_attach = [{
+                            "media_content_id": f"media-source://media_source/{media[0]}/{tmp_rel}/clip.mp4",
+                            "media_content_type": "video/mp4",
+                        }]
+                    else:
+                        full_attach = frame_attach
+                    quick_attach = self._first_window_attachments(frame_attach, None) or full_attach
+        if not full_attach:
             # Couldn't fetch Frigate media — analyze a live snapshot so we still get a summary.
-            attachments = [{
+            full_attach = quick_attach = [{
                 "media_content_id": f"media-source://camera/{camera_id}",
                 "media_content_type": "image/jpeg",
             }]
         try:
-            return await self._analyze(
-                camera_id, cam_name, area_name, event_type, attachments, entity_id=entity
+            return await self._staged_analyze(
+                camera_id, cam_name, area_name, event_type,
+                quick_attach or full_attach, quick_entity, full_attach, detailed_entity,
+                two_pass, on_quick,
             )
         finally:
             if tmp_dir:
@@ -667,35 +698,12 @@ class VisionEngine:
         s = self._settings()
         two_pass = bool(s.get("vision_two_pass", True))
         mode = s.get("vision_capture_mode") or "video"
-        # Frigate already classified the object on-device. With two-pass on, use that to
-        # SEED pass 1 (skip the quick AI call) — the detailed second pass still runs the
-        # full-clip AI analysis for a rich summary. Single-pass keeps the normal AI path.
-        frigate_seed = (
-            two_pass
-            and bool(s.get("frigate_native_detection", True))
-            and is_frigate_camera(self.hass, camera_id)
-        )
-        quick_entity = s.get("vision_ai_task_entity") or preferred_image_ai_task_entity(self.hass)
+        discard_list = (trigger or {}).get("discard_severities") or []
+        fa_mode = s.get("vision_false_alarm_mode") or "log_only"
 
-        # Pass 1 — one fast frame when two-pass, else the full configured capture.
-        attachments, files = await self._capture(camera_id, event_id, quick=two_pass)
-        files.update(await self._finalize_media(event_id, files, "snapshot" if two_pass else mode))
-        if frigate_seed:
-            analysis = None
-            severity = _FRIGATE_NATIVE_SEVERITY.get(event_type, "unknown")
-            false_alarm = False
-            short_summary = f"{event_type.replace('_', ' ').title()} detected by Frigate."
-        else:
-            analysis = await self._analyze(
-                camera_id, cam_name, area_name, event_type, attachments, entity_id=quick_entity
-            )
-            severity = (analysis or {}).get("severity") or "unknown"
-            if severity not in VISION_SEVERITIES:
-                severity = "unknown"
-            false_alarm = _as_bool((analysis or {}).get("false_alarm"))
-            short_summary = (analysis or {}).get("short_summary") or (
-                "Analysis unavailable — check the AI Task setup." if analysis is None else ""
-            )
+        # Stage 1 — show the event and fire its actions IMMEDIATELY, from a fast placeholder
+        # snapshot, before any clip capture or AI runs (act while it's happening).
+        ph_files = await self._placeholder(camera_id, event_id)
         event = {
             "id": event_id,
             "camera_id": camera_id,
@@ -705,57 +713,71 @@ class VisionEngine:
             "event_type": event_type,
             "created": started.isoformat(),
             "ts_start": started.isoformat(),
-            "ts_end": dt_util.utcnow().isoformat(),
-            "severity": severity,
-            "false_alarm": false_alarm,
-            "short_summary": short_summary,
-            "long_summary": (analysis or {}).get("long_summary") or "",
-            "thumbnail_url": files.get("thumbnail_url"),
-            "clip_url": files.get("clip_url"),
+            "ts_end": started.isoformat(),
+            "severity": "unknown",
+            "false_alarm": False,
+            "short_summary": f"{event_type.replace('_', ' ').title()} detected.",
+            "long_summary": "",
+            "thumbnail_url": ph_files.get("thumbnail_url"),
+            "clip_url": None,
             "reviewed": False,
             "trigger_entity": trigger_entity,
-            "_files": files,
+            "status": "in_progress",
+            "_files": ph_files,
         }
-
-        fa_mode = s.get("vision_false_alarm_mode") or "log_only"
-        discard_list = (trigger or {}).get("discard_severities") or []
         dropped = await self.manager.add_vision_event(event)
         if dropped:
             await self._cleanup_files(dropped)
-        # Actions always fire — severity is only known after analysis; the discard control
-        # below runs on the FINAL result, not on the actions.
         if trigger is not None:
             await self._run_actions(event, trigger, area_id)
 
-        # Pass 2 — full-window capture + detailed model refine, patched in place.
-        if two_pass:
-            f_attach, f_files = await self._capture(camera_id, event_id)
-            f_files.update(await self._finalize_media(event_id, f_files, mode))
-            detailed_entity = self._detailed_entity(s, quick_entity)
-            if _entity_supports_video(self.hass, detailed_entity) and f_files.get("video_media_id"):
-                f_attach = [*f_attach, {
-                    "media_content_id": f_files["video_media_id"],
-                    "media_content_type": "video/mp4",
-                }]
-            refined = await self._analyze(
-                camera_id, cam_name, area_name, event_type, f_attach, entity_id=detailed_entity
-            )
-            files = {**files, **f_files}
-            patch: dict = {
-                "_files": files,
-                "thumbnail_url": f_files.get("thumbnail_url") or event["thumbnail_url"],
-                "clip_url": f_files.get("clip_url") or event["clip_url"],
-            }
-            if refined:
-                patch["long_summary"] = refined.get("long_summary") or event["long_summary"]
-                patch["short_summary"] = refined.get("short_summary") or event["short_summary"]
-                rsev = refined.get("severity")
-                if rsev in VISION_SEVERITIES:
-                    patch["severity"] = rsev
-                if "false_alarm" in refined:
-                    patch["false_alarm"] = _as_bool(refined["false_alarm"])
-            await self.manager.update_vision_event(event_id, **patch)
-            event.update(patch)
+        # Stage 2 — capture the real clip ONCE (shared by both passes); move to "analyzing"
+        # with the captured thumbnail + clip.
+        attachments, files = await self._capture(camera_id, event_id)
+        files = {**ph_files, **files}
+        files.update(await self._finalize_media(event_id, files, mode))
+        event["_files"] = files
+        event["thumbnail_url"] = files.get("thumbnail_url") or event["thumbnail_url"]
+        event["clip_url"] = files.get("clip_url")
+        await self.manager.update_vision_event(
+            event_id,
+            status="analyzing",
+            thumbnail_url=event["thumbnail_url"],
+            clip_url=event["clip_url"],
+            _files=files,
+        )
+
+        # Stage 3 — analyze. Two-pass runs a quick early-window pass and the detailed
+        # full-clip pass concurrently (the quick one only publishes if it beats the detailed
+        # one); single-pass runs one full-clip analysis. Then move to "complete".
+        quick_entity = s.get("vision_ai_task_entity") or preferred_image_ai_task_entity(self.hass)
+        detailed_entity = self._detailed_entity(s, quick_entity)
+        full_attach = list(attachments)
+        if _entity_supports_video(self.hass, detailed_entity) and files.get("video_media_id"):
+            full_attach = [*attachments, {
+                "media_content_id": files["video_media_id"],
+                "media_content_type": "video/mp4",
+            }]
+        span = max(0.0, float(s.get("vision_clip_seconds") or 10))
+        quick_attach = self._first_window_attachments(attachments, span)
+
+        async def _push_quick(patch: dict) -> None:
+            await self.manager.update_vision_event(event_id, status="analyzing", **patch)
+
+        final = await self._staged_analyze(
+            camera_id, cam_name, area_name, event_type,
+            quick_attach, quick_entity, full_attach, detailed_entity, two_pass, _push_quick,
+        )
+        self._apply_analysis(event, final)
+        await self.manager.update_vision_event(
+            event_id,
+            status="complete",
+            severity=event["severity"],
+            false_alarm=event["false_alarm"],
+            short_summary=event["short_summary"],
+            long_summary=event["long_summary"],
+        )
+
         # Discard on the FINAL result: a false alarm, or a severity the user chose to
         # discard. "drop" removes it; otherwise it stays logged (flagged discarded).
         if self._is_discarded(discard_list, event["severity"], event["false_alarm"]):
@@ -776,6 +798,86 @@ class VisionEngine:
         if _entity_supports_video(self.hass, quick_entity):
             return quick_entity
         return preferred_video_ai_task_entity(self.hass) or quick_entity
+
+    async def _placeholder(self, camera_id: str, event_id: str) -> dict:
+        """Grab one immediate snapshot so the event appears instantly, before capture/AI."""
+        _attach, files = await self._capture(camera_id, event_id, quick=True)
+        files.update(await self._finalize_media(event_id, files, "snapshot"))
+        return files
+
+    @staticmethod
+    def _first_window_attachments(attachments: list[dict], span: float | None) -> list[dict]:
+        """The subset of stills covering roughly the first 10 seconds of the window (for the
+        quick pass). When the window is <=10s or its duration is unknown, use them all."""
+        if len(attachments) <= 1 or not span or span <= 10:
+            return attachments
+        keep = max(1, round(len(attachments) * (10.0 / span)))
+        return attachments[:keep]
+
+    @staticmethod
+    def _analysis_patch(result: dict | None) -> dict:
+        """Build an event-update patch from a (preliminary) analysis result."""
+        patch: dict = {}
+        if not result:
+            return patch
+        sev = result.get("severity")
+        if sev in VISION_SEVERITIES:
+            patch["severity"] = sev
+        if "false_alarm" in result:
+            patch["false_alarm"] = _as_bool(result["false_alarm"])
+        if result.get("short_summary"):
+            patch["short_summary"] = result["short_summary"]
+        if result.get("long_summary"):
+            patch["long_summary"] = result["long_summary"]
+        return patch
+
+    @staticmethod
+    def _apply_analysis(event: dict, result: dict | None) -> None:
+        """Fold a final analysis result into the event dict, with sensible fallbacks."""
+        if result:
+            sev = result.get("severity")
+            event["severity"] = sev if sev in VISION_SEVERITIES else (event.get("severity") or "unknown")
+            event["false_alarm"] = _as_bool(result.get("false_alarm"))
+            event["short_summary"] = result.get("short_summary") or event.get("short_summary") or ""
+            event["long_summary"] = result.get("long_summary") or event.get("long_summary") or ""
+        else:
+            event["severity"] = event.get("severity") or "unknown"
+            event["short_summary"] = "Analysis unavailable — check the AI Task setup."
+
+    async def _staged_analyze(
+        self, camera_id: str, cam_name: str, area_name: str | None, event_type: str,
+        quick_attach: list[dict], quick_entity: str | None,
+        full_attach: list[dict], detailed_entity: str | None,
+        two_pass: bool, on_quick,
+    ) -> dict | None:
+        """Run the AI. Single-pass = one detailed full analysis. Two-pass = a quick pass and
+        the detailed pass concurrently; the quick result is published (via ``on_quick``) only
+        if the detailed pass hasn't already finished. Returns the detailed result."""
+        if not two_pass or (quick_attach == full_attach and quick_entity == detailed_entity):
+            return await self._analyze(
+                camera_id, cam_name, area_name, event_type, full_attach, entity_id=detailed_entity
+            )
+        done = asyncio.Event()
+        final: dict = {}
+
+        async def _quick() -> None:
+            result = await self._analyze(
+                camera_id, cam_name, area_name, event_type, quick_attach, entity_id=quick_entity
+            )
+            if done.is_set() or not result or on_quick is None:
+                return
+            await on_quick(self._analysis_patch(result))
+
+        async def _detailed() -> None:
+            result = await self._analyze(
+                camera_id, cam_name, area_name, event_type, full_attach, entity_id=detailed_entity
+            )
+            done.set()
+            if result:
+                final.update(result)
+
+        await asyncio.gather(_quick(), _detailed())
+        return final or None
 
     def _camera_context(self, camera_id: str) -> tuple[str | None, str | None, str]:
         """Resolve a camera's area id, area name, and friendly name."""
