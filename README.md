@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.95
+
+- Bundles Ted's Cards v0.9.89 (Calendar Card Agenda view: long event titles now truncate with “…” inside the card instead of overflowing past its right edge).
+
 ### v0.9.94
 
 - Bundles Ted's Cards v0.9.88 — voice: interrupt a long spoken answer by saying a stop word ("stop", "no", "cancel"…) or tapping the navbar mic (now a stop button while speaking); it stops and acknowledges with "Okay". The full-screen Assist-Response view now scrolls so long answers aren't clipped.
