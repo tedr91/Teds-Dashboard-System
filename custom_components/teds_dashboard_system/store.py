@@ -468,6 +468,30 @@ class TedsManager:
         self._notify()
         return dropped
 
+    async def update_vision_notifications(
+        self, vision_event_id: str, *, message: str | None = None,
+        clip_url: str | None = None, thumbnail_url: str | None = None,
+    ) -> None:
+        """Fold a vision event's final summary + media into the notifications its toast
+        action created (matched by data.vision_event_id), WITHOUT re-alerting — refreshes
+        the stored list/sensor only, so no second toast pops and no sound replays."""
+        changed = False
+        for n in self.notifications:
+            if (n.get("data") or {}).get("vision_event_id") != vision_event_id:
+                continue
+            if message:
+                n["message"] = message
+            data = dict(n.get("data") or {})
+            if clip_url is not None:
+                data["clip_url"] = clip_url
+            if thumbnail_url is not None:
+                data["thumbnail_url"] = thumbnail_url
+            n["data"] = data
+            changed = True
+        if changed:
+            await self._save()
+            self._notify()
+
     async def update_vision_event(self, event_id: str, **changes) -> dict | None:
         """Patch an event in place (e.g. mark reviewed) and broadcast the change."""
         for e in self.vision_events:

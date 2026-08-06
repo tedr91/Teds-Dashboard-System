@@ -51,6 +51,11 @@ frontend:
 
 ## Changelog
 
+### v0.9.90
+
+- **Vision: act immediately, discard after analysis.** Trigger actions (live feed, chime, notifications) now fire the instant an event is detected instead of waiting on severity. Once the full AI analysis completes, the event is discarded if it turns out to be a false alarm or its final severity matches the trigger's new **“Discard events if severity matches”** list — discarded events are logged-only or dropped per your **Filter out false alarms** setting. Applies to both Frigate-native and binary-sensor Vision paths.
+- Bundles Ted's Cards v0.9.84 (the discard-severity trigger UI).
+
 ### v0.9.89
 
 - **Frigate-native Vision, done right.** For Frigate cameras, TDS now drives Vision from Frigate's own tracked events instead of re-recording: it logs the event using **Frigate's thumbnail + clip** (nothing captured or stored locally) and runs the AI only to describe that clip. The entry appears **the instant Frigate reports the object** — firing your “Display live feed” / chime actions immediately, while the activity is happening — then upgrades in place with the clip and a detailed summary when the event ends.

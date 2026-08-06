@@ -12,6 +12,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import re
 import os
 import time
 import uuid
@@ -48,27 +49,30 @@ _SEVERITY_TO_NOTIF = {
 }
 
 _ANALYSIS_INSTRUCTIONS = (
-    "You are a home security camera analyst. The attached images are sequential frames "
-    "captured on the '{camera_name}' camera{area_phrase}. A motion or occupancy sensor "
-    "reported a possible '{event_type}', but that is an UNVERIFIED hint that is often "
-    "wrong (shadows, sunlight, rain, a static object, or even the camera's own name can "
-    "trigger it). Judge ONLY by what is actually visible in the frames.\n"
-    "- Do NOT report a person, vehicle, animal, or package just because the sensor hint "
-    "or the camera name mentions it — report an object only if you can actually see it "
-    "in the frames.\n"
-    "- false_alarm: set TRUE whenever the hinted activity is not genuinely visible — the "
-    "sensor fired but no real subject or activity is present (an empty scene, only "
-    "shadows / light changes / weather, or a static object). This is the EXPECTED result "
-    "for spurious triggers, so use it freely. Set FALSE only when a real subject or "
-    "genuine activity is clearly visible.\n"
+    "You are a home security camera analyst reviewing a SHORT VIDEO CLIP, given as "
+    "sequential frames in time order, from the '{camera_name}' camera{area_phrase}. A "
+    "motion or occupancy sensor reported a possible '{event_type}', but that hint is "
+    "UNVERIFIED and often wrong (shadows, sunlight, rain, a static object, or even the "
+    "camera's own name can trigger it). Judge ONLY by what the frames actually show.\n"
+    "Describe the ACTION — what CHANGES from the first frame to the last: who or what "
+    "arrives, the direction and path they move, what they do, and how it ends. Do NOT "
+    "just describe a static scene or a parked object; report the sequence of events over "
+    "time. (Good: 'A dark SUV pulls into the driveway and continues forward into the "
+    "garage.' / 'A van stops, two people get out and carry a box to the porch, then "
+    "leave.' Bad: 'A parked car in the driveway.' / 'Two cars in the garage.')\n"
+    "- Do NOT report a person, vehicle, animal, or package unless it is actually visible "
+    "and moving/acting in the frames — the sensor hint or camera name is not evidence.\n"
+    "- false_alarm: set TRUE when nothing genuinely happens across the frames (an empty "
+    "scene, only shadows / light changes / weather, or a static object that never moves). "
+    "This is the EXPECTED result for spurious triggers, so use it freely. Set FALSE only "
+    "when real activity or movement actually occurs.\n"
     "- severity: 'critical' for an active threat, break-in, or emergency; 'suspicious' "
     "for unexpected or concerning activity worth a human review; 'harmless' for routine "
     "or expected activity (residents, pets, deliveries, passing cars); 'unknown' only if "
     "the frames are too unclear to judge.\n"
-    "- short_summary: one concise sentence describing what the frames actually show "
-    "(state plainly if nothing is happening).\n"
-    "- long_summary: a detailed paragraph covering who or what is visible and what they "
-    "are doing — or that the scene appears empty if no real subject is present."
+    "- short_summary: one concise sentence naming the main action that occurs.\n"
+    "- long_summary: a play-by-play of the sequence across the clip, in order — arrival, "
+    "movement and path, actions taken, and how it ends."
 )
 
 # ai_task provider platforms (entity-registry platform) in preference order for smart
@@ -222,9 +226,9 @@ class VisionEngine:
         self._unsub_events = None  # Frigate MQTT events subscription (native cameras)
         self._watch: dict[str, tuple[str, str]] = {}  # sensor eid -> (camera_id, event_type)
         self._cooldowns: dict[str, float] = {}        # camera_id -> monotonic last trigger
-        self._native_cams: set[str] = set()           # Frigate cameras driven by events, not sensors
-        self._frigate_pending: dict[str, str] = {}    # frigate event id -> provisional TDS event id
-        self._frigate_seen: set[str] = set()          # frigate event ids we've handled a `new` for
+        self._native_cams: set[str] = set()           # Frigate cameras driven by reviews, not sensors
+        self._frigate_pending: dict[str, str] = {}    # frigate review id -> provisional TDS event id
+        self._frigate_skip: set[str] = set()          # review ids we chose to skip (cooldown)
 
     @callback
     def async_setup(self, entry: ConfigEntry) -> None:
@@ -244,7 +248,7 @@ class VisionEngine:
             self._unsub_events()
             self._unsub_events = None
         self._frigate_pending.clear()
-        self._frigate_seen.clear()
+        self._frigate_skip.clear()
 
     def _settings(self) -> dict:
         return self.manager.effective_settings()
@@ -278,7 +282,7 @@ class VisionEngine:
             _LOGGER.debug(
                 "Ted's Vision: %s -> %s (frigate_native_detection=%s, mqtt=%s, is_frigate_camera=%s)",
                 cam_id,
-                "Frigate event-driven" if (native_on and mqtt_present and frigate) else "binary_sensor",
+                "Frigate alert-driven" if (native_on and mqtt_present and frigate) else "binary_sensor",
                 native_on, mqtt_present, frigate,
             )
             if native_on and mqtt_present and frigate:
@@ -293,7 +297,7 @@ class VisionEngine:
             self._unsub_state = async_track_state_change_event(
                 self.hass, list(self._watch), self._on_state
             )
-        self.hass.async_create_task(self._sync_frigate_events(bool(native_cams)))
+        self.hass.async_create_task(self._sync_frigate_reviews(bool(native_cams)))
 
     @callback
     def _on_state(self, event: Event) -> None:
@@ -328,18 +332,23 @@ class VisionEngine:
                 )
             )
 
-    # ── Frigate event-driven path (tight integration) ───────
-    async def _sync_frigate_events(self, want: bool) -> None:
-        """Subscribe/unsubscribe to Frigate's MQTT event stream for native cameras."""
+    # ── Frigate alert-driven path (tight integration) ───────
+    def handles_camera(self, camera_id: str) -> bool:
+        """True when the Vision engine drives this camera's alerts (Frigate event-driven),
+        so the notification bridge should not also notify for it."""
+        return camera_id in self._native_cams
+
+    async def _sync_frigate_reviews(self, want: bool) -> None:
+        """Subscribe/unsubscribe to Frigate's MQTT review stream for native cameras."""
         if want and self._unsub_events is None and "mqtt" in self.hass.config.components:
             from homeassistant.components import mqtt  # noqa: PLC0415
 
             from .frigate import frigate_topic_prefix  # noqa: PLC0415
 
-            topic = f"{frigate_topic_prefix(self.hass)}/events"
+            topic = f"{frigate_topic_prefix(self.hass)}/reviews"
             try:
                 self._unsub_events = await mqtt.async_subscribe(
-                    self.hass, topic, self._on_frigate_event, encoding=None
+                    self.hass, topic, self._on_frigate_review, encoding=None
                 )
             except Exception:  # noqa: BLE001 - MQTT not ready; retried on the next rebuild
                 self._unsub_events = None
@@ -348,65 +357,80 @@ class VisionEngine:
             self._unsub_events = None
 
     @callback
-    def _on_frigate_event(self, msg) -> None:
-        """React to a Frigate tracked object: create a provisional Vision event (and fire
-        the trigger's actions) on `new`, then refine that same entry with the finished clip
-        + AI summary on `end`."""
+    def _on_frigate_review(self, msg) -> None:
+        """Drive Vision from Frigate reviews, acting ONLY on alerts (not detections): create
+        a provisional entry + fire the trigger's actions the moment a review becomes an
+        alert, then refine that entry with the finished clip + AI summary when it ends."""
         try:
             data = json.loads(msg.payload)
         except (ValueError, TypeError):
             return
         phase = data.get("type")
-        if phase not in ("new", "end"):
+        if phase not in ("new", "update", "end"):
             return
         after = data.get("after") or {}
-        camera, event_id = after.get("camera"), after.get("id")
-        if not camera or not event_id:
+        review_id, camera = after.get("id"), after.get("camera")
+        if not review_id or not camera:
             return
         cam_id = frigate_camera_entity(self.hass, str(camera))
         if not cam_id or cam_id not in self._native_cams:
             return
-        event_id = str(event_id)
-        etype = _frigate_label_type(str(after.get("label") or ""))
-        triggers = ((self._settings().get("vision_cameras") or {}).get(cam_id) or {}).get("triggers") or []
-        t_idx, trig = self._match_trigger(triggers, etype)
+        review_id = str(review_id)
+        payload = after.get("data") or {}
+        objects = [str(o) for o in (payload.get("objects") or [])]
+        detections = [str(d) for d in (payload.get("detections") or [])]
+        event_id = detections[0] if detections else review_id
+        is_alert = str(after.get("severity") or "").lower() == "alert"
+        t_idx, etype, trig = self._match_review_trigger(cam_id, objects)
         if trig is None:
             return
-        if phase == "new":
-            if event_id in self._frigate_seen:
-                return  # Frigate re-sent `new` for the same object
-            self._frigate_seen.add(event_id)
+        if phase in ("new", "update"):
+            if not is_alert:
+                return  # detection-level review — TDS only acts on alerts
+            if review_id in self._frigate_pending or review_id in self._frigate_skip:
+                return  # already handled this review
             key = f"{cam_id}#{t_idx}"
             now = time.monotonic()
             cooldown = int(trig.get("cooldown_seconds") or 0)
             if cooldown and (now - self._cooldowns.get(key, 0)) < cooldown:
-                return  # suppressed — recorded in _frigate_seen so `end` skips it too
+                self._frigate_skip.add(review_id)
+                return
             self._cooldowns[key] = now
-            self.hass.async_create_task(self._frigate_event_new(cam_id, etype, event_id, trig))
+            self.hass.async_create_task(
+                self._frigate_review_new(cam_id, etype, review_id, event_id, trig)
+            )
         else:
             self.hass.async_create_task(
-                self._frigate_event_end(cam_id, etype, event_id, bool(after.get("has_clip")))
+                self._frigate_review_end(cam_id, etype, review_id, event_id, is_alert)
             )
 
-    @staticmethod
-    def _match_trigger(triggers: list, etype: str) -> tuple[int | None, dict | None]:
-        """Pick the trigger for a Frigate object type: an exact-type trigger, else a
-        'motion' trigger as a catch-all. Returns (index, trigger) or (None, None)."""
-        fallback: tuple[int | None, dict | None] = (None, None)
+    def _match_review_trigger(
+        self, cam_id: str, objects: list[str]
+    ) -> tuple[int | None, str | None, dict | None]:
+        """Match a review's objects to a configured trigger: an exact object-type trigger,
+        else a 'motion' trigger as a catch-all. Returns (index, display_type, trigger)."""
+        triggers = ((self._settings().get("vision_cameras") or {}).get(cam_id) or {}).get("triggers") or []
+        mapped = [_frigate_label_type(o) for o in objects]
+        priority = ("person", "package", "car", "animal", "motion")
+        display = next((t for t in priority if t in mapped), "motion")
         for i, trig in enumerate(triggers):
-            ttype = (trig or {}).get("type")
-            if ttype == etype:
-                return i, trig
-            if ttype == "motion" and fallback[1] is None:
-                fallback = (i, trig)
-        return fallback
+            if (trig or {}).get("type") in mapped:
+                return i, (trig or {}).get("type"), trig
+        for i, trig in enumerate(triggers):
+            if (trig or {}).get("type") == "motion":
+                return i, display, (trig or {})
+        return None, None, None
 
-    async def _frigate_event_new(self, camera_id: str, event_type: str, event_id: str, trigger: dict) -> None:
-        """Create the provisional Vision event from Frigate's live thumbnail and fire the
-        trigger's actions immediately — the timely moment (driver approaching), before the
-        clip even exists. Frigate only emits `new` once the object isn't a false positive."""
+    async def _frigate_review_new(
+        self, camera_id: str, event_type: str, review_id: str, event_id: str, trigger: dict,
+    ) -> None:
+        """Create the provisional Vision event from the alert's thumbnail and fire the
+        trigger's actions immediately — the timely moment, before the clip is finalized."""
         tds_id = uuid.uuid4().hex
-        self._frigate_pending[event_id] = tds_id
+        self._frigate_pending[review_id] = {
+            "id": tds_id,
+            "discard": (trigger or {}).get("discard_severities") or [],
+        }
         started = dt_util.utcnow()
         area_id, area_name, cam_name = self._camera_context(camera_id)
         event = {
@@ -424,10 +448,11 @@ class VisionEngine:
             "short_summary": f"{event_type.replace('_', ' ').title()} detected by Frigate.",
             "long_summary": "",
             "thumbnail_url": f"/api/frigate/notifications/{event_id}/thumbnail.jpg",
-            "clip_url": None,  # the clip doesn't exist until the object's event ends
+            "clip_url": None,  # the clip isn't finalized until the review ends
             "reviewed": False,
             "trigger_entity": None,
             "frigate_event_id": event_id,
+            "frigate_review_id": review_id,
             "analyzing": True,
             "_files": {},
         }
@@ -436,23 +461,24 @@ class VisionEngine:
             await self._cleanup_files(dropped)
         await self._run_actions(event, trigger, area_id)
 
-    async def _frigate_event_end(
-        self, camera_id: str, event_type: str, event_id: str, has_clip: bool,
+    async def _frigate_review_end(
+        self, camera_id: str, event_type: str, review_id: str, event_id: str, is_alert: bool,
     ) -> None:
-        """Refine the provisional event with the finished clip + AI summary. If we never saw
-        the object's start (e.g. TDS started mid-event), create a complete entry now instead
-        — but without firing actions late, since the timely moment has passed."""
-        tds_id = self._frigate_pending.pop(event_id, None)
-        suppressed = event_id in self._frigate_seen
-        self._frigate_seen.discard(event_id)
-        if tds_id is None and suppressed:
-            return  # the object's start was cooldown-suppressed — no entry to make
+        """Refine the provisional entry with the finished clip + AI summary. If we never
+        acted on the alert's onset, create a finished entry now (no late actions)."""
+        pending = self._frigate_pending.pop(review_id, None)
+        tds_id = pending["id"] if pending else None
+        discard_list = pending["discard"] if pending else []
+        skipped = review_id in self._frigate_skip
+        self._frigate_skip.discard(review_id)
+        if tds_id is None and (skipped or not is_alert):
+            return  # cooldown-suppressed, or the review never became an alert
         s = self._settings()
         area_id, area_name, cam_name = self._camera_context(camera_id)
         analysis = await self._analyze_frigate(
-            camera_id, cam_name, area_name, event_type, event_id, has_clip, s
+            camera_id, cam_name, area_name, event_type, event_id, True, s
         )
-        clip_url = f"/api/frigate/notifications/{event_id}/clip.mp4" if has_clip else None
+        clip_url = f"/api/frigate/notifications/{event_id}/clip.mp4"
         false_alarm = _as_bool((analysis or {}).get("false_alarm"))
         fa_mode = s.get("vision_false_alarm_mode") or "log_only"
         severity = (analysis or {}).get("severity")
@@ -460,8 +486,8 @@ class VisionEngine:
             severity = _FRIGATE_NATIVE_SEVERITY.get(event_type, "unknown")
 
         if tds_id is None:
-            # Joined mid-event: create the finished entry (no late actions).
-            if false_alarm and fa_mode == "drop":
+            # Joined mid-review that ended as an alert: create the finished entry (no actions).
+            if self._is_discarded(discard_list, severity, false_alarm) and fa_mode == "drop":
                 return
             now = dt_util.utcnow()
             event = {
@@ -484,6 +510,7 @@ class VisionEngine:
                 "reviewed": False,
                 "trigger_entity": None,
                 "frigate_event_id": event_id,
+                "frigate_review_id": review_id,
                 "analyzing": False,
                 "_files": {},
             }
@@ -493,7 +520,7 @@ class VisionEngine:
             return
 
         # Refine the provisional entry in place (the row visibly upgrades on the timeline).
-        if false_alarm and fa_mode == "drop":
+        if self._is_discarded(discard_list, severity, false_alarm) and fa_mode == "drop":
             await self.manager.remove_vision_event(tds_id)
             return
         patch: dict = {"clip_url": clip_url, "ts_end": dt_util.utcnow().isoformat(), "analyzing": False}
@@ -504,7 +531,14 @@ class VisionEngine:
             if analysis.get("severity") in VISION_SEVERITIES:
                 patch["severity"] = analysis["severity"]
             patch["false_alarm"] = false_alarm
+        if self._is_discarded(discard_list, severity, false_alarm):
+            patch["discarded"] = True  # kept but flagged (log-only discard)
         await self.manager.update_vision_event(tds_id, **patch)
+        # Fold the finished clip + summary into the toast's stored notification (if the
+        # trigger created one) in place — no second toast, no repeated chime.
+        await self.manager.update_vision_notifications(
+            tds_id, message=patch.get("short_summary"), clip_url=clip_url,
+        )
 
     async def _analyze_frigate(
         self, camera_id: str, cam_name: str, area_name: str | None,
@@ -578,14 +612,19 @@ class VisionEngine:
             return None
 
     async def _extract_frames(self, clip_path: str, out_dir: str, count: int) -> list[str]:
-        """ffmpeg-extract up to `count` stills from a clip for AI analysis (best-effort)."""
+        """ffmpeg-extract `count` stills spread ACROSS the whole clip (so the AI sees the
+        action over time, not just the first seconds). Best-effort."""
         pattern = os.path.join(out_dir, "ff_%02d.jpg")
         try:
             from homeassistant.components import ffmpeg  # noqa: PLC0415
 
             binary = ffmpeg.get_ffmpeg_manager(self.hass).binary
+            duration = await self._probe_duration(binary, clip_path)
+            # Evenly sample across the clip (fps = count/duration); fall back to 1 fps from
+            # the start when the duration can't be determined.
+            vf = f"fps={max(1, count)}/{duration:.2f}" if duration and duration > 0.5 else "fps=1"
             proc = await asyncio.create_subprocess_exec(
-                binary, "-y", "-i", clip_path, "-vf", "fps=1", "-frames:v", str(count), pattern,
+                binary, "-y", "-i", clip_path, "-vf", vf, "-frames:v", str(count), pattern,
                 stdout=asyncio.subprocess.DEVNULL, stderr=asyncio.subprocess.DEVNULL,
             )
             await proc.communicate()
@@ -598,6 +637,21 @@ class VisionEngine:
             )
 
         return await self.hass.async_add_executor_job(_list)
+
+    async def _probe_duration(self, binary: str, clip_path: str) -> float | None:
+        """Read a clip's duration (seconds) from ffmpeg's stderr banner, or None."""
+        try:
+            proc = await asyncio.create_subprocess_exec(
+                binary, "-i", clip_path,
+                stdout=asyncio.subprocess.DEVNULL, stderr=asyncio.subprocess.PIPE,
+            )
+            _out, err = await proc.communicate()
+            m = re.search(r"Duration:\s*(\d+):(\d+):(\d+(?:\.\d+)?)", (err or b"").decode(errors="ignore"))
+            if m:
+                return int(m.group(1)) * 3600 + int(m.group(2)) * 60 + float(m.group(3))
+        except Exception:  # noqa: BLE001 - probe is best-effort
+            pass
+        return None
 
     async def analyze(self, camera_id: str, event_type: str = "manual") -> dict | None:
         """Manually analyze a camera now (used by the analyze_camera service/test)."""
@@ -664,14 +718,13 @@ class VisionEngine:
         }
 
         fa_mode = s.get("vision_false_alarm_mode") or "log_only"
-        if false_alarm and fa_mode == "drop":
-            await self._cleanup_files([event])  # discard: don't store, don't fire
-            return None
+        discard_list = (trigger or {}).get("discard_severities") or []
         dropped = await self.manager.add_vision_event(event)
         if dropped:
             await self._cleanup_files(dropped)
-        # Fire actions unless a false alarm is being filtered (log_only skips actions; off runs).
-        if trigger is not None and not (false_alarm and fa_mode == "log_only"):
+        # Actions always fire — severity is only known after analysis; the discard control
+        # below runs on the FINAL result, not on the actions.
+        if trigger is not None:
             await self._run_actions(event, trigger, area_id)
 
         # Pass 2 — full-window capture + detailed model refine, patched in place.
@@ -703,11 +756,15 @@ class VisionEngine:
                     patch["false_alarm"] = _as_bool(refined["false_alarm"])
             await self.manager.update_vision_event(event_id, **patch)
             event.update(patch)
-            # The detailed pass can flip the verdict — re-apply "drop" on the final result.
-            if event["false_alarm"] and fa_mode == "drop":
+        # Discard on the FINAL result: a false alarm, or a severity the user chose to
+        # discard. "drop" removes it; otherwise it stays logged (flagged discarded).
+        if self._is_discarded(discard_list, event["severity"], event["false_alarm"]):
+            if fa_mode == "drop":
                 await self.manager.remove_vision_event(event_id)
                 await self._cleanup_files([event])
                 return None
+            await self.manager.update_vision_event(event_id, discarded=True)
+            event["discarded"] = True
         return event
 
     def _detailed_entity(self, settings: dict, quick_entity: str | None) -> str | None:
@@ -957,11 +1014,15 @@ class VisionEngine:
         return out if isinstance(out, dict) else None
 
     # ── on-trigger actions ──────────────────────────────────
+    @staticmethod
+    def _is_discarded(discard_severities: list, severity: str, false_alarm: bool) -> bool:
+        """A finished event is discarded when the AI flags a false alarm, or its final
+        severity is one the trigger is configured to discard."""
+        return bool(false_alarm) or severity in (discard_severities or [])
+
     async def _run_actions(self, event: dict, trigger: dict, area_id: str | None) -> None:
-        """Run a trigger's actions, gated by its severity filter (empty = all severities)."""
-        severities = trigger.get("severities") or []
-        if severities and event["severity"] not in severities:
-            return
+        """Run a trigger's actions. Actions always fire (severity isn't known yet); the
+        discard control gates the stored event afterward, not the actions."""
         title = f"{event['camera_name']}: {str(event['event_type']).title()}"
         message = event["short_summary"] or "Camera event detected."
         notif_sev = _SEVERITY_TO_NOTIF.get(event["severity"], "info")
