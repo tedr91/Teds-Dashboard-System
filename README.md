@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.94
+
+- Bundles Ted's Cards v0.9.88 — voice: interrupt a long spoken answer by saying a stop word ("stop", "no", "cancel"…) or tapping the navbar mic (now a stop button while speaking); it stops and acknowledges with "Okay". The full-screen Assist-Response view now scrolls so long answers aren't clipped.
+
 ### v0.9.93
 
 - Bundles Ted's Cards v0.9.87 (Nightstand device type now defaults the navbar to the right with the Left/Right sections kept but weather and date/time items removed; Calendar Card Agenda view groups the weekday/forecast tightly around a slightly larger date number).
