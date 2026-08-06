@@ -36,3 +36,11 @@ def test_prompt_has_no_scenic_examples():
 def test_prompt_has_object_context_placeholder():
     # Fix 2a threads Frigate's tracked object/zones in here.
     assert "{object_context}" in _analysis_instructions()
+
+
+def test_false_alarm_bullet_is_not_over_permissive():
+    # The "use it freely" invitation drove over-application of false_alarm onto real activity.
+    text = _analysis_instructions().lower()
+    assert "use it freely" not in text
+    # And the self-consistency check tying the flag to short_summary must be present.
+    assert "short_summary must agree" in text

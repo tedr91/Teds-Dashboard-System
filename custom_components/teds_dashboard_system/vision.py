@@ -65,10 +65,14 @@ _ANALYSIS_INSTRUCTIONS = (
     "and moving/acting in the frames — the sensor hint or camera name is not evidence.\n"
     "- Do NOT invent a story or assume a motive; report only what is actually visible in the frames.\n"
     "- Do NOT report a static object that never moves, even if it is a person, vehicle, animal, or package.\n"
-    "- false_alarm: set TRUE when nothing genuinely happens across the frames — an empty "
-    "scene, only shadows / light changes / weather, or a static object that never moves. "
-    "This is the EXPECTED result for a spurious trigger, so use it freely. Set FALSE if "
-    "any real activity or movement actually occurs.\n"
+    "- false_alarm: this flag means 'NOTHING HAPPENED', not 'the sensor hint was "
+    "wrong'. Set it TRUE only when the clip shows no real activity at all: an empty "
+    "scene, only shadows / light changes / weather, or a static object that never "
+    "moves. Set it FALSE whenever any person, vehicle, animal, or package actually "
+    "moves, arrives, departs, or acts — even if that differs from the reported "
+    "'{event_type}'. A clip where a car arrives is NOT a false alarm just because "
+    "the hint said 'person'. Your own short_summary must agree with this flag: if "
+    "the summary names an actor performing an action, false_alarm MUST be FALSE.\n"
     "- severity: 'critical' for an active threat, break-in, or emergency; 'suspicious' "
     "for unexpected or concerning activity worth a human review; 'harmless' for routine "
     "or expected activity (residents, pets, deliveries, passing cars); 'unknown' only if "
@@ -433,7 +437,7 @@ class VisionEngine:
             self.hass.async_create_task(
                 self._frigate_review_end(
                     cam_id, etype, review_id, event_id, is_alert,
-                    object_context=self._object_context(objects, zones),
+                    objects=objects, zones=zones,
                 )
             )
 
@@ -484,7 +488,9 @@ class VisionEngine:
         return (
             f"Frigate's object detector tracked {objs}{zone_part} in this clip. Describe "
             "THAT object as the subject. If other objects are visible, mention them only "
-            "as context — the tracked object above is the subject.\n"
+            "as context — the tracked object above is the subject. Because a real object "
+            "was independently tracked, this clip is NOT a false alarm: set false_alarm "
+            "to FALSE unless the tracked object is completely absent from every frame.\n"
         )
 
     async def _frigate_review_new(
@@ -529,7 +535,7 @@ class VisionEngine:
 
     async def _frigate_review_end(
         self, camera_id: str, event_type: str, review_id: str, event_id: str, is_alert: bool,
-        object_context: str = "",
+        objects: list[str] | None = None, zones: list[str] | None = None,
     ) -> None:
         """Refine the provisional entry with the finished clip + AI summary. If we never
         acted on the alert's onset, create a finished entry now (no late actions)."""
@@ -555,10 +561,20 @@ class VisionEngine:
 
             on_quick = _push_quick
 
+        object_context = self._object_context(objects or [], zones or [])
         analysis = await self._analyze_frigate(
             camera_id, cam_name, area_name, event_type, event_id, True, s,
             on_quick=on_quick, object_context=object_context,
         )
+        # Defensive backstop: the model intermittently flags false_alarm on clips its own
+        # summary describes as real activity. When Frigate independently tracked an object,
+        # trust the detector over the model and clear the flag.
+        if analysis and analysis.get("false_alarm") and objects:
+            _LOGGER.info(
+                "Ted's Vision: overriding false_alarm=True for %s — Frigate tracked %s",
+                camera_id, ", ".join(objects),
+            )
+            analysis["false_alarm"] = False
         false_alarm = _as_bool((analysis or {}).get("false_alarm"))
         fa_mode = s.get("vision_false_alarm_mode") or "log_only"
         severity = (analysis or {}).get("severity")
