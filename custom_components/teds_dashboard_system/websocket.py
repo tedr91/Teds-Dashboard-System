@@ -42,6 +42,7 @@ from .const import (
 from .vision import (
     ai_task_entities,
     discover_camera_detectors,
+    frigate_native_camera,
     preferred_ai_task_entity,
 )
 
@@ -697,9 +698,18 @@ def handle_list_vision_events(
 def handle_list_camera_detectors(
     hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict
 ) -> None:
-    """Return the detection event types discoverable for a camera (for the opt-in UI)."""
-    detectors = discover_camera_detectors(hass, msg["camera_entity"])
-    connection.send_result(msg["id"], {"detectors": detectors})
+    """Return the detection event types discoverable for a camera (for the opt-in UI), plus
+    whether Frigate's native alert detection will drive it."""
+    cam = msg["camera_entity"]
+    mgr = _manager(hass)
+    settings = mgr.effective_settings() if mgr else {}
+    connection.send_result(
+        msg["id"],
+        {
+            "detectors": discover_camera_detectors(hass, cam),
+            "frigate_native": frigate_native_camera(hass, settings, cam),
+        },
+    )
 
 
 @websocket_api.websocket_command(

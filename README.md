@@ -51,6 +51,12 @@ frontend:
 
 ## Changelog
 
+### v0.9.97
+
+- **No more silently-dropped Frigate alerts.** Frigate already decides what's alert-worthy, so TDS no longer re-filters its alerts against a hand-kept per-object trigger list. Frigate-native cameras now always have a built-in **“Any Frigate alert”** catch-all (server-side too, so existing configs are covered without any migration); object triggers are optional refinements for per-object cooldowns/actions. Previously an alert for an object with no matching trigger (e.g. a `car` on a camera set up only for `person`) produced no timeline entry and no notification.
+- Fixed two related edge cases: the notification bridge could pick the wrong event from a multi-object review (now uses the earliest-started one), and it now falls back to notifying if Vision ever declines a review — while still respecting cooldown suppression.
+- Bundles Ted's Cards v0.9.90 (the “Any Frigate alert” settings UI).
+
 ### v0.9.96
 
 - **More accurate Vision descriptions.** Fixed three issues that made AI summaries describe the wrong thing: the prompt's example sentences were being copied verbatim (removed them); the model wasn't told which object Frigate actually tracked (it's now given the tracked object, its zones, and Frigate's labelled bounding-box snapshot as a reference frame); and the analyzed clip could be picked from the wrong detection (now always the earliest-started one that opened the review).

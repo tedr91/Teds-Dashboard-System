@@ -157,18 +157,23 @@ class FrigateEventBridge:
             return
         payload = after.get("data") or {}
         detections = payload.get("detections") or []
-        event_id = detections[0] if detections else after.get("id")
+        # Frigate event IDs are `<start_epoch>.<micros>-<random>`, so the lexicographically
+        # smallest is the earliest-STARTED detection (the list is NOT time-ordered) — the
+        # object that actually opened the review. Do not "simplify" to detections[0].
+        event_id = min(detections) if detections else after.get("id")
         camera = str(after.get("camera") or "")
-        # Skip when the Vision engine already owns this camera's alerts (it posts the
+        objects = [str(o) for o in (payload.get("objects") or [])]
+        # Skip when the Vision engine already owns this camera's alert (it posts the
         # notification via the trigger's actions and updates it on end) — no double-notify.
+        # Pass the objects so a review Vision would DECLINE still falls through to us.
         vision = getattr(self.manager, "vision", None)
         cam_entity = _frigate_camera_entity(self.hass, camera) if camera else None
-        if vision is not None and cam_entity and vision.handles_camera(cam_entity):
+        if vision is not None and cam_entity and vision.handles_camera(cam_entity, objects):
             return
         self.hass.async_create_task(
             self._notify(
                 camera=camera,
-                objects=[str(o) for o in (payload.get("objects") or [])],
+                objects=objects,
                 event_id=str(event_id) if event_id else None,
             )
         )

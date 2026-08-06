@@ -121,6 +121,27 @@ def _classify_detector(hass: HomeAssistant, ent: er.RegistryEntry, cam_object_id
     return classify_detector_type(object_id, cam_object_id, dev_class)
 
 
+def frigate_native_camera(hass: HomeAssistant, settings: dict, camera_id: str) -> bool:
+    """Whether a camera is driven by Frigate's native review alerts (not its binary_sensors):
+    a Frigate camera + the native-detection setting on + MQTT loaded. Single source of truth
+    shared by the Vision engine and the settings UI so the two can never drift."""
+    return (
+        bool(settings.get("frigate_native_detection", True))
+        and "mqtt" in hass.config.components
+        and is_frigate_camera(hass, camera_id)
+    )
+
+
+def _default_trigger_actions() -> list[dict]:
+    """The default action set for a new trigger — mirrors the settings UI's ``_addTrigger``."""
+    return [
+        {"type": "live_feed", "enabled": True, "areas": []},
+        {"type": "toast", "enabled": True, "areas": []},
+        {"type": "push", "enabled": False, "services": []},
+        {"type": "custom", "enabled": False, "items": []},
+    ]
+
+
 def _frigate_label_type(label: str) -> str:
     """Map a Frigate object label (person/car/dog/...) to a Vision detector type."""
     low = label.lower()
@@ -232,6 +253,7 @@ class VisionEngine:
         self._native_cams: set[str] = set()           # Frigate cameras driven by reviews, not sensors
         self._frigate_pending: dict[str, str] = {}    # frigate review id -> provisional TDS event id
         self._frigate_skip: set[str] = set()          # review ids we chose to skip (cooldown)
+        self._synth_logged: set[str] = set()          # cams we've logged a synthesized catch-all for
 
     @callback
     def async_setup(self, entry: ConfigEntry) -> None:
@@ -272,8 +294,6 @@ class VisionEngine:
         cams = s.get("vision_cameras") or {}
         # A Frigate camera with native detection + MQTT is driven by Frigate's own tracked
         # events (real clip/thumbnail, no local capture) rather than its binary_sensors.
-        native_on = bool(s.get("frigate_native_detection", True))
-        mqtt_present = "mqtt" in self.hass.config.components
         native_cams: set[str] = set()
         for cam_id, cfg in cams.items():
             if not (cfg or {}).get("enabled"):
@@ -281,14 +301,12 @@ class VisionEngine:
             triggers = cfg.get("triggers") or []
             if not triggers:
                 continue
-            frigate = is_frigate_camera(self.hass, cam_id)
+            native = frigate_native_camera(self.hass, s, cam_id)
             _LOGGER.debug(
-                "Ted's Vision: %s -> %s (frigate_native_detection=%s, mqtt=%s, is_frigate_camera=%s)",
-                cam_id,
-                "Frigate alert-driven" if (native_on and mqtt_present and frigate) else "binary_sensor",
-                native_on, mqtt_present, frigate,
+                "Ted's Vision: %s -> %s",
+                cam_id, "Frigate alert-driven" if native else "binary_sensor",
             )
-            if native_on and mqtt_present and frigate:
+            if native:
                 native_cams.add(cam_id)
                 continue
             detectors = discover_camera_detectors(self.hass, cam_id)
@@ -336,10 +354,15 @@ class VisionEngine:
             )
 
     # ── Frigate alert-driven path (tight integration) ───────
-    def handles_camera(self, camera_id: str) -> bool:
-        """True when the Vision engine drives this camera's alerts (Frigate event-driven),
-        so the notification bridge should not also notify for it."""
-        return camera_id in self._native_cams
+    def handles_camera(self, camera_id: str, objects: list[str] | None = None) -> bool:
+        """True when the Vision engine will drive this camera's alert, so the notification
+        bridge should not also notify. Native cameras always have a catch-all (so this is
+        true for any object set); if a specific object set would somehow fail to match,
+        return False so the bridge picks it up rather than the alert being dropped."""
+        if camera_id not in self._native_cams:
+            return False
+        _idx, _display, trig = self._match_review_trigger(camera_id, objects or [])
+        return trig is not None
 
     async def _sync_frigate_reviews(self, want: bool) -> None:
         """Subscribe/unsubscribe to Frigate's MQTT review stream for native cameras."""
@@ -429,6 +452,23 @@ class VisionEngine:
         for i, trig in enumerate(triggers):
             if (trig or {}).get("type") == "motion":
                 return i, display, (trig or {})
+        # Frigate-native cameras always have a catch-all: Frigate already decided this review
+        # is alert-worthy, so a missing 'motion' trigger must not silently drop it. Synthesize
+        # the default catch-all with a stable index past the real triggers (keeps the
+        # `f"{cam_id}#{t_idx}"` cooldown key deterministic per camera).
+        if cam_id in self._native_cams:
+            if cam_id not in self._synth_logged:
+                self._synth_logged.add(cam_id)
+                _LOGGER.info(
+                    "Ted's Vision: %s has no 'Any Frigate alert' trigger; using the built-in "
+                    "catch-all so Frigate alerts aren't dropped", cam_id,
+                )
+            return len(triggers), display, {
+                "type": "motion",
+                "cooldown_seconds": 60,
+                "discard_severities": [],
+                "actions": _default_trigger_actions(),
+            }
         return None, None, None
 
     @staticmethod
