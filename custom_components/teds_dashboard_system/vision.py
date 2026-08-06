@@ -54,23 +54,21 @@ _ANALYSIS_INSTRUCTIONS = (
     "motion or occupancy sensor reported a possible '{event_type}', but that hint is "
     "UNVERIFIED and often wrong (shadows, sunlight, rain, a static object, or even the "
     "camera's own name can trigger it). Judge ONLY by what the frames actually show.\n"
-    "Describe the ACTION — what CHANGES throughout the clip: who or what "
-    "arrives, the direction and path they move, what they do, and how it ends. Do NOT "
-    "just describe a static scene or a parked object; report the sequence of events over "
-    "time. (Good: 'A dark SUV pulls into the driveway and continues forward into the "
-    "garage.' / 'A van stops, two people get out and carry a box to the porch, then "
-    "leave.' Bad: 'A parked car in the driveway.' / 'Two cars in the garage.')\n"
+    "{object_context}"
+    "Report what CHANGES across the frames: what enters or leaves the scene, the "
+    "direction it travels, what it does, and the state at the end. If the frames show "
+    "the same scene at the start and the end with nothing moving, say so explicitly "
+    "rather than narrating an arrival or departure that is not visible. A good "
+    "description states a sequence with a beginning and an end; a poor one just names a "
+    "static object with no verb of motion.\n"
     "- Do NOT report a person, vehicle, animal, or package unless it is actually visible "
     "and moving/acting in the frames — the sensor hint or camera name is not evidence.\n"
     "- Do NOT invent a story or assume a motive; report only what is actually visible in the frames.\n"
     "- Do NOT report a static object that never moves, even if it is a person, vehicle, animal, or package.\n"
-    "- false_alarm: default FALSE unless the frames genuinely show nothing meaningful "
-    "happening (an empty scene, only shadows / light changes / weather, or a static object "
-    "that never moves).\n"
-    "- false_alarm: set TRUE when nothing genuinely happens across the frames (an empty "
-    "scene, only shadows / light changes / weather, or a static object that never moves). "
-    "This is the EXPECTED result for spurious triggers, so use it freely. Set FALSE only "
-    "when real activity or movement actually occurs.\n"
+    "- false_alarm: set TRUE when nothing genuinely happens across the frames — an empty "
+    "scene, only shadows / light changes / weather, or a static object that never moves. "
+    "This is the EXPECTED result for a spurious trigger, so use it freely. Set FALSE if "
+    "any real activity or movement actually occurs.\n"
     "- severity: 'critical' for an active threat, break-in, or emergency; 'suspicious' "
     "for unexpected or concerning activity worth a human review; 'harmless' for routine "
     "or expected activity (residents, pets, deliveries, passing cars); 'unknown' only if "
@@ -383,8 +381,12 @@ class VisionEngine:
         review_id = str(review_id)
         payload = after.get("data") or {}
         objects = [str(o) for o in (payload.get("objects") or [])]
+        zones = [str(z) for z in (payload.get("zones") or [])]
         detections = [str(d) for d in (payload.get("detections") or [])]
-        event_id = detections[0] if detections else review_id
+        # Frigate event IDs are `<start_epoch>.<microseconds>-<random>`, so the smallest
+        # by plain string order is the earliest-STARTED detection — the object that
+        # actually opened this review (the detections list itself is not time-ordered).
+        event_id = min(detections) if detections else review_id
         is_alert = str(after.get("severity") or "").lower() == "alert"
         t_idx, etype, trig = self._match_review_trigger(cam_id, objects)
         if trig is None:
@@ -406,7 +408,10 @@ class VisionEngine:
             )
         else:
             self.hass.async_create_task(
-                self._frigate_review_end(cam_id, etype, review_id, event_id, is_alert)
+                self._frigate_review_end(
+                    cam_id, etype, review_id, event_id, is_alert,
+                    object_context=self._object_context(objects, zones),
+                )
             )
 
     def _match_review_trigger(
@@ -425,6 +430,22 @@ class VisionEngine:
             if (trig or {}).get("type") == "motion":
                 return i, display, (trig or {})
         return None, None, None
+
+    @staticmethod
+    def _object_context(objects: list[str], zones: list[str]) -> str:
+        """Corroborated ground truth from Frigate's object detector (empty when there's
+        nothing to report) — distinct from the UNVERIFIED motion-sensor hint. Names the
+        tracked object(s) and any zones so the model describes THAT object, not whatever is
+        most visually salient."""
+        if not objects:
+            return ""
+        objs = ", ".join(f"`{o}`" for o in objects)
+        zone_part = f", which entered the zone(s): {', '.join(zones)}" if zones else ""
+        return (
+            f"Frigate's object detector tracked {objs}{zone_part} in this clip. Describe "
+            "THAT object as the subject. If other objects are visible, mention them only "
+            "as context — the tracked object above is the subject.\n"
+        )
 
     async def _frigate_review_new(
         self, camera_id: str, event_type: str, review_id: str, event_id: str, trigger: dict,
@@ -468,6 +489,7 @@ class VisionEngine:
 
     async def _frigate_review_end(
         self, camera_id: str, event_type: str, review_id: str, event_id: str, is_alert: bool,
+        object_context: str = "",
     ) -> None:
         """Refine the provisional entry with the finished clip + AI summary. If we never
         acted on the alert's onset, create a finished entry now (no late actions)."""
@@ -494,7 +516,8 @@ class VisionEngine:
             on_quick = _push_quick
 
         analysis = await self._analyze_frigate(
-            camera_id, cam_name, area_name, event_type, event_id, True, s, on_quick=on_quick
+            camera_id, cam_name, area_name, event_type, event_id, True, s,
+            on_quick=on_quick, object_context=object_context,
         )
         false_alarm = _as_bool((analysis or {}).get("false_alarm"))
         fa_mode = s.get("vision_false_alarm_mode") or "log_only"
@@ -565,7 +588,7 @@ class VisionEngine:
     async def _analyze_frigate(
         self, camera_id: str, cam_name: str, area_name: str | None,
         event_type: str, event_id: str, has_clip: bool, settings: dict,
-        on_quick=None,
+        on_quick=None, object_context: str = "",
     ) -> dict | None:
         """Run the AI analysis on Frigate's clip/snapshot. Downloads the media to a temp
         location ONCE, builds a quick (early-frames) and detailed (full-clip) attachment set
@@ -576,6 +599,7 @@ class VisionEngine:
         media = self._media_source_dir()
         full_attach: list[dict] = []
         quick_attach: list[dict] = []
+        labelled_snapshot = False
         tmp_dir: str | None = None
         if media:
             tmp_rel = f"{MEDIA_FOLDER_NAME}/frigate/{event_id}"
@@ -587,10 +611,12 @@ class VisionEngine:
                 local = os.path.join(tmp_dir, asset)
                 await self.hass.async_add_executor_job(_write_bytes, local, blob)
                 if not has_clip:
+                    # Frigate's snapshot.jpg has the label + bounding box burned in.
                     full_attach = quick_attach = [{
                         "media_content_id": f"media-source://media_source/{media[0]}/{tmp_rel}/{asset}",
                         "media_content_type": "image/jpeg",
                     }]
+                    labelled_snapshot = True
                 else:
                     count = max(1, int(settings.get("vision_frame_count") or 3))
                     frame_attach = [
@@ -608,17 +634,37 @@ class VisionEngine:
                     else:
                         full_attach = frame_attach
                     quick_attach = self._first_window_attachments(frame_attach, None) or full_attach
+                    # The extracted clip frames are RAW (no boxes); Frigate's snapshot.jpg
+                    # has the tracked object outlined + labelled. Prepend it to both passes
+                    # as a reference frame identifying which object is the subject.
+                    snap_blob = await self._download_frigate(event_id, "snapshot.jpg")
+                    if snap_blob is not None:
+                        snap_local = os.path.join(tmp_dir, "snapshot.jpg")
+                        await self.hass.async_add_executor_job(_write_bytes, snap_local, snap_blob)
+                        snap_attach = {
+                            "media_content_id": f"media-source://media_source/{media[0]}/{tmp_rel}/snapshot.jpg",
+                            "media_content_type": "image/jpeg",
+                        }
+                        full_attach = [snap_attach, *full_attach]
+                        quick_attach = [snap_attach, *quick_attach]
+                        labelled_snapshot = True
         if not full_attach:
             # Couldn't fetch Frigate media — analyze a live snapshot so we still get a summary.
             full_attach = quick_attach = [{
                 "media_content_id": f"media-source://camera/{camera_id}",
                 "media_content_type": "image/jpeg",
             }]
+        if labelled_snapshot:
+            object_context = (object_context or "") + (
+                "The FIRST image is a labelled reference frame from Frigate showing the "
+                "tracked object outlined by a bounding box with its label. Use it to "
+                "identify the subject, then describe that subject across the frames.\n"
+            )
         try:
             return await self._staged_analyze(
                 camera_id, cam_name, area_name, event_type,
                 quick_attach or full_attach, quick_entity, full_attach, detailed_entity,
-                two_pass, on_quick,
+                two_pass, on_quick, object_context=object_context,
             )
         finally:
             if tmp_dir:
@@ -848,21 +894,23 @@ class VisionEngine:
         self, camera_id: str, cam_name: str, area_name: str | None, event_type: str,
         quick_attach: list[dict], quick_entity: str | None,
         full_attach: list[dict], detailed_entity: str | None,
-        two_pass: bool, on_quick,
+        two_pass: bool, on_quick, object_context: str = "",
     ) -> dict | None:
         """Run the AI. Single-pass = one detailed full analysis. Two-pass = a quick pass and
         the detailed pass concurrently; the quick result is published (via ``on_quick``) only
         if the detailed pass hasn't already finished. Returns the detailed result."""
         if not two_pass or (quick_attach == full_attach and quick_entity == detailed_entity):
             return await self._analyze(
-                camera_id, cam_name, area_name, event_type, full_attach, entity_id=detailed_entity
+                camera_id, cam_name, area_name, event_type, full_attach,
+                entity_id=detailed_entity, object_context=object_context,
             )
         done = asyncio.Event()
         final: dict = {}
 
         async def _quick() -> None:
             result = await self._analyze(
-                camera_id, cam_name, area_name, event_type, quick_attach, entity_id=quick_entity
+                camera_id, cam_name, area_name, event_type, quick_attach,
+                entity_id=quick_entity, object_context=object_context,
             )
             if done.is_set() or not result or on_quick is None:
                 return
@@ -870,7 +918,8 @@ class VisionEngine:
 
         async def _detailed() -> None:
             result = await self._analyze(
-                camera_id, cam_name, area_name, event_type, full_attach, entity_id=detailed_entity
+                camera_id, cam_name, area_name, event_type, full_attach,
+                entity_id=detailed_entity, object_context=object_context,
             )
             done.set()
             if result:
@@ -1070,13 +1119,15 @@ class VisionEngine:
     async def _analyze(
         self, camera_id: str, cam_name: str, area_name: str | None,
         event_type: str, attachments: list[dict], entity_id: str | None = None,
+        object_context: str = "",
     ) -> dict | None:
         """Run ai_task.generate_data with structured output. None on failure."""
         area_phrase = f" in the {area_name}" if area_name else ""
         data = {
             "task_name": "Ted's Vision Analysis",
             "instructions": _ANALYSIS_INSTRUCTIONS.format(
-                event_type=event_type, camera_name=cam_name, area_phrase=area_phrase
+                event_type=event_type, camera_name=cam_name, area_phrase=area_phrase,
+                object_context=object_context,
             ),
             "structure": {
                 "severity": {
