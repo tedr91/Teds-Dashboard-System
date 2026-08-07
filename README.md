@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.102
+
+- Bundles Ted's Cards v0.9.92 (Vision card **context-aware empty states** — the timeline now explains why it's empty and offers **Show all events** when filters hide everything).
+
 ### v0.9.101
 
 - **Fixed real activity being mislabeled as a false alarm.** The Vision AI was over-applying the “false alarm” flag — sometimes tagging a clip its own summary described as a car arriving or a person walking. The analysis prompt no longer invites it, now treats a Frigate-tracked object as proof something happened, and a code backstop clears a contradictory flag when Frigate independently tracked an object (logged so the rate is visible). This prevents a real event from being silently downgraded.
