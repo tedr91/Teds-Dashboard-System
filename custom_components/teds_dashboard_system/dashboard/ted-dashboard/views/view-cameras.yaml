@@ -1,24 +1,50 @@
-# View: Cameras — Ted's Camera Card driven by the per-device Settings list. path: cameras
-# The camera card fills the "content" grid-area (like the calendar in Calendar-Month).
-# Cameras are chosen per-device in Settings → Cameras; when a device has none available
-# the card shows its own empty-state prompt with a "Settings" button. Navbar is a plain
-# card (`- !include ../shared/navbar.yaml`), position:fixed so it needs no grid-area.
+# View: Cameras — Ted's Camera Card + Vision timeline in one tab card. path: cameras
+# A single full-height Ted's Tab Card fills the content area, housing the two fullscreen
+# cards (each is the card that used to be its own view):
+#   • Cameras — Ted's Camera Card driven by the per-device Settings list.
+#   • Vision — Ted's Vision Card timeline of AI-analyzed camera events.
+# The Vision tab is gated on the `vision_enabled` setting (dashboard_integration): when
+# Vision Analysis is off the tab is disabled (dropped), leaving a single Cameras tab, and
+# `hide_single_tab` then hides the tab strip entirely so it reads like a plain Cameras view.
+# Deep-link a tab with `?tab=cameras` / `?tab=vision`. Navbar is a plain position:fixed card.
 type: custom:grid-layout
 path: cameras
 title: Cameras
 icon: mdi:cctv
 layout: !include ../shared/layout-content.yaml
 cards:
-  - type: custom:ted-fullscreen-card
+  - type: custom:ted-tab-card
     view_layout:
       grid-area: content
     dashboard_integration: true
-    state_key: cameras
-    fill: true
-    card:
-      type: custom:ted-camera-card
-      cameras_source: settings
-      fill: true
-      show_name: true
+    hide_single_tab: true
+    url_param: tab
+    default_tab: 0
+    tabs:
+      - label: Cameras
+        icon: mdi:cctv
+        slug: cameras
+        card:
+          type: custom:ted-fullscreen-card
+          dashboard_integration: true
+          state_key: cameras
+          fill: true
+          card:
+            type: custom:ted-camera-card
+            cameras_source: settings
+            fill: true
+            show_name: true
+      - label: Vision
+        icon: mdi:eye
+        slug: vision
+        enabled_setting: vision_enabled
+        card:
+          type: custom:ted-fullscreen-card
+          dashboard_integration: true
+          state_key: vision
+          fill: true
+          card:
+            type: custom:ted-vision-card
+            theme: ted-style
   - !include ../shared/navbar.yaml
   - !include ../shared/background.yaml

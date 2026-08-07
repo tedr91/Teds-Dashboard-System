@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.107
+
+- Bundles Ted's Cards v0.9.97. The **Cameras and Vision views are now combined** — the Vision timeline is a tab inside the Cameras view that disappears when Vision Analysis is off (deep-link with `?tab=cameras` / `?tab=vision`). Also nudges the Calendar Agenda day-row spacing to 2px.
+
 ### v0.9.105
 
 - Bundles Ted's Cards v0.9.95 (Automatic Night Mode dark theme is now applied per-browser instead of via HA's account-wide theme, so devices sharing one HA user account no longer darken each other).

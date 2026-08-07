@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "dashboard": "0.9.6",
+  "dashboard": "0.9.7",
   "shared": "1.0.0",
   "views": {
     "view-welcome": "1.0.7",
@@ -9,8 +9,7 @@
     "view-assist-response": "1.0.0",
     "view-calendar-month": "1.1.0",
     "view-calendar-week": "1.1.0",
-    "view-cameras": "1.0.0",
-    "view-vision": "1.0.0",
+    "view-cameras": "1.1.0",
     "view-climate": "1.0.0",
     "view-music": "1.0.0",
     "view-notifications": "1.0.0",
@@ -30,7 +29,6 @@
       "views-home/view-home-wallpanel-v.yaml",
       "views-home/view-home-handheld.yaml",
       "views/view-cameras.yaml",
-      "views/view-vision.yaml",
       "views/view-climate.yaml",
       "views/view-weather.yaml",
       "views/view-music.yaml",
