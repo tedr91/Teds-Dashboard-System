@@ -466,6 +466,24 @@ class TedsManager:
         self.playback.stop(notif_id)
         self.hass.bus.async_fire(EVENT_NOTIFICATION, {"id": notif_id, "dismissed": True})
 
+    def _strip_vision_notifs(self, ids: set | None) -> list:
+        """Drop notifications a vision toast created for the given event ids (None = every
+        vision-linked notification). Sticky ones are kept but marked read. Returns the
+        dismissed ids; the caller batches the save/notify + _fire_dismissed."""
+        affected = []
+        remaining = []
+        for n in self.notifications:
+            vid = (n.get("data") or {}).get("vision_event_id")
+            if vid and (ids is None or vid in ids):
+                affected.append(n["id"])
+                if n.get("persistence") == "sticky":
+                    n["read"] = True
+                    remaining.append(n)
+            else:
+                remaining.append(n)
+        self.notifications = remaining
+        return affected
+
     def _mark_vision_events_reviewed(self, vision_ids: set) -> None:
         """Flag the given vision events reviewed in place + broadcast, so reading/dismissing
         a vision toast also marks its timeline entry reviewed (globally, every device)."""
@@ -478,19 +496,9 @@ class TedsManager:
         """Read/dismiss the notification(s) a vision event's toast created (matched by
         data.vision_event_id) — same as the user acting on the toast, on every device, so
         marking the event reviewed also clears the notification center on the wallpanel."""
-        affected = []
-        remaining = []
-        for n in self.notifications:
-            if (n.get("data") or {}).get("vision_event_id") == vision_event_id:
-                affected.append(n["id"])
-                if n.get("persistence") == "sticky":
-                    n["read"] = True
-                    remaining.append(n)
-            else:
-                remaining.append(n)
+        affected = self._strip_vision_notifs({vision_event_id})
         if not affected:
             return
-        self.notifications = remaining
         for nid in affected:
             self._fire_dismissed(nid)
         await self._save()
@@ -547,7 +555,8 @@ class TedsManager:
         return None
 
     async def remove_vision_event(self, event_id: str) -> dict | None:
-        """Remove one event; return it so the engine can clean up its files."""
+        """Remove one event and the notifications its toast created; return it so the engine
+        can clean up its files."""
         removed = None
         kept = []
         for e in self.vision_events:
@@ -558,16 +567,23 @@ class TedsManager:
         if removed is None:
             return None
         self.vision_events = kept
+        dismissed = self._strip_vision_notifs({event_id})
         self.hass.bus.async_fire(EVENT_VISION_EVENT, {"id": event_id, "deleted": True})
+        for nid in dismissed:
+            self._fire_dismissed(nid)
         await self._save()
         self._notify()
         return removed
 
     async def clear_vision_events(self) -> list[dict]:
-        """Remove all events; return them so the engine can clean up their files."""
+        """Remove all events and the notifications their toasts created; return them so the
+        engine can clean up their files."""
         removed = self.vision_events
         self.vision_events = []
+        dismissed = self._strip_vision_notifs(None)
         self.hass.bus.async_fire(EVENT_VISION_EVENT, {"cleared": True})
+        for nid in dismissed:
+            self._fire_dismissed(nid)
         await self._save()
         self._notify()
         return removed

@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.116
+
+- **Clearing or deleting Vision events now also clears their notifications.** Marking an event reviewed already cleared its notification, but the Cameras view's **Clear all** and deleting a single event left the matching notifications behind. Both now dismiss the notifications a vision event's toast created, on every device (sticky ones are marked read).
+
 ### v0.9.115
 
 - **Analysis debugging now raises a notification per pass.** With **Enable analysis debugging** on, each analysis pass (including each A/B pass) posts a **silent** Info notification titled with the AI Task entity's friendly name and carrying its images/timing/severity and full summary — a timing-independent way to compare models straight from the notification center. The notifications are silent (a two-pass A/B event emits four), unscoped, and survive marking the event reviewed. Note they churn the notification list while debugging is on. Bundles Ted's Cards v0.9.102.
