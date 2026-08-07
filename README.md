@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.103
+
+- Bundles Ted's Cards v0.9.93 (Calendar Card Agenda view: tighter day rows — the blank strip above each day trimmed to 1px).
+
 ### v0.9.102
 
 - Bundles Ted's Cards v0.9.92 (Vision card **context-aware empty states** — the timeline now explains why it's empty and offers **Show all events** when filters hide everything).
