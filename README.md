@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.110
+
+- **Vision Pass 1 now runs live, at the start of the event — and both passes analyze the right object.** Previously the “quick” pass only ran after the clip finalized (so a summary didn't appear until the event ended), and a review that absorbed an earlier-started object could hand the detailed pass the *wrong* object's clip and snapshot. Pass 1 now samples the live camera the moment the alert fires (a real summary at ~T+12s), and the event that raised the alert is pinned so the clip, thumbnail, and labelled snapshot always match. Also fixes video-capable provider detection (Gemini) and gives each pass its own image set. Bundles Ted's Cards v0.9.99.
+
 ### v0.9.109
 
 - **Vision two-pass diagnostics.** With **Keep both analysis passes** on (Settings → Cameras → Vision Analysis), each event now retains the quick and detailed pass results separately — entity, timing, attachment count, and text — viewable in the event detail so you can tell which pass wrote a given summary. Bundles Ted's Cards v0.9.98.

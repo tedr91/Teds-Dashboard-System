@@ -85,7 +85,24 @@ _ANALYSIS_INSTRUCTIONS = (
 # ai_task provider platforms (entity-registry platform) in preference order for smart
 # defaults, and those known to accept VIDEO attachments (image support has no such flag).
 _AI_PROVIDER_PRIORITY = ("ollama", "openai_conversation", "google_generative_ai")
-VIDEO_CAPABLE_PLATFORMS = frozenset({"google_generative_ai"})
+# Integration domains whose ai_task entities accept a VIDEO attachment. This is the entity
+# registry's `platform` value, i.e. the integration's manifest domain — Gemini's is
+# "google_generative_ai_conversation". Every other provider (ollama, openai_conversation)
+# raises HomeAssistantError on a non-image attachment, so they must be sent stills.
+VIDEO_CAPABLE_PLATFORMS = frozenset({
+    "google_generative_ai_conversation",
+    "google_generative_ai",  # tolerated alias
+})
+
+# Pass 1 samples the LIVE camera at 1 fps for this long, starting the moment the review
+# becomes an alert — it must never wait for Frigate's clip, which only exists at review end.
+QUICK_WINDOW_SECONDS = 10
+
+_LABELLED_SNAPSHOT_NOTE = (
+    "The FIRST image is a labelled reference frame from Frigate showing the tracked "
+    "object outlined by a bounding box with its label. Use it to identify the subject, "
+    "then describe that subject across the frames.\n"
+)
 
 
 
@@ -255,7 +272,8 @@ class VisionEngine:
         self._watch: dict[str, tuple[str, str]] = {}  # sensor eid -> (camera_id, event_type)
         self._cooldowns: dict[str, float] = {}        # camera_id -> monotonic last trigger
         self._native_cams: set[str] = set()           # Frigate cameras driven by reviews, not sensors
-        self._frigate_pending: dict[str, str] = {}    # frigate review id -> provisional TDS event id
+        # frigate review id -> {id, discard, event_id, stop, superseded, passes}
+        self._frigate_pending: dict[str, dict] = {}
         self._frigate_skip: set[str] = set()          # review ids we chose to skip (cooldown)
         self._synth_logged: set[str] = set()          # cams we've logged a synthesized catch-all for
 
@@ -431,7 +449,10 @@ class VisionEngine:
                 return
             self._cooldowns[key] = now
             self.hass.async_create_task(
-                self._frigate_review_new(cam_id, etype, review_id, event_id, trig)
+                self._frigate_review_new(
+                    cam_id, etype, review_id, event_id, trig,
+                    objects=objects, zones=zones,
+                )
             )
         else:
             self.hass.async_create_task(
@@ -495,14 +516,25 @@ class VisionEngine:
 
     async def _frigate_review_new(
         self, camera_id: str, event_type: str, review_id: str, event_id: str, trigger: dict,
+        objects: list[str] | None = None, zones: list[str] | None = None,
     ) -> None:
-        """Create the provisional Vision event from the alert's thumbnail and fire the
-        trigger's actions immediately — the timely moment, before the clip is finalized."""
+        """Create the provisional Vision event from the alert's thumbnail, fire the trigger's
+        actions immediately — the timely moment, before the clip is finalized — and kick off
+        PASS 1 against the LIVE camera right now."""
         tds_id = uuid.uuid4().hex
-        self._frigate_pending[review_id] = {
+        s = self._settings()
+        rec = {
             "id": tds_id,
             "discard": (trigger or {}).get("discard_severities") or [],
+            # DEFECT E: pin the event that RAISED this alert. `detections` grows during a
+            # review, so min(detections) at review end can resolve to a different (earlier-
+            # started) object and hand pass 2 the wrong clip + wrong labelled snapshot.
+            "event_id": event_id,
+            "stop": asyncio.Event(),   # set at review end: cut pass 1's sampling short
+            "superseded": False,       # set once pass 2 has published; pass 1 then stays quiet
+            "passes": [],              # shared debug capture, appended by BOTH passes
         }
+        self._frigate_pending[review_id] = rec
         started = dt_util.utcnow()
         area_id, area_name, cam_name = self._camera_context(camera_id)
         event = {
@@ -531,7 +563,108 @@ class VisionEngine:
         dropped = await self.manager.add_vision_event(event)
         if dropped:
             await self._cleanup_files(dropped)
+        # PASS 1 starts NOW, concurrently with the actions — this is the whole point of it.
+        if s.get("vision_two_pass", True):
+            self.hass.async_create_task(
+                self._frigate_quick_pass(
+                    camera_id, cam_name, area_name, event_type, event_id, rec, s,
+                    self._object_context(objects or [], zones or []),
+                )
+            )
         await self._run_actions(event, trigger, area_id)
+
+    async def _frigate_quick_pass(
+        self, camera_id: str, cam_name: str, area_name: str | None, event_type: str,
+        event_id: str, rec: dict, settings: dict, object_context: str,
+    ) -> None:
+        """PASS 1 — runs the moment the review becomes an alert, against the LIVE camera.
+        Frigate's clip does not exist yet, so this can never use it. Samples ~1 fps for
+        QUICK_WINDOW_SECONDS (cut short when the review ends), analyses, then publishes only
+        if pass 2 hasn't already landed."""
+        media = self._media_source_dir()
+        if not media:
+            return
+        tmp_rel = f"{MEDIA_FOLDER_NAME}/frigate/{event_id}-quick"
+        tmp_dir = os.path.join(media[1], tmp_rel)
+        entity = settings.get("vision_ai_task_entity") or preferred_image_ai_task_entity(self.hass)
+        capture = rec["passes"] if settings.get("vision_debug_passes") else None
+        try:
+            attach = await self._sample_live_frames(
+                camera_id, media, tmp_rel, tmp_dir, rec["stop"],
+            )
+            snap = await self._frigate_snapshot_attachment(event_id, media, tmp_rel, tmp_dir)
+            if snap is not None:
+                attach = [snap, *attach]
+                object_context = (object_context or "") + _LABELLED_SNAPSHOT_NOTE
+            if not attach:
+                return
+            result = await self._run_pass(
+                "quick", camera_id, cam_name, area_name, event_type, attach, entity,
+                object_context=object_context, capture=capture,
+            )
+            # Pass 2 may have finished while we were analysing — it always wins.
+            if not result or rec.get("superseded"):
+                return
+            await self.manager.update_vision_event(
+                rec["id"], status="analyzing", **self._analysis_patch(result),
+            )
+            self._mark_published(capture, "quick")
+        except Exception:  # noqa: BLE001 - pass 1 is best-effort; pass 2 still runs
+            _LOGGER.exception("Ted's Vision: quick pass failed for %s", camera_id)
+        finally:
+            await self.hass.async_add_executor_job(_rmtree_quiet, tmp_dir)
+
+    async def _sample_live_frames(
+        self, camera_id: str, media: tuple, tmp_rel: str, tmp_dir: str,
+        stop: asyncio.Event,
+    ) -> list[dict]:
+        """Grab one live camera still per second for up to QUICK_WINDOW_SECONDS, stopping
+        early when `stop` fires (the review ended). Keeps whatever it already collected, so a
+        3-second event still yields 3-4 frames."""
+        from homeassistant.components.camera import async_get_image  # noqa: PLC0415
+
+        await self.hass.async_add_executor_job(lambda: os.makedirs(tmp_dir, exist_ok=True))
+        out: list[dict] = []
+        for i in range(QUICK_WINDOW_SECONDS):
+            try:
+                image = await async_get_image(self.hass, camera_id, timeout=5)
+            except Exception:  # noqa: BLE001 - a dropped frame must not kill the pass
+                image = None
+            if image is not None and image.content:
+                name = f"qw_{i:02d}.jpg"
+                await self.hass.async_add_executor_job(
+                    _write_bytes, os.path.join(tmp_dir, name), image.content,
+                )
+                out.append({
+                    "media_content_id": f"media-source://media_source/{media[0]}/{tmp_rel}/{name}",
+                    "media_content_type": "image/jpeg",
+                })
+            if stop.is_set():
+                break
+            try:
+                await asyncio.wait_for(stop.wait(), timeout=1.0)
+                break            # stop fired during the wait — the review just ended
+            except TimeoutError:
+                pass             # normal 1-second tick
+        return out
+
+    async def _frigate_snapshot_attachment(
+        self, event_id: str, media: tuple, tmp_rel: str, tmp_dir: str,
+    ) -> dict | None:
+        """Frigate's labelled snapshot (bounding box + label burned in). Best-effort — it may
+        not exist yet this early in a review, in which case pass 1 runs without it."""
+        blob = await self._download_frigate(event_id, "snapshot.jpg")
+        if blob is None:
+            return None
+        await self.hass.async_add_executor_job(lambda: os.makedirs(tmp_dir, exist_ok=True))
+        await self.hass.async_add_executor_job(
+            _write_bytes, os.path.join(tmp_dir, "snapshot.jpg"), blob,
+        )
+        return {
+            "media_content_id": f"media-source://media_source/{media[0]}/{tmp_rel}/snapshot.jpg",
+            "media_content_type": "image/jpeg",
+        }
+
 
     async def _frigate_review_end(
         self, camera_id: str, event_type: str, review_id: str, event_id: str, is_alert: bool,
@@ -542,31 +675,43 @@ class VisionEngine:
         pending = self._frigate_pending.pop(review_id, None)
         tds_id = pending["id"] if pending else None
         discard_list = pending["discard"] if pending else []
+        # DEFECT E: reuse the event pinned when this review became an alert. Recomputing
+        # min(detections) here can resolve to a DIFFERENT object — one that started earlier
+        # and got absorbed into the review later — which would download that object's clip
+        # and its labelled snapshot, so the model would describe the wrong thing entirely.
+        # Fall back to the caller's value only when we never saw the review start.
+        if pending and pending.get("event_id"):
+            event_id = pending["event_id"]
+        # Pass 1 (if still sampling) stops here — the event is over, there's nothing left to
+        # watch live. It keeps the frames it has and finishes its analysis.
+        if pending:
+            pending["stop"].set()
         skipped = review_id in self._frigate_skip
         self._frigate_skip.discard(review_id)
         if tds_id is None and (skipped or not is_alert):
             return  # cooldown-suppressed, or the review never became an alert
         s = self._settings()
+        # Pass 1 already appended its record to the shared list on the pending record, so
+        # pass 2 must append to that SAME list or one of the two would be lost.
+        passes: list | None = None
+        if s.get("vision_debug_passes"):
+            passes = pending["passes"] if pending else []
         area_id, area_name, cam_name = self._camera_context(camera_id)
         clip_url = f"/api/frigate/notifications/{event_id}/clip.mp4"
 
-        # The clip is finalized: move the row to "analyzing", and (for two-pass) let the
-        # quick pass publish a preliminary summary before the detailed pass finishes.
-        on_quick = None
         if tds_id is not None:
             await self.manager.update_vision_event(tds_id, status="analyzing", clip_url=clip_url)
 
-            async def _push_quick(patch: dict) -> None:
-                await self.manager.update_vision_event(tds_id, status="analyzing", **patch)
-
-            on_quick = _push_quick
-
         object_context = self._object_context(objects or [], zones or [])
-        passes: list | None = [] if s.get("vision_debug_passes") else None
+        label = "detailed" if s.get("vision_two_pass", True) else "single"
         analysis = await self._analyze_frigate(
             camera_id, cam_name, area_name, event_type, event_id, True, s,
-            on_quick=on_quick, object_context=object_context, capture=passes,
+            object_context=object_context, capture=passes, label=label,
         )
+        # Pass 2 has landed: pass 1 must not overwrite it if it is somehow still in flight.
+        if pending:
+            pending["superseded"] = True
+        self._mark_published(passes, label)
         # Defensive backstop: the model intermittently flags false_alarm on clips its own
         # summary describes as real activity. When Frigate independently tracked an object,
         # trust the detector over the model and clear the flag.
@@ -625,6 +770,10 @@ class VisionEngine:
             return
         patch: dict = {
             "clip_url": clip_url,
+            # Re-assert the thumbnail from the SAME pinned event as the clip. The provisional
+            # row's thumbnail was written at review start and never refreshed, which is how
+            # the two drifted onto different Frigate events unnoticed — see defect E.
+            "thumbnail_url": f"/api/frigate/notifications/{event_id}/thumbnail.jpg",
             "ts_end": dt_util.utcnow().isoformat(),
             "status": "complete",
             "severity": severity,
@@ -648,18 +797,16 @@ class VisionEngine:
     async def _analyze_frigate(
         self, camera_id: str, cam_name: str, area_name: str | None,
         event_type: str, event_id: str, has_clip: bool, settings: dict,
-        on_quick=None, object_context: str = "", capture: list | None = None,
+        object_context: str = "", capture: list | None = None,
+        label: str = "detailed",
     ) -> dict | None:
-        """Run the AI analysis on Frigate's clip/snapshot. Downloads the media to a temp
-        location ONCE, builds a quick (early-frames) and detailed (full-clip) attachment set
-        for two-pass, runs them, then deletes the temp — nothing is retained by TDS."""
+        """PASS 2 — the detailed analysis of Frigate's FINISHED clip. Pass 1 already ran live
+        at review start, so there is no race here and no quick attachment set. Downloads the
+        media to a temp location, analyses, then deletes it — nothing is retained by TDS."""
         quick_entity = settings.get("vision_ai_task_entity") or preferred_image_ai_task_entity(self.hass)
         detailed_entity = self._detailed_entity(settings, quick_entity)
-        two_pass = bool(settings.get("vision_two_pass", True))
         media = self._media_source_dir()
         full_attach: list[dict] = []
-        quick_attach: list[dict] = []
-        labelled_snapshot = False
         tmp_dir: str | None = None
         if media:
             tmp_rel = f"{MEDIA_FOLDER_NAME}/frigate/{event_id}"
@@ -672,63 +819,51 @@ class VisionEngine:
                 await self.hass.async_add_executor_job(_write_bytes, local, blob)
                 if not has_clip:
                     # Frigate's snapshot.jpg has the label + bounding box burned in.
-                    full_attach = quick_attach = [{
+                    full_attach = [{
                         "media_content_id": f"media-source://media_source/{media[0]}/{tmp_rel}/{asset}",
                         "media_content_type": "image/jpeg",
                     }]
-                    labelled_snapshot = True
+                    object_context = (object_context or "") + _LABELLED_SNAPSHOT_NOTE
                 else:
-                    count = max(1, int(settings.get("vision_frame_count") or 3))
-                    frame_attach = [
-                        {
-                            "media_content_id": f"media-source://media_source/{media[0]}/{tmp_rel}/{os.path.basename(fp)}",
-                            "media_content_type": "image/jpeg",
-                        }
-                        for fp in await self._extract_frames(local, tmp_dir, count)
-                    ]
                     if _entity_supports_video(self.hass, detailed_entity):
                         full_attach = [{
                             "media_content_id": f"media-source://media_source/{media[0]}/{tmp_rel}/clip.mp4",
                             "media_content_type": "video/mp4",
                         }]
                     else:
-                        full_attach = frame_attach
-                    quick_attach = self._first_window_attachments(frame_attach, None) or full_attach
-                    # The extracted clip frames are RAW (no boxes); Frigate's snapshot.jpg
-                    # has the tracked object outlined + labelled. Prepend it to both passes
-                    # as a reference frame identifying which object is the subject.
-                    snap_blob = await self._download_frigate(event_id, "snapshot.jpg")
-                    if snap_blob is not None:
-                        snap_local = os.path.join(tmp_dir, "snapshot.jpg")
-                        await self.hass.async_add_executor_job(_write_bytes, snap_local, snap_blob)
-                        snap_attach = {
-                            "media_content_id": f"media-source://media_source/{media[0]}/{tmp_rel}/snapshot.jpg",
-                            "media_content_type": "image/jpeg",
-                        }
-                        full_attach = [snap_attach, *full_attach]
-                        quick_attach = [snap_attach, *quick_attach]
-                        labelled_snapshot = True
+                        # Stills spanning the WHOLE clip — pass 2's job is "what happened",
+                        # and pass 1 already covered the opening seconds live.
+                        count = max(1, int(settings.get("vision_frame_count") or 3))
+                        full_attach = [
+                            {
+                                "media_content_id": f"media-source://media_source/{media[0]}/{tmp_rel}/{os.path.basename(fp)}",
+                                "media_content_type": "image/jpeg",
+                            }
+                            for fp in await self._extract_frames(local, tmp_dir, count)
+                        ]
+                    # The extracted frames are RAW (no boxes); Frigate's snapshot.jpg has the
+                    # tracked object outlined + labelled. Prepend it as a reference frame.
+                    snap = await self._frigate_snapshot_attachment(
+                        event_id, media, tmp_rel, tmp_dir,
+                    )
+                    if snap is not None:
+                        full_attach = [snap, *full_attach]
+                        object_context = (object_context or "") + _LABELLED_SNAPSHOT_NOTE
         if not full_attach:
             # Couldn't fetch Frigate media — analyze a live snapshot so we still get a summary.
-            full_attach = quick_attach = [{
+            full_attach = [{
                 "media_content_id": f"media-source://camera/{camera_id}",
                 "media_content_type": "image/jpeg",
             }]
-        if labelled_snapshot:
-            object_context = (object_context or "") + (
-                "The FIRST image is a labelled reference frame from Frigate showing the "
-                "tracked object outlined by a bounding box with its label. Use it to "
-                "identify the subject, then describe that subject across the frames.\n"
-            )
         try:
-            return await self._staged_analyze(
-                camera_id, cam_name, area_name, event_type,
-                quick_attach or full_attach, quick_entity, full_attach, detailed_entity,
-                two_pass, on_quick, object_context=object_context, capture=capture,
+            return await self._run_pass(
+                label, camera_id, cam_name, area_name, event_type, full_attach,
+                detailed_entity, object_context=object_context, capture=capture,
             )
         finally:
             if tmp_dir:
                 await self.hass.async_add_executor_job(_rmtree_quiet, tmp_dir)
+
 
     async def _download_frigate(self, event_id: str, asset: str) -> bytes | None:
         """Fetch a Frigate notification-API asset (clip.mp4 / snapshot.jpg) over HTTP."""
@@ -955,6 +1090,44 @@ class VisionEngine:
             event["severity"] = event.get("severity") or "unknown"
             event["short_summary"] = "Analysis unavailable — check the AI Task setup."
 
+    async def _run_pass(
+        self, label: str, camera_id: str, cam_name: str, area_name: str | None,
+        event_type: str, attach: list[dict], entity: str | None,
+        object_context: str = "", capture: list | None = None,
+    ) -> dict | None:
+        """Run ONE analysis pass. When `capture` is a list, append a debug record describing
+        what this pass was actually given and what it returned."""
+        started = time.monotonic()
+        result = await self._analyze(
+            camera_id, cam_name, area_name, event_type, attach,
+            entity_id=entity, object_context=object_context,
+        )
+        if capture is not None:
+            capture.append({
+                "pass": label,
+                "entity_id": entity,
+                "attachments": len(attach),
+                # Whether the model actually received video, or stills standing in for it.
+                "input": "video" if any(
+                    str(a.get("media_content_type") or "").startswith("video/") for a in attach
+                ) else "stills",
+                "duration_ms": int((time.monotonic() - started) * 1000),
+                "published": False,
+                "severity": (result or {}).get("severity"),
+                "false_alarm": (result or {}).get("false_alarm"),
+                "short_summary": (result or {}).get("short_summary"),
+                "long_summary": (result or {}).get("long_summary"),
+                "failed": result is None,
+            })
+        return result
+
+    @staticmethod
+    def _mark_published(capture: list | None, label: str) -> None:
+        """Flag the pass whose text actually reached the UI."""
+        for rec in capture or []:
+            if rec.get("pass") == label and not rec.get("failed"):
+                rec["published"] = True
+
     async def _staged_analyze(
         self, camera_id: str, cam_name: str, area_name: str | None, event_type: str,
         quick_attach: list[dict], quick_entity: str | None,
@@ -970,30 +1143,14 @@ class VisionEngine:
         attachment count, elapsed ms, whether it reached the UI, and its full result)."""
 
         async def _run(label: str, attach: list[dict], entity: str | None) -> dict | None:
-            started = time.monotonic()
-            result = await self._analyze(
-                camera_id, cam_name, area_name, event_type, attach,
-                entity_id=entity, object_context=object_context,
+            return await self._run_pass(
+                label, camera_id, cam_name, area_name, event_type, attach, entity,
+                object_context=object_context, capture=capture,
             )
-            if capture is not None:
-                capture.append({
-                    "pass": label,
-                    "entity_id": entity,
-                    "attachments": len(attach),
-                    "duration_ms": int((time.monotonic() - started) * 1000),
-                    "published": False,
-                    "severity": (result or {}).get("severity"),
-                    "false_alarm": (result or {}).get("false_alarm"),
-                    "short_summary": (result or {}).get("short_summary"),
-                    "long_summary": (result or {}).get("long_summary"),
-                    "failed": result is None,
-                })
-            return result
 
         if not two_pass or (quick_attach == full_attach and quick_entity == detailed_entity):
             result = await _run("single", full_attach, detailed_entity)
-            if capture:
-                capture[-1]["published"] = True
+            self._mark_published(capture, "single")
             return result
         done = asyncio.Event()
         final: dict = {}
@@ -1002,10 +1159,7 @@ class VisionEngine:
             result = await _run("quick", quick_attach, quick_entity)
             if done.is_set() or not result or on_quick is None:
                 return
-            if capture:
-                for rec in capture:
-                    if rec["pass"] == "quick":
-                        rec["published"] = True
+            self._mark_published(capture, "quick")
             await on_quick(self._analysis_patch(result))
 
         async def _detailed() -> None:
@@ -1015,10 +1169,7 @@ class VisionEngine:
                 final.update(result)
 
         await asyncio.gather(_quick(), _detailed())
-        if capture:
-            for rec in capture:
-                if rec["pass"] == "detailed" and not rec.get("failed"):
-                    rec["published"] = True
+        self._mark_published(capture, "detailed")
         return final or None
 
     def _camera_context(self, camera_id: str) -> tuple[str | None, str | None, str]:
