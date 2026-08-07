@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.114
+
+- **Compare vision models side by side, live.** The **Enable analysis debugging** setting (renamed; now works in single-pass mode) gains an **AI Task entity — A/B pass**: when set, every analysis pass is also run in parallel against that entity with the exact same images, recorded in the event detail alongside the real result. The A/B result is never published — it can't change an event's summary, severity, or false-alarm handling — so you can benchmark a candidate model against production on genuinely identical input with no replay harness. Bundles Ted's Cards v0.9.101.
+
 ### v0.9.113
 
 - **More reliable Vision descriptions of direction and sequence.** Frigate's labelled reference snapshot can come from the middle or end of an event, but it was presented as image #1 ahead of the chronological frames — so the model saw timestamps out of order and sometimes flipped the direction of travel or “loading vs unloading” between identical runs. The analysis prompt now tells the model that image #1 is a reference outside the sequence and to use only the remaining, chronologically-ordered frames for direction and order of events.
@@ -69,7 +73,7 @@ frontend:
 
 ### v0.9.109
 
-- **Vision two-pass diagnostics.** With **Keep both analysis passes** on (Settings → Cameras → Vision Analysis), each event now retains the quick and detailed pass results separately — entity, timing, attachment count, and text — viewable in the event detail so you can tell which pass wrote a given summary. Bundles Ted's Cards v0.9.98.
+- **Vision two-pass diagnostics.** With **Enable analysis debugging** on (Settings → Cameras → Vision Analysis), each event now retains the quick and detailed pass results separately — entity, timing, attachment count, and text — viewable in the event detail so you can tell which pass wrote a given summary. Bundles Ted's Cards v0.9.98.
 
 ### v0.9.108
 

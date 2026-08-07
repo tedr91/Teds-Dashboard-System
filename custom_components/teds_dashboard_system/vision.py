@@ -1371,30 +1371,55 @@ class VisionEngine:
         object_context: str = "", capture: list | None = None,
     ) -> dict | None:
         """Run ONE analysis pass. When `capture` is a list, append a debug record describing
-        what this pass was actually given and what it returned."""
-        started = time.monotonic()
-        result = await self._analyze(
-            camera_id, cam_name, area_name, event_type, attach,
-            entity_id=entity, object_context=object_context,
+        what this pass was actually given and what it returned.
+
+        When analysis debugging is on AND `vision_ai_task_entity_ab` is configured, the
+        SAME attachments are additionally sent to that entity concurrently, purely to
+        compare models. The A/B result is recorded for display and discarded otherwise —
+        it can never be published."""
+
+        async def _one(lbl: str, ent: str | None) -> dict | None:
+            started = time.monotonic()
+            result = await self._analyze(
+                camera_id, cam_name, area_name, event_type, attach,
+                entity_id=ent, object_context=object_context,
+            )
+            if capture is not None:
+                capture.append({
+                    "pass": lbl,
+                    "entity_id": ent,
+                    "attachments": len(attach),
+                    # Whether the model actually received video, or stills standing in for it.
+                    "input": "video" if any(
+                        str(a.get("media_content_type") or "").startswith("video/") for a in attach
+                    ) else "stills",
+                    "duration_ms": int((time.monotonic() - started) * 1000),
+                    "published": False,
+                    "severity": (result or {}).get("severity"),
+                    "false_alarm": (result or {}).get("false_alarm"),
+                    "short_summary": (result or {}).get("short_summary"),
+                    "long_summary": (result or {}).get("long_summary"),
+                    "failed": result is None,
+                })
+            return result
+
+        # `capture is not None` IS the debug gate — it is only a list when
+        # vision_debug_passes is on, so no extra check is needed.
+        ab_entity = (
+            (self._settings().get("vision_ai_task_entity_ab") or None)
+            if capture is not None else None
         )
-        if capture is not None:
-            capture.append({
-                "pass": label,
-                "entity_id": entity,
-                "attachments": len(attach),
-                # Whether the model actually received video, or stills standing in for it.
-                "input": "video" if any(
-                    str(a.get("media_content_type") or "").startswith("video/") for a in attach
-                ) else "stills",
-                "duration_ms": int((time.monotonic() - started) * 1000),
-                "published": False,
-                "severity": (result or {}).get("severity"),
-                "false_alarm": (result or {}).get("false_alarm"),
-                "short_summary": (result or {}).get("short_summary"),
-                "long_summary": (result or {}).get("long_summary"),
-                "failed": result is None,
-            })
-        return result
+        if not ab_entity or ab_entity == entity:
+            return await _one(label, entity)
+
+        async def _ab() -> None:
+            try:
+                await _one(f"{label}_ab", ab_entity)
+            except Exception:  # noqa: BLE001 - the A/B pass must never break the real one
+                _LOGGER.debug("Vision: A/B pass failed for %s", camera_id, exc_info=True)
+
+        primary, _ = await asyncio.gather(_one(label, entity), _ab())
+        return primary
 
     @staticmethod
     def _mark_published(capture: list | None, label: str) -> None:
