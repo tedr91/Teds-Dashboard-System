@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.113
+
+- **More reliable Vision descriptions of direction and sequence.** Frigate's labelled reference snapshot can come from the middle or end of an event, but it was presented as image #1 ahead of the chronological frames — so the model saw timestamps out of order and sometimes flipped the direction of travel or “loading vs unloading” between identical runs. The analysis prompt now tells the model that image #1 is a reference outside the sequence and to use only the remaining, chronologically-ordered frames for direction and order of events.
+
 ### v0.9.112
 
 - **Vision analysis costs several-fold less, predictably across models.** Every image is now downscaled before it's sent (longest edge 1024 px by default), the number of images is a single total budget (default 5, including Frigate's labelled snapshot) instead of a growing pile, Pass 1 now sends only the live frames where Frigate tracked the object (down from all ~11), and both passes send fewer images on quiet events (scaled to how much the object actually moved). Set **Max image size** to 0 to restore full resolution. Bundles Ted's Cards v0.9.100.

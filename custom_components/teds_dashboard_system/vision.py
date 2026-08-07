@@ -106,7 +106,11 @@ QUICK_WINDOW_SECONDS = 10
 _LABELLED_SNAPSHOT_NOTE = (
     "The FIRST image is a labelled reference frame from Frigate showing the tracked "
     "object outlined by a bounding box with its label. Use it to identify the subject, "
-    "then describe that subject across the frames.\n"
+    "then describe that subject across the frames. This reference frame may come from "
+    "ANY point during the event and is NOT part of the chronological sequence — ignore "
+    "its timestamp when reasoning about order. The REMAINING images are in "
+    "chronological order, earliest first; use only those to determine direction of "
+    "travel and the sequence of actions.\n"
 )
 
 
