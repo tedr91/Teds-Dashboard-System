@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.112
+
+- **Vision analysis costs several-fold less, predictably across models.** Every image is now downscaled before it's sent (longest edge 1024 px by default), the number of images is a single total budget (default 5, including Frigate's labelled snapshot) instead of a growing pile, Pass 1 now sends only the live frames where Frigate tracked the object (down from all ~11), and both passes send fewer images on quiet events (scaled to how much the object actually moved). Set **Max image size** to 0 to restore full resolution. Bundles Ted's Cards v0.9.100.
+
 ### v0.9.111
 
 - **Vision Pass 2 now extracts frames where the object actually was.** Instead of sampling stills at a fixed interval across the whole clip (which mostly captured empty pre/post-capture padding), TDS reads Frigate's tracked-object path for the event and pulls frames from those moments — self-calibrating the clip alignment and falling back to even sampling if Frigate is unreachable. Measured ~+65% more distinct object positions per event at the same frame budget, so the AI describes the action rather than the static scene.

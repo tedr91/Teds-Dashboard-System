@@ -593,11 +593,30 @@ class VisionEngine:
         tmp_dir = os.path.join(media[1], tmp_rel)
         entity = settings.get("vision_ai_task_entity") or preferred_image_ai_task_entity(self.hass)
         capture = rec["passes"] if settings.get("vision_debug_passes") else None
+        scale = self._scale_filter(settings)
         try:
-            attach = await self._sample_live_frames(
+            candidates = await self._sample_live_frames(
                 camera_id, media, tmp_rel, tmp_dir, rec["stop"],
             )
-            snap = await self._frigate_snapshot_attachment(event_id, media, tmp_rel, tmp_dir)
+            snap = await self._frigate_snapshot_attachment(
+                event_id, media, tmp_rel, tmp_dir, scale,
+            )
+            # Budget the TOTAL images (snapshot + selected live stills) and shrink to how
+            # much the object actually moved. Frigate's path_data is populated live, so this
+            # works before the clip exists.
+            meta = await async_frigate_event_meta(self.hass, event_id)
+            budget = max(1, max(2, int(settings.get("vision_frame_count") or 5)) - (1 if snap else 0))
+            if settings.get("vision_frame_adaptive", True):
+                budget = self._adaptive_frame_count(meta, budget)
+            chosen = await self._select_live_frames(event_id, candidates, budget, meta=meta)
+            # Only the survivors are resized (one ffmpeg call each), not all captured stills.
+            attach: list[dict] = []
+            for fr in chosen:
+                usable = await self._downscale_jpeg(fr["path"], f"{fr['path'][:-4]}_s.jpg", scale)
+                attach.append({
+                    "media_content_id": f"media-source://media_source/{media[0]}/{tmp_rel}/{os.path.basename(usable)}",
+                    "media_content_type": "image/jpeg",
+                })
             if snap is not None:
                 attach = [snap, *attach]
                 object_context = (object_context or "") + _LABELLED_SNAPSHOT_NOTE
@@ -624,8 +643,9 @@ class VisionEngine:
         stop: asyncio.Event,
     ) -> list[dict]:
         """Grab one live camera still per second for up to QUICK_WINDOW_SECONDS, stopping
-        early when `stop` fires (the review ended). Keeps whatever it already collected, so a
-        3-second event still yields 3-4 frames."""
+        early when `stop` fires (the review ended). Returns capture CANDIDATES ({ts, path,
+        name}); selection + attachment building happen later, so a 3-second event still
+        yields 3-4 frames to choose from."""
         from homeassistant.components.camera import async_get_image  # noqa: PLC0415
 
         await self.hass.async_add_executor_job(lambda: os.makedirs(tmp_dir, exist_ok=True))
@@ -637,13 +657,13 @@ class VisionEngine:
                 image = None
             if image is not None and image.content:
                 name = f"qw_{i:02d}.jpg"
-                await self.hass.async_add_executor_job(
-                    _write_bytes, os.path.join(tmp_dir, name), image.content,
-                )
-                out.append({
-                    "media_content_id": f"media-source://media_source/{media[0]}/{tmp_rel}/{name}",
-                    "media_content_type": "image/jpeg",
-                })
+                path = os.path.join(tmp_dir, name)
+                await self.hass.async_add_executor_job(_write_bytes, path, image.content)
+                # A live still fetched at wall-clock T shows the scene slightly BEFORE T
+                # (RTSP/HLS buffering, ~1-3s) while Frigate's path timestamps come from the
+                # detect stream. At 1 fps this rarely changes which second is picked, so no
+                # compensation is applied — noted so it isn't mistaken for a bug.
+                out.append({"ts": time.time(), "path": path, "name": name})
             if stop.is_set():
                 break
             try:
@@ -653,20 +673,69 @@ class VisionEngine:
                 pass             # normal 1-second tick
         return out
 
+    async def _select_live_frames(
+        self, event_id: str, frames: list[dict], count: int, meta: dict | None = None,
+    ) -> list[dict]:
+        """Pick up to `count` of the captured live stills, favouring the moments Frigate
+        actually tracked the object.
+
+        Mirrors `_frigate_path_offsets`: spread the pick evenly across the path list BY
+        INDEX (not by time), because Frigate emits points more densely during real motion.
+        Degrades to an even spread over whatever we captured.
+
+        NOTE: under a synthetic MQTT replay of an old event the live camera shows the scene
+        NOW, not the recorded event — pass 1's cost/latency stay valid but its summary does
+        not. Only pass 2 is fully reproducible under replay.
+        """
+        if not frames:
+            return []
+        if count >= len(frames):
+            return frames
+        try:
+            if meta is None:
+                meta = await async_frigate_event_meta(self.hass, event_id)
+            path = ((meta or {}).get("data") or {}).get("path_data") or []
+            stamps = sorted(
+                float(p[1]) for p in path
+                if isinstance(p, list) and len(p) > 1 and isinstance(p[1], (int, float))
+            )
+            if len(stamps) >= 2:
+                last = len(stamps) - 1
+                picks = (
+                    [stamps[round(k * last / max(1, count - 1))] for k in range(count)]
+                    if count > 1 else [stamps[last // 2]]
+                )
+                chosen: list[int] = []
+                for ts in picks:
+                    # nearest captured frame to this tracked moment
+                    i = min(range(len(frames)), key=lambda j: abs(frames[j]["ts"] - ts))
+                    if i not in chosen:
+                        chosen.append(i)
+                if chosen:
+                    return [frames[i] for i in sorted(chosen)]
+        except Exception:  # noqa: BLE001 - any surprise -> even spread
+            _LOGGER.debug("Vision: live path selection failed for %s", event_id, exc_info=True)
+        # Fallback: even spread across what we captured (still better than sending all).
+        last = len(frames) - 1
+        idx = sorted({round(k * last / max(1, count - 1)) for k in range(count)})
+        return [frames[i] for i in idx]
+
     async def _frigate_snapshot_attachment(
         self, event_id: str, media: tuple, tmp_rel: str, tmp_dir: str,
+        scale: str | None = None,
     ) -> dict | None:
-        """Frigate's labelled snapshot (bounding box + label burned in). Best-effort — it may
-        not exist yet this early in a review, in which case pass 1 runs without it."""
+        """Frigate's labelled snapshot (bounding box + label burned in), downscaled to the
+        configured size. Best-effort — it may not exist yet this early in a review, in which
+        case the caller runs without it."""
         blob = await self._download_frigate(event_id, "snapshot.jpg")
         if blob is None:
             return None
         await self.hass.async_add_executor_job(lambda: os.makedirs(tmp_dir, exist_ok=True))
-        await self.hass.async_add_executor_job(
-            _write_bytes, os.path.join(tmp_dir, "snapshot.jpg"), blob,
-        )
+        src = os.path.join(tmp_dir, "snapshot.jpg")
+        await self.hass.async_add_executor_job(_write_bytes, src, blob)
+        usable = await self._downscale_jpeg(src, os.path.join(tmp_dir, "snapshot_s.jpg"), scale)
         return {
-            "media_content_id": f"media-source://media_source/{media[0]}/{tmp_rel}/snapshot.jpg",
+            "media_content_id": f"media-source://media_source/{media[0]}/{tmp_rel}/{os.path.basename(usable)}",
             "media_content_type": "image/jpeg",
         }
 
@@ -830,29 +899,36 @@ class VisionEngine:
                     }]
                     object_context = (object_context or "") + _LABELLED_SNAPSHOT_NOTE
                 else:
+                    scale = self._scale_filter(settings)
+                    # Fetch the labelled snapshot FIRST so the frame budget knows image #1
+                    # is already taken (it's the highest-value image — the only one that
+                    # unambiguously identifies which object to describe).
+                    snap = await self._frigate_snapshot_attachment(
+                        event_id, media, tmp_rel, tmp_dir, scale,
+                    )
                     if _entity_supports_video(self.hass, detailed_entity):
                         full_attach = [{
                             "media_content_id": f"media-source://media_source/{media[0]}/{tmp_rel}/clip.mp4",
                             "media_content_type": "video/mp4",
                         }]
                     else:
-                        # Stills spanning the WHOLE clip — pass 2's job is "what happened",
-                        # and pass 1 already covered the opening seconds live.
-                        count = max(1, int(settings.get("vision_frame_count") or 3))
+                        # Stills anchored where Frigate tracked the object; pass 1 already
+                        # covered the opening seconds live. `vision_frame_count` is the TOTAL
+                        # image budget, so the snapshot's slot comes out of it.
+                        total = max(2, int(settings.get("vision_frame_count") or 5))
+                        extract_budget = max(1, total - (1 if snap else 0))
                         full_attach = [
                             {
                                 "media_content_id": f"media-source://media_source/{media[0]}/{tmp_rel}/{os.path.basename(fp)}",
                                 "media_content_type": "image/jpeg",
                             }
                             for fp in await self._extract_frames(
-                                local, tmp_dir, count, event_id=event_id,
+                                local, tmp_dir, extract_budget, event_id=event_id,
+                                scale=scale, adaptive=bool(settings.get("vision_frame_adaptive", True)),
                             )
                         ]
                     # The extracted frames are RAW (no boxes); Frigate's snapshot.jpg has the
                     # tracked object outlined + labelled. Prepend it as a reference frame.
-                    snap = await self._frigate_snapshot_attachment(
-                        event_id, media, tmp_rel, tmp_dir,
-                    )
                     if snap is not None:
                         full_attach = [snap, *full_attach]
                         object_context = (object_context or "") + _LABELLED_SNAPSHOT_NOTE
@@ -890,8 +966,79 @@ class VisionEngine:
         except Exception:  # noqa: BLE001 - media may not be ready yet; fall back gracefully
             return None
 
+    def _scale_filter(self, settings: dict) -> str | None:
+        """ffmpeg -vf fragment that caps the longest edge, preserving aspect ratio.
+
+        `min(W,iw)` guarantees we never upscale a frame that is already smaller;
+        `-2` keeps the other edge even. The comma inside min() must be backslash-
+        escaped or ffmpeg reads it as a filter separator.
+        """
+        try:
+            w = int(settings.get("vision_frame_width") or 0)
+        except (TypeError, ValueError):
+            return None
+        if w < 64:
+            return None
+        return f"scale=min({w}\\,iw):-2:flags=lanczos"
+
+    async def _downscale_jpeg(self, src: str, dst: str, scale: str | None) -> str:
+        """Write a downscaled copy of a JPEG. Returns the path actually usable —
+        falls back to `src` if ffmpeg is unavailable or the resize fails, so a
+        resize problem can never cost us the image itself."""
+        if not scale:
+            return src
+        try:
+            from homeassistant.components import ffmpeg  # noqa: PLC0415
+
+            binary = ffmpeg.get_ffmpeg_manager(self.hass).binary
+            proc = await asyncio.create_subprocess_exec(
+                binary, "-y", "-i", src, "-vf", scale, "-q:v", "4", dst,
+                stdout=asyncio.subprocess.DEVNULL, stderr=asyncio.subprocess.DEVNULL,
+            )
+            await proc.communicate()
+            if await self.hass.async_add_executor_job(os.path.exists, dst):
+                return dst
+        except Exception:  # noqa: BLE001 - resizing is an optimisation, never a hard failure
+            _LOGGER.debug("Vision: downscale failed for %s", src, exc_info=True)
+        return src
+
+    def _adaptive_frame_count(self, meta: dict | None, budget: int) -> int:
+        """How many stills this event actually warrants, in [1, budget].
+
+        Scored on total normalised travel (path coords are 0-1 fractions of the
+        frame, so this is resolution-independent), with a bonus for long dwells
+        where the subject lingers without moving far.
+        """
+        if budget <= 1:
+            return max(1, budget)
+        try:
+            path = ((meta or {}).get("data") or {}).get("path_data") or []
+            pts = [
+                (float(p[0][0]), float(p[0][1]), float(p[1]))
+                for p in path
+                if isinstance(p, list) and len(p) > 1
+                and isinstance(p[0], (list, tuple)) and len(p[0]) > 1
+            ]
+            if len(pts) < 2:
+                return 1
+            travel = sum(
+                ((b[0] - a[0]) ** 2 + (b[1] - a[1]) ** 2) ** 0.5
+                for a, b in zip(pts, pts[1:])
+            )
+            span = pts[-1][2] - pts[0][2]
+            n = 1
+            for threshold in (0.10, 0.30, 0.60):
+                if travel > threshold:
+                    n += 1
+            if span >= 20:      # long dwell: buy one more look even without travel
+                n += 1
+            return max(1, min(budget, n))
+        except Exception:  # noqa: BLE001 - any surprise -> spend the full budget
+            return budget
+
     async def _frigate_path_offsets(
         self, event_id: str, count: int, clip_duration: float | None,
+        meta: dict | None = None,
     ) -> list[float]:
         """Offsets (seconds into the downloaded clip) where Frigate actually tracked the
         object, for pass-2 still extraction.
@@ -908,7 +1055,7 @@ class VisionEngine:
         if count < 1 or not clip_duration or clip_duration <= 0.5:
             return []
         try:
-            meta = await async_frigate_event_meta(self.hass, event_id)
+            meta = meta or await async_frigate_event_meta(self.hass, event_id)
             if not meta:
                 return []
             start = meta.get("start_time")
@@ -974,32 +1121,38 @@ class VisionEngine:
 
     async def _extract_frames(
         self, clip_path: str, out_dir: str, count: int, event_id: str | None = None,
+        scale: str | None = None, adaptive: bool = False,
     ) -> list[str]:
-        """ffmpeg-extract `count` stills from the clip.
+        """ffmpeg-extract stills from the clip, downscaled to `scale` when given.
 
-        When `event_id` is given and Frigate can tell us where it tracked the object,
-        the stills are taken at those moments; otherwise they're spread evenly across
-        the whole clip. Best-effort — any failure degrades to even sampling, then to
-        no frames at all."""
+        When `event_id` is given and Frigate can tell us where it tracked the object, the
+        stills are taken at those moments (and, with `adaptive`, only as many as the motion
+        warrants); otherwise they're spread evenly across the whole clip. Best-effort — any
+        failure degrades to even sampling, then to no frames at all."""
         pattern = os.path.join(out_dir, "ff_%02d.jpg")
         try:
             from homeassistant.components import ffmpeg  # noqa: PLC0415
 
             binary = ffmpeg.get_ffmpeg_manager(self.hass).binary
             duration = await self._probe_duration(binary, clip_path)
-            offsets = (
-                await self._frigate_path_offsets(event_id, max(1, count), duration)
-                if event_id else []
-            )
+            n = max(1, count)
+            offsets: list[float] = []
+            if event_id:
+                meta = await async_frigate_event_meta(self.hass, event_id)
+                if adaptive:
+                    n = self._adaptive_frame_count(meta, n)
+                offsets = await self._frigate_path_offsets(event_id, n, duration, meta=meta)
             if offsets:
                 # One fast+accurate seek per offset. `-ss` before `-i` seeks by keyframe
                 # then decodes forward, so it stays accurate without decoding the whole
                 # clip. Frames are numbered in time order to keep _list() sorted.
                 for idx, off in enumerate(offsets, start=1):
+                    args = [binary, "-y", "-ss", f"{off:.2f}", "-i", clip_path, "-frames:v", "1"]
+                    if scale:
+                        args += ["-vf", scale]
+                    args += ["-q:v", "4", os.path.join(out_dir, f"ff_{idx:02d}.jpg")]
                     proc = await asyncio.create_subprocess_exec(
-                        binary, "-y", "-ss", f"{off:.2f}", "-i", clip_path,
-                        "-frames:v", "1", os.path.join(out_dir, f"ff_{idx:02d}.jpg"),
-                        stdout=asyncio.subprocess.DEVNULL, stderr=asyncio.subprocess.DEVNULL,
+                        *args, stdout=asyncio.subprocess.DEVNULL, stderr=asyncio.subprocess.DEVNULL,
                     )
                     await proc.communicate()
                 _LOGGER.debug(
@@ -1007,11 +1160,14 @@ class VisionEngine:
                     len(offsets), event_id, [round(o, 2) for o in offsets],
                 )
             else:
-                # Evenly sample across the clip (fps = count/duration); fall back to 1 fps
-                # from the start when the duration can't be determined.
-                vf = f"fps={max(1, count)}/{duration:.2f}" if duration and duration > 0.5 else "fps=1"
+                # Evenly sample across the clip (fps = n/duration); fall back to 1 fps from
+                # the start when the duration can't be determined.
+                vf = f"fps={max(1, n)}/{duration:.2f}" if duration and duration > 0.5 else "fps=1"
+                if scale:
+                    vf = f"{vf},{scale}"
                 proc = await asyncio.create_subprocess_exec(
-                    binary, "-y", "-i", clip_path, "-vf", vf, "-frames:v", str(count), pattern,
+                    binary, "-y", "-i", clip_path, "-vf", vf, "-frames:v", str(n),
+                    "-q:v", "4", pattern,
                     stdout=asyncio.subprocess.DEVNULL, stderr=asyncio.subprocess.DEVNULL,
                 )
                 await proc.communicate()

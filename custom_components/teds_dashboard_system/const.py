@@ -146,7 +146,12 @@ SETTINGS_DEFAULTS = {
     "vision_capture_mode": "video",
     # Length of the capture window (seconds) and how many stills to grab across it.
     "vision_clip_seconds": 10,
-    "vision_frame_count": 3,
+    # TOTAL images sent to the model per pass, INCLUDING Frigate's labelled snapshot.
+    "vision_frame_count": 5,
+    # Longest-edge cap (px) for every image sent to the AI; 0 disables (full resolution).
+    "vision_frame_width": 1024,
+    # Scale the number of extracted frames to how much the object actually moved (1..count).
+    "vision_frame_adaptive": True,
     # What to do when the AI believes an event is a false alarm:
     #   "off" = ignore (act normally) | "log_only" = store the event but don't fire the
     #   trigger's actions | "drop" = don't store and don't fire.
