@@ -259,6 +259,19 @@ def _entity_supports_video(hass: HomeAssistant, entity_id: str | None) -> bool:
     return bool(entity_id) and _ai_task_platform(hass, entity_id) in VIDEO_CAPABLE_PLATFORMS
 
 
+def _entity_label(hass: HomeAssistant, entity_id: str | None) -> str:
+    """Friendly name for an ai_task entity, for debug notification titles.
+
+    `entity_id` is None when the pass let HA auto-pick the entity: `_analyze` omits
+    `entity_id` from the service call entirely and the ai_task response does not report
+    which entity served the request, so the resolved entity genuinely isn't knowable here.
+    """
+    if not entity_id:
+        return "auto-selected"
+    st = hass.states.get(entity_id)
+    return (st.attributes.get("friendly_name") if st else None) or entity_id
+
+
 def _as_bool(value: object) -> bool:
     """Coerce an ai_task structured value to bool — providers may return the string 'false',
     and bool('false') is True, which would flag every event as a false alarm."""
@@ -1365,6 +1378,55 @@ class VisionEngine:
             event["severity"] = event.get("severity") or "unknown"
             event["short_summary"] = "Analysis unavailable — check the AI Task setup."
 
+    _PASS_TITLES = {
+        "quick": "Pass 1", "detailed": "Pass 2", "single": "Single pass",
+        "quick_ab": "Pass 1 A/B", "detailed_ab": "Pass 2 A/B", "single_ab": "Single pass A/B",
+    }
+
+    async def _notify_debug_pass(
+        self, label: str, cam_name: str, entity: str | None, result: dict | None,
+        attachments: int, kind: str, elapsed_ms: int,
+    ) -> None:
+        """Emit one unscoped Info notification describing a single analysis pass.
+
+        Diagnostic only. Silent (play_sound=False) because a two-pass event with an
+        A/B entity emits four of these, and area=None would otherwise chime every
+        present device in the house four times per camera event.
+        """
+        pass_title = self._PASS_TITLES.get(label, label)
+        title = f"{pass_title} — {_entity_label(self.hass, entity)}"
+        secs = elapsed_ms / 1000
+        if result is None:
+            message = f"{cam_name}: FAILED after {secs:.1f}s"
+        else:
+            head = (
+                f"{cam_name} · {attachments} {kind} · {secs:.1f}s · "
+                f"{result.get('severity') or '?'}"
+                + (" · false alarm" if result.get("false_alarm") else "")
+            )
+            message = "\n".join([
+                head,
+                "",
+                result.get("short_summary") or "(no short summary)",
+                "",
+                result.get("long_summary") or "(no long summary)",
+            ])
+        try:
+            # NOT vision_event_id — see spec: that key lets update_vision_notifications
+            # overwrite this message and dismiss_vision_notifications delete it.
+            await self.manager.notify(
+                title=title,
+                message=message,
+                severity="info",
+                icon="mdi:bug-outline",
+                area=None,               # unscoped — visible everywhere
+                source="vision",
+                data={"debug_pass": label, "debug_entity_id": entity},
+                play_sound=False,
+            )
+        except Exception:  # noqa: BLE001 - a debug notification must never break analysis
+            _LOGGER.debug("Vision: debug pass notification failed for %s", label, exc_info=True)
+
     async def _run_pass(
         self, label: str, camera_id: str, cam_name: str, area_name: str | None,
         event_type: str, attach: list[dict], entity: str | None,
@@ -1384,16 +1446,18 @@ class VisionEngine:
                 camera_id, cam_name, area_name, event_type, attach,
                 entity_id=ent, object_context=object_context,
             )
+            elapsed_ms = int((time.monotonic() - started) * 1000)
+            kind = "video" if any(
+                str(a.get("media_content_type") or "").startswith("video/") for a in attach
+            ) else "stills"
             if capture is not None:
                 capture.append({
                     "pass": lbl,
                     "entity_id": ent,
                     "attachments": len(attach),
                     # Whether the model actually received video, or stills standing in for it.
-                    "input": "video" if any(
-                        str(a.get("media_content_type") or "").startswith("video/") for a in attach
-                    ) else "stills",
-                    "duration_ms": int((time.monotonic() - started) * 1000),
+                    "input": kind,
+                    "duration_ms": elapsed_ms,
                     "published": False,
                     "severity": (result or {}).get("severity"),
                     "false_alarm": (result or {}).get("false_alarm"),
@@ -1401,6 +1465,11 @@ class VisionEngine:
                     "long_summary": (result or {}).get("long_summary"),
                     "failed": result is None,
                 })
+                # Timing-independent debug view: one notification per pass, so each
+                # model's raw output is browsable even when passes race each other.
+                await self._notify_debug_pass(
+                    lbl, cam_name, ent, result, len(attach), kind, elapsed_ms,
+                )
             return result
 
         # `capture is not None` IS the debug gate — it is only a list when

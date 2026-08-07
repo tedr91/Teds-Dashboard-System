@@ -395,11 +395,11 @@ class TedsManager:
 
     async def notify(self, title, message, severity="info", icon=None, area=None,
                      actions=None, notif_id=None, timeout=None, persistence="normal",
-                     source="service", data=None):
+                     source="service", data=None, play_sound=True):
         self._add_notification(
             title=title, message=message, severity=severity, icon=icon, area=area,
             actions=actions, notif_id=notif_id, timeout=timeout, persistence=persistence,
-            source=source, data=data,
+            source=source, data=data, play_sound=play_sound,
         )
         await self._save()
         self._notify()

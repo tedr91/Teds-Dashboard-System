@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.115
+
+- **Analysis debugging now raises a notification per pass.** With **Enable analysis debugging** on, each analysis pass (including each A/B pass) posts a **silent** Info notification titled with the AI Task entity's friendly name and carrying its images/timing/severity and full summary — a timing-independent way to compare models straight from the notification center. The notifications are silent (a two-pass A/B event emits four), unscoped, and survive marking the event reviewed. Note they churn the notification list while debugging is on. Bundles Ted's Cards v0.9.102.
+
 ### v0.9.114
 
 - **Compare vision models side by side, live.** The **Enable analysis debugging** setting (renamed; now works in single-pass mode) gains an **AI Task entity — A/B pass**: when set, every analysis pass is also run in parallel against that entity with the exact same images, recorded in the event detail alongside the real result. The A/B result is never published — it can't change an event's summary, severity, or false-alarm handling — so you can benchmark a candidate model against production on genuinely identical input with no replay harness. Bundles Ted's Cards v0.9.101.
