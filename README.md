@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.104
+
+- Bundles Ted's Cards v0.9.94 (notification severity colors — each severity now drives a shared accent color, danger warmed to a clearer red, and the auto-hide navbar pill pulsates in the highest-severity unread notification's color).
+
 ### v0.9.103
 
 - Bundles Ted's Cards v0.9.93 (Calendar Card Agenda view: tighter day rows — the blank strip above each day trimmed to 1px).
