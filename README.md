@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.105
+
+- Bundles Ted's Cards v0.9.95 (Automatic Night Mode dark theme is now applied per-browser instead of via HA's account-wide theme, so devices sharing one HA user account no longer darken each other).
+
 ### v0.9.104
 
 - Bundles Ted's Cards v0.9.94 (notification severity colors — each severity now drives a shared accent color, danger warmed to a clearer red, and the auto-hide navbar pill pulsates in the highest-severity unread notification's color).
