@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.117
+
+- **Animated Vision previews.** The stills that were analyzed for each Frigate event are now retained (in the served vision cache) so the Cameras view's Vision timeline can **loop them like Frigate's own preview thumbnails**, showing the motion at a glance instead of one frozen frame. The frames are pruned along with their event (on clear, delete, or when the event ages out), and the detail sheet falls back to the same loop when an event has no clip. Bundles Ted's Cards v0.9.103.
+
 ### v0.9.116
 
 - **Clearing or deleting Vision events now also clears their notifications.** Marking an event reviewed already cleared its notification, but the Cameras view's **Clear all** and deleting a single event left the matching notifications behind. Both now dismiss the notifications a vision event's toast created, on every device (sticky ones are marked read).

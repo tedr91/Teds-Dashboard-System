@@ -795,9 +795,10 @@ class VisionEngine:
 
         object_context = self._object_context(objects or [], zones or [])
         label = "detailed" if s.get("vision_two_pass", True) else "single"
+        preview: dict = {}
         analysis = await self._analyze_frigate(
             camera_id, cam_name, area_name, event_type, event_id, True, s,
-            object_context=object_context, capture=passes, label=label,
+            object_context=object_context, capture=passes, label=label, preview_out=preview,
         )
         # Pass 2 has landed: pass 1 must not overwrite it if it is somehow still in flight.
         if pending:
@@ -848,7 +849,8 @@ class VisionEngine:
                 "status": "complete",
                 "discarded": discarded,
                 "analysis_passes": passes or None,
-                "_files": {},
+                "frame_urls": preview.get("urls") or None,
+                "_files": {"frame_preview_paths": preview.get("paths") or []},
             }
             dropped = await self.manager.add_vision_event(event)
             if dropped:
@@ -876,6 +878,9 @@ class VisionEngine:
                 patch["short_summary"] = analysis["short_summary"]
         if passes:
             patch["analysis_passes"] = passes
+        if preview.get("urls"):
+            patch["frame_urls"] = preview["urls"]
+            patch["_files"] = {"frame_preview_paths": preview["paths"]}
         if discarded:
             patch["discarded"] = True  # kept but flagged (log-only discard)
         await self.manager.update_vision_event(tds_id, **patch)
@@ -889,7 +894,7 @@ class VisionEngine:
         self, camera_id: str, cam_name: str, area_name: str | None,
         event_type: str, event_id: str, has_clip: bool, settings: dict,
         object_context: str = "", capture: list | None = None,
-        label: str = "detailed",
+        label: str = "detailed", preview_out: dict | None = None,
     ) -> dict | None:
         """PASS 2 — the detailed analysis of Frigate's FINISHED clip. Pass 1 already ran live
         at review start, so there is no race here and no quick attachment set. Downloads the
@@ -934,16 +939,23 @@ class VisionEngine:
                         # image budget, so the snapshot's slot comes out of it.
                         total = max(2, int(settings.get("vision_frame_count") or 5))
                         extract_budget = max(1, total - (1 if snap else 0))
+                        frame_files = await self._extract_frames(
+                            local, tmp_dir, extract_budget, event_id=event_id,
+                            scale=scale, adaptive=bool(settings.get("vision_frame_adaptive", True)),
+                        )
                         full_attach = [
                             {
                                 "media_content_id": f"media-source://media_source/{media[0]}/{tmp_rel}/{os.path.basename(fp)}",
                                 "media_content_type": "image/jpeg",
                             }
-                            for fp in await self._extract_frames(
-                                local, tmp_dir, extract_budget, event_id=event_id,
-                                scale=scale, adaptive=bool(settings.get("vision_frame_adaptive", True)),
-                            )
+                            for fp in frame_files
                         ]
+                        # Retain the anchored stills in the served cache so the timeline can
+                        # loop them as an animated preview (like Frigate's).
+                        if preview_out is not None:
+                            urls, paths = await self._store_preview_frames(event_id, frame_files)
+                            preview_out["urls"] = urls
+                            preview_out["paths"] = paths
                     # The extracted frames are RAW (no boxes); Frigate's snapshot.jpg has the
                     # tracked object outlined + labelled. Prepend it as a reference frame.
                     if snap is not None:
@@ -964,6 +976,31 @@ class VisionEngine:
             if tmp_dir:
                 await self.hass.async_add_executor_job(_rmtree_quiet, tmp_dir)
 
+    async def _store_preview_frames(
+        self, event_id: str, frame_paths: list[str],
+    ) -> tuple[list[str], list[str]]:
+        """Copy the analysed stills into the served vision cache so the timeline can loop
+        them as an animated preview (Frigate-style). Returns (urls, local_paths); empty when
+        there is nothing worth looping. Best-effort — a copy failure just drops that frame."""
+        if not self.cache_dir or len(frame_paths) < 2:
+            return [], []
+        cache_dir = self.cache_dir
+
+        def _copy() -> tuple[list[str], list[str]]:
+            import shutil  # noqa: PLC0415
+            urls: list[str] = []
+            paths: list[str] = []
+            for i, src in enumerate(frame_paths):
+                dst = os.path.join(cache_dir, f"{event_id}_f{i:02d}.jpg")
+                try:
+                    shutil.copyfile(src, dst)
+                except OSError:
+                    continue
+                paths.append(dst)
+                urls.append(f"/teds_dashboard_system/vision_cache/{os.path.basename(dst)}")
+            return urls, paths
+
+        return await self.hass.async_add_executor_job(_copy)
 
     async def _download_frigate(self, event_id: str, asset: str) -> bytes | None:
         """Fetch a Frigate notification-API asset (clip.mp4 / snapshot.jpg) over HTTP."""
@@ -1888,6 +1925,7 @@ class VisionEngine:
                 if files.get(key):
                     paths.append(files[key])
             paths.extend(files.get("frame_paths") or [])
+            paths.extend(files.get("frame_preview_paths") or [])
             if files.get("frame_dir"):
                 dirs.append(files["frame_dir"])
         if paths or dirs:
