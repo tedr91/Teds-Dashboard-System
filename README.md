@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.118
+
+- **Fixed: the diagnostic A/B model could freeze event processing.** When analysis debugging's A/B entity **hung** (rather than erroring — e.g. an Ollama model that never loads), the event stayed at “analyzing” forever even though the real analysis had already succeeded. The A/B comparison now runs fully detached from the real pass with a 120s ceiling, so a slow or stuck A/B model can never delay or block an event; a timed-out A/B pass logs a warning and posts a FAILED debug notification. Analysis debugging is off by default, so most installs were unaffected.
+
 ### v0.9.117
 
 - **Animated Vision previews.** The stills that were analyzed for each Frigate event are now retained (in the served vision cache) so the Cameras view's Vision timeline can **loop them like Frigate's own preview thumbnails**, showing the motion at a glance instead of one frozen frame. The frames are pruned along with their event (on clear, delete, or when the event ages out), and the detail sheet falls back to the same loop when an event has no clip. Bundles Ted's Cards v0.9.103.

@@ -103,6 +103,11 @@ VIDEO_CAPABLE_PLATFORMS = frozenset({
 # becomes an alert — it must never wait for Frigate's clip, which only exists at review end.
 QUICK_WINDOW_SECONDS = 10
 
+# Hard ceiling on the diagnostic A/B pass. Local Ollama models legitimately take 10-20s
+# (17.2s observed for glimpse-v1), so this is generous — it exists only to stop a hung
+# entity leaking a background task forever, not to police slow models.
+_AB_PASS_TIMEOUT = 120
+
 _LABELLED_SNAPSHOT_NOTE = (
     "The FIRST image is a labelled reference frame from Frigate showing the tracked "
     "object outlined by a bounding box with its label. Use it to identify the subject, "
@@ -1519,13 +1524,29 @@ class VisionEngine:
             return await _one(label, entity)
 
         async def _ab() -> None:
+            """Diagnostic only. DETACHED from the primary pass on purpose: gathering it
+            meant a hung A/B entity blocked the event from ever completing (it sat at
+            'analyzing' forever, even though the real analysis had succeeded).
+            Never await this from the analysis path."""
             try:
-                await _one(f"{label}_ab", ab_entity)
+                async with asyncio.timeout(_AB_PASS_TIMEOUT):
+                    await _one(f"{label}_ab", ab_entity)
+            except TimeoutError:
+                _LOGGER.warning(
+                    "Ted's Vision: A/B pass %s timed out after %ss on %s",
+                    label, _AB_PASS_TIMEOUT, ab_entity,
+                )
+                await self._notify_debug_pass(
+                    f"{label}_ab", cam_name, ab_entity, None,
+                    len(attach), "stills", _AB_PASS_TIMEOUT * 1000,
+                )
             except Exception:  # noqa: BLE001 - the A/B pass must never break the real one
                 _LOGGER.debug("Vision: A/B pass failed for %s", camera_id, exc_info=True)
 
-        primary, _ = await asyncio.gather(_one(label, entity), _ab())
-        return primary
+        # Fire-and-forget: HA owns the task, cancels it on shutdown, and keeps a strong
+        # reference so it is not garbage-collected mid-flight.
+        self.hass.async_create_background_task(_ab(), f"tds-vision-ab-{label}")
+        return await _one(label, entity)
 
     @staticmethod
     def _mark_published(capture: list | None, label: str) -> None:
