@@ -93,6 +93,10 @@ frontend:
 
 - **More accurate Vision descriptions.** Fixed three issues that made AI summaries describe the wrong thing: the prompt's example sentences were being copied verbatim (removed them); the model wasn't told which object Frigate actually tracked (it's now given the tracked object, its zones, and Frigate's labelled bounding-box snapshot as a reference frame); and the analyzed clip could be picked from the wrong detection (now always the earliest-started one that opened the review).
 
+### v0.9.106
+
+- Bundles Ted's Cards v0.9.96 (navbar: the voice Assist mic moved to the Left section, after the weather item; the Nightstand device type no longer auto-hides its navbar).
+
 ### v0.9.95
 
 - Bundles Ted's Cards v0.9.89 (Calendar Card Agenda view: long event titles now truncate with “…” inside the card instead of overflowing past its right edge).

@@ -211,7 +211,8 @@ SETTINGS_DEFAULTS = {
                 {
                     "type": "weather",
                     "tap_action": {"action": "navigate-dashboard", "dashboard": "weather_dashboard"},
-                }
+                },
+                {"type": "assist"},
             ]
         },
         {"items": []},
@@ -219,7 +220,6 @@ SETTINGS_DEFAULTS = {
         {"items": []},
         {
             "items": [
-                {"type": "assist"},
                 {"type": "timers"},
                 {"type": "alarms"},
                 {
