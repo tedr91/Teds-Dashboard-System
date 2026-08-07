@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.108
+
+- Welcome view: the setup/requirement prompts (Register device, Re-check requirements, Frigate, backend-not-installed) now use the same default card styling as the rest of the boxes instead of the darker Ted's Style surface.
+
 ### v0.9.107
 
 - Bundles Ted's Cards v0.9.97. The **Cameras and Vision views are now combined** — the Vision timeline is a tab inside the Cameras view that disappears when Vision Analysis is off (deep-link with `?tab=cameras` / `?tab=vision`). Also nudges the Calendar Agenda day-row spacing to 2px.

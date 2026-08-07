@@ -59,7 +59,6 @@ cards:
       # one-tap register (falls back to the Browser Mod panel). Only shown once
       # Browser Mod is installed + set up.
       - type: custom:ted-messagebox-card
-        theme: ted-style
         severity: warning
         icon: mdi:cellphone-cog
         title: Register this device with Browser Mod
@@ -82,7 +81,6 @@ cards:
       # HA start, a dashboard reload, or every ~10 min). Only shown once the backend
       # (which provides the service) is connected.
       - type: custom:ted-messagebox-card
-        theme: ted-style
         severity: tip
         icon: mdi:refresh
         title: Did you recently install or setup an integration?
@@ -103,7 +101,6 @@ cards:
       # own camera list — offer a one-time switch to Frigate. (With no camera list yet,
       # the backend auto-adopts silently, so this box never appears in that case.)
       - type: custom:ted-messagebox-card
-        theme: ted-style
         severity: tip
         icon: mdi:cctv
         title: Use Frigate as your camera source?
@@ -122,7 +119,6 @@ cards:
       # Backend integration — the funnel; shows only when it's absent (which is
       # also what unlocks every other check below).
       - type: custom:ted-messagebox-card
-        theme: ted-style
         severity: danger
         icon: mdi:alert-octagon
         title: Ted's Dashboard System not installed
