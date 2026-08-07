@@ -151,6 +151,8 @@ SETTINGS_DEFAULTS = {
     #   "off" = ignore (act normally) | "log_only" = store the event but don't fire the
     #   trigger's actions | "drop" = don't store and don't fire.
     "vision_false_alarm_mode": "log_only",
+    # Diagnostic: retain both analysis-pass results (quick + detailed) on each event.
+    "vision_debug_passes": False,
     # Cap on stored analyzed events (older pruned, with their snapshot/clip files).
     "vision_retention_max": 200,
     # Frigate integration (only meaningful when Frigate is the adopted camera source):

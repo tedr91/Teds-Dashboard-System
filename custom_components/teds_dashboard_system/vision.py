@@ -562,9 +562,10 @@ class VisionEngine:
             on_quick = _push_quick
 
         object_context = self._object_context(objects or [], zones or [])
+        passes: list | None = [] if s.get("vision_debug_passes") else None
         analysis = await self._analyze_frigate(
             camera_id, cam_name, area_name, event_type, event_id, True, s,
-            on_quick=on_quick, object_context=object_context,
+            on_quick=on_quick, object_context=object_context, capture=passes,
         )
         # Defensive backstop: the model intermittently flags false_alarm on clips its own
         # summary describes as real activity. When Frigate independently tracked an object,
@@ -610,6 +611,7 @@ class VisionEngine:
                 "frigate_review_id": review_id,
                 "status": "complete",
                 "discarded": discarded,
+                "analysis_passes": passes or None,
                 "_files": {},
             }
             dropped = await self.manager.add_vision_event(event)
@@ -632,6 +634,8 @@ class VisionEngine:
             patch["long_summary"] = analysis.get("long_summary") or ""
             if analysis.get("short_summary"):
                 patch["short_summary"] = analysis["short_summary"]
+        if passes:
+            patch["analysis_passes"] = passes
         if discarded:
             patch["discarded"] = True  # kept but flagged (log-only discard)
         await self.manager.update_vision_event(tds_id, **patch)
@@ -644,7 +648,7 @@ class VisionEngine:
     async def _analyze_frigate(
         self, camera_id: str, cam_name: str, area_name: str | None,
         event_type: str, event_id: str, has_clip: bool, settings: dict,
-        on_quick=None, object_context: str = "",
+        on_quick=None, object_context: str = "", capture: list | None = None,
     ) -> dict | None:
         """Run the AI analysis on Frigate's clip/snapshot. Downloads the media to a temp
         location ONCE, builds a quick (early-frames) and detailed (full-clip) attachment set
@@ -720,7 +724,7 @@ class VisionEngine:
             return await self._staged_analyze(
                 camera_id, cam_name, area_name, event_type,
                 quick_attach or full_attach, quick_entity, full_attach, detailed_entity,
-                two_pass, on_quick, object_context=object_context,
+                two_pass, on_quick, object_context=object_context, capture=capture,
             )
         finally:
             if tmp_dir:
@@ -866,11 +870,15 @@ class VisionEngine:
         async def _push_quick(patch: dict) -> None:
             await self.manager.update_vision_event(event_id, status="analyzing", **patch)
 
+        passes: list | None = [] if s.get("vision_debug_passes") else None
         final = await self._staged_analyze(
             camera_id, cam_name, area_name, event_type,
             quick_attach, quick_entity, full_attach, detailed_entity, two_pass, _push_quick,
+            capture=passes,
         )
         self._apply_analysis(event, final)
+        if passes:
+            event["analysis_passes"] = passes
         await self.manager.update_vision_event(
             event_id,
             status="complete",
@@ -878,6 +886,7 @@ class VisionEngine:
             false_alarm=event["false_alarm"],
             short_summary=event["short_summary"],
             long_summary=event["long_summary"],
+            **({"analysis_passes": passes} if passes else {}),
         )
 
         # Discard on the FINAL result: a false alarm, or a severity the user chose to
@@ -951,37 +960,65 @@ class VisionEngine:
         quick_attach: list[dict], quick_entity: str | None,
         full_attach: list[dict], detailed_entity: str | None,
         two_pass: bool, on_quick, object_context: str = "",
+        capture: list | None = None,
     ) -> dict | None:
         """Run the AI. Single-pass = one detailed full analysis. Two-pass = a quick pass and
         the detailed pass concurrently; the quick result is published (via ``on_quick``) only
-        if the detailed pass hasn't already finished. Returns the detailed result."""
-        if not two_pass or (quick_attach == full_attach and quick_entity == detailed_entity):
-            return await self._analyze(
-                camera_id, cam_name, area_name, event_type, full_attach,
-                entity_id=detailed_entity, object_context=object_context,
+        if the detailed pass hasn't already finished. Returns the detailed result.
+
+        When ``capture`` is a list, each pass appends a debug record to it (label, entity,
+        attachment count, elapsed ms, whether it reached the UI, and its full result)."""
+
+        async def _run(label: str, attach: list[dict], entity: str | None) -> dict | None:
+            started = time.monotonic()
+            result = await self._analyze(
+                camera_id, cam_name, area_name, event_type, attach,
+                entity_id=entity, object_context=object_context,
             )
+            if capture is not None:
+                capture.append({
+                    "pass": label,
+                    "entity_id": entity,
+                    "attachments": len(attach),
+                    "duration_ms": int((time.monotonic() - started) * 1000),
+                    "published": False,
+                    "severity": (result or {}).get("severity"),
+                    "false_alarm": (result or {}).get("false_alarm"),
+                    "short_summary": (result or {}).get("short_summary"),
+                    "long_summary": (result or {}).get("long_summary"),
+                    "failed": result is None,
+                })
+            return result
+
+        if not two_pass or (quick_attach == full_attach and quick_entity == detailed_entity):
+            result = await _run("single", full_attach, detailed_entity)
+            if capture:
+                capture[-1]["published"] = True
+            return result
         done = asyncio.Event()
         final: dict = {}
 
         async def _quick() -> None:
-            result = await self._analyze(
-                camera_id, cam_name, area_name, event_type, quick_attach,
-                entity_id=quick_entity, object_context=object_context,
-            )
+            result = await _run("quick", quick_attach, quick_entity)
             if done.is_set() or not result or on_quick is None:
                 return
+            if capture:
+                for rec in capture:
+                    if rec["pass"] == "quick":
+                        rec["published"] = True
             await on_quick(self._analysis_patch(result))
 
         async def _detailed() -> None:
-            result = await self._analyze(
-                camera_id, cam_name, area_name, event_type, full_attach,
-                entity_id=detailed_entity, object_context=object_context,
-            )
+            result = await _run("detailed", full_attach, detailed_entity)
             done.set()
             if result:
                 final.update(result)
 
         await asyncio.gather(_quick(), _detailed())
+        if capture:
+            for rec in capture:
+                if rec["pass"] == "detailed" and not rec.get("failed"):
+                    rec["published"] = True
         return final or None
 
     def _camera_context(self, camera_id: str) -> tuple[str | None, str | None, str]:

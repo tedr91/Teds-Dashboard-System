@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.109
+
+- **Vision two-pass diagnostics.** With **Keep both analysis passes** on (Settings → Cameras → Vision Analysis), each event now retains the quick and detailed pass results separately — entity, timing, attachment count, and text — viewable in the event detail so you can tell which pass wrote a given summary. Bundles Ted's Cards v0.9.98.
+
 ### v0.9.108
 
 - Welcome view: the setup/requirement prompts (Register device, Re-check requirements, Frigate, backend-not-installed) now use the same default card styling as the rest of the boxes instead of the darker Ted's Style surface.
