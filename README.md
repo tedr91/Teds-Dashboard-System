@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.111
+
+- **Vision Pass 2 now extracts frames where the object actually was.** Instead of sampling stills at a fixed interval across the whole clip (which mostly captured empty pre/post-capture padding), TDS reads Frigate's tracked-object path for the event and pulls frames from those moments — self-calibrating the clip alignment and falling back to even sampling if Frigate is unreachable. Measured ~+65% more distinct object positions per event at the same frame budget, so the AI describes the action rather than the static scene.
+
 ### v0.9.110
 
 - **Vision Pass 1 now runs live, at the start of the event — and both passes analyze the right object.** Previously the “quick” pass only ran after the clip finalized (so a summary didn't appear until the event ended), and a review that absorbed an earlier-started object could hand the detailed pass the *wrong* object's clip and snapshot. Pass 1 now samples the live camera the moment the alert fires (a real summary at ~T+12s), and the event that raised the alert is pinned so the clip, thumbnail, and labelled snapshot always match. Also fixes video-capable provider detection (Gemini) and gives each pass its own image set. Bundles Ted's Cards v0.9.99.

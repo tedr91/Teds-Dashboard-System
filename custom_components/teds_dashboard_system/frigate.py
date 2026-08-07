@@ -50,6 +50,53 @@ async def async_mark_frigate_reviewed(hass: HomeAssistant, review_ids: list[str]
         return False
 
 
+async def async_frigate_event_meta(hass: HomeAssistant, event_id: str) -> dict | None:
+    """Fetch one Frigate event's metadata (``GET /api/events/<id>``).
+
+    Used to read ``data.path_data`` — the tracked object's positions WITH timestamps —
+    so pass 2 can extract stills where the object actually was instead of at a fixed
+    interval. Returns None when Frigate isn't configured or is unreachable; callers
+    must degrade to their existing behaviour. Never raises.
+    """
+    from homeassistant.helpers.aiohttp_client import async_get_clientsession  # noqa: PLC0415
+
+    base = frigate_url(hass)
+    if not base or not event_id:
+        return None
+    try:
+        async with async_get_clientsession(hass).get(
+            f"{base}/api/events/{event_id}"
+        ) as resp:
+            if resp.status != 200:
+                _LOGGER.debug("Frigate event meta returned %s for %s", resp.status, event_id)
+                return None
+            data = await resp.json()
+            return data if isinstance(data, dict) else None
+    except Exception:  # noqa: BLE001 - Frigate unreachable / bad payload; non-fatal
+        _LOGGER.debug("Frigate event meta failed for %s", event_id, exc_info=True)
+        return None
+
+
+async def async_frigate_alert_pre_capture(hass: HomeAssistant) -> float:
+    """Frigate's configured ALERT pre-capture (seconds) — how long before an event's
+    ``start_time`` its clip begins. TDS only acts on alerts. Falls back to Frigate's
+    own default of 5 s. Never raises."""
+    from homeassistant.helpers.aiohttp_client import async_get_clientsession  # noqa: PLC0415
+
+    base = frigate_url(hass)
+    if not base:
+        return 5.0
+    try:
+        async with async_get_clientsession(hass).get(f"{base}/api/config") as resp:
+            if resp.status != 200:
+                return 5.0
+            cfg = await resp.json()
+        alerts = ((cfg.get("record") or {}).get("alerts") or {})
+        return float(alerts.get("pre_capture", 5) or 0)
+    except Exception:  # noqa: BLE001 - unreachable / unexpected shape
+        return 5.0
+
+
 def frigate_topic_prefix(hass: HomeAssistant) -> str:
     """Frigate's MQTT ``topic_prefix`` (default ``frigate``), read from its config."""
     for value in (hass.data.get(FRIGATE_DOMAIN) or {}).values():

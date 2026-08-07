@@ -24,7 +24,12 @@ from homeassistant.helpers.event import async_track_state_change_event
 from homeassistant.util import dt as dt_util
 
 from .const import DOMAIN, EVENT_NAVIGATE, EVENT_SETTINGS, MEDIA_FOLDER_NAME, VISION_SEVERITIES
-from .frigate import frigate_camera_entity, is_frigate_camera
+from .frigate import (
+    async_frigate_alert_pre_capture,
+    async_frigate_event_meta,
+    frigate_camera_entity,
+    is_frigate_camera,
+)
 from .vision_classify import (
     DETECTOR_KEYWORDS as _DETECTOR_KEYWORDS,
     classify_detector_type,
@@ -839,7 +844,9 @@ class VisionEngine:
                                 "media_content_id": f"media-source://media_source/{media[0]}/{tmp_rel}/{os.path.basename(fp)}",
                                 "media_content_type": "image/jpeg",
                             }
-                            for fp in await self._extract_frames(local, tmp_dir, count)
+                            for fp in await self._extract_frames(
+                                local, tmp_dir, count, event_id=event_id,
+                            )
                         ]
                     # The extracted frames are RAW (no boxes); Frigate's snapshot.jpg has the
                     # tracked object outlined + labelled. Prepend it as a reference frame.
@@ -883,23 +890,131 @@ class VisionEngine:
         except Exception:  # noqa: BLE001 - media may not be ready yet; fall back gracefully
             return None
 
-    async def _extract_frames(self, clip_path: str, out_dir: str, count: int) -> list[str]:
-        """ffmpeg-extract `count` stills spread ACROSS the whole clip (so the AI sees the
-        action over time, not just the first seconds). Best-effort."""
+    async def _frigate_path_offsets(
+        self, event_id: str, count: int, clip_duration: float | None,
+    ) -> list[float]:
+        """Offsets (seconds into the downloaded clip) where Frigate actually tracked the
+        object, for pass-2 still extraction.
+
+        Frigate's ``data.path_data`` is ``[[[x, y], epoch_ts], ...]``. We spread the
+        selection evenly **through that list by index** — NOT evenly in time. Frigate
+        emits path points more densely while the object is moving, so index-spreading
+        self-weights toward real motion; time-bucketing measured strictly worse (fewer
+        distinct positions AND more duplicate frames).
+
+        Returns [] whenever anything is missing or inconsistent, so the caller falls
+        back to plain even sampling. Never raises.
+        """
+        if count < 1 or not clip_duration or clip_duration <= 0.5:
+            return []
+        try:
+            meta = await async_frigate_event_meta(self.hass, event_id)
+            if not meta:
+                return []
+            start = meta.get("start_time")
+            end = meta.get("end_time")
+            path = ((meta.get("data") or {}).get("path_data") or [])
+            if not start or not end or end <= start or len(path) < 2:
+                return []
+            event_dur = float(end) - float(start)
+            # Frames only exist where the clip does.
+            if clip_duration < event_dur * 0.5:
+                return []  # clip truncated / still being written - don't guess
+
+            # --- align the event timeline to the clip timeline -------------------
+            # The clip starts BEFORE the event by Frigate's alert pre_capture. Trust
+            # the probed clip length over the configured value: if the clip is shorter
+            # than expected (still recording, retention trim) scale the lead down so we
+            # never seek past the object.
+            pre = await async_frigate_alert_pre_capture(self.hass)
+            extra = max(0.0, clip_duration - event_dur)
+            lead = min(pre, extra) if extra > 0 else 0.0
+
+            rel = sorted(
+                float(p[1]) - float(start)
+                for p in path
+                if isinstance(p, list) and len(p) > 1 and isinstance(p[1], (int, float))
+            )
+            if not rel:
+                return []
+            last = len(rel) - 1
+            picks = [rel[round(k * last / max(1, count - 1))] for k in range(count)] \
+                if count > 1 else [rel[last // 2]]
+
+            # Clamp into the clip and drop duplicates (events with fewer path points
+            # than `count` would otherwise yield the same frame several times).
+            # 0.10 s is a "same decoded frame" test, not a spacing rule: Frigate emits
+            # path points ~0.2 s apart, so a larger epsilon would throw away genuinely
+            # distinct adjacent frames. Do not raise it.
+            hi = clip_duration - 0.15
+            seen: list[float] = []
+            for off in picks:
+                t = min(max(off + lead, 0.05), hi)
+                if all(abs(t - s) > 0.10 for s in seen):
+                    seen.append(t)
+            if not seen:
+                return []
+            # Top up any shortfall by subdividing the MOTION SPAN - never the whole clip.
+            # Events with fewer path points than `count` are short, so the clip-wide
+            # fallback would spend the remaining budget on empty pre/post-capture
+            # padding, which is the exact waste this change exists to remove.
+            lo_m, hi_m = rel[0] + lead, rel[-1] + lead
+            for i in range(count):
+                if len(seen) >= count:
+                    break
+                t = min(max(lo_m + (hi_m - lo_m) * (i + 0.5) / count, 0.05), hi)
+                if all(abs(t - s) > 0.10 for s in seen):
+                    seen.append(t)
+            # Returning FEWER than `count` is a valid, desirable outcome: the object was
+            # only on camera briefly. Fewer real frames beat padding with empty ones.
+            return sorted(seen)[:count]
+        except Exception:  # noqa: BLE001 - any surprise -> even sampling
+            _LOGGER.debug("Frigate path anchoring failed for %s", event_id, exc_info=True)
+            return []
+
+    async def _extract_frames(
+        self, clip_path: str, out_dir: str, count: int, event_id: str | None = None,
+    ) -> list[str]:
+        """ffmpeg-extract `count` stills from the clip.
+
+        When `event_id` is given and Frigate can tell us where it tracked the object,
+        the stills are taken at those moments; otherwise they're spread evenly across
+        the whole clip. Best-effort — any failure degrades to even sampling, then to
+        no frames at all."""
         pattern = os.path.join(out_dir, "ff_%02d.jpg")
         try:
             from homeassistant.components import ffmpeg  # noqa: PLC0415
 
             binary = ffmpeg.get_ffmpeg_manager(self.hass).binary
             duration = await self._probe_duration(binary, clip_path)
-            # Evenly sample across the clip (fps = count/duration); fall back to 1 fps from
-            # the start when the duration can't be determined.
-            vf = f"fps={max(1, count)}/{duration:.2f}" if duration and duration > 0.5 else "fps=1"
-            proc = await asyncio.create_subprocess_exec(
-                binary, "-y", "-i", clip_path, "-vf", vf, "-frames:v", str(count), pattern,
-                stdout=asyncio.subprocess.DEVNULL, stderr=asyncio.subprocess.DEVNULL,
+            offsets = (
+                await self._frigate_path_offsets(event_id, max(1, count), duration)
+                if event_id else []
             )
-            await proc.communicate()
+            if offsets:
+                # One fast+accurate seek per offset. `-ss` before `-i` seeks by keyframe
+                # then decodes forward, so it stays accurate without decoding the whole
+                # clip. Frames are numbered in time order to keep _list() sorted.
+                for idx, off in enumerate(offsets, start=1):
+                    proc = await asyncio.create_subprocess_exec(
+                        binary, "-y", "-ss", f"{off:.2f}", "-i", clip_path,
+                        "-frames:v", "1", os.path.join(out_dir, f"ff_{idx:02d}.jpg"),
+                        stdout=asyncio.subprocess.DEVNULL, stderr=asyncio.subprocess.DEVNULL,
+                    )
+                    await proc.communicate()
+                _LOGGER.debug(
+                    "Vision: anchored %d frame(s) on Frigate path for %s at %s",
+                    len(offsets), event_id, [round(o, 2) for o in offsets],
+                )
+            else:
+                # Evenly sample across the clip (fps = count/duration); fall back to 1 fps
+                # from the start when the duration can't be determined.
+                vf = f"fps={max(1, count)}/{duration:.2f}" if duration and duration > 0.5 else "fps=1"
+                proc = await asyncio.create_subprocess_exec(
+                    binary, "-y", "-i", clip_path, "-vf", vf, "-frames:v", str(count), pattern,
+                    stdout=asyncio.subprocess.DEVNULL, stderr=asyncio.subprocess.DEVNULL,
+                )
+                await proc.communicate()
         except Exception:  # noqa: BLE001 - no ffmpeg / bad clip -> no frames
             return []
 
