@@ -1,8 +1,8 @@
 # View: Weather (custom:grid-layout) — path: weather
 # A single full-height Ted's Tab Card fills the content area with two tabs:
-#   • Forecast — pkissling/clock-weather-card (custom:clock-weather-card), animated iOS-style
+#   • Forecast — troinine/ha-weather-forecast-card (custom:weather-forecast-card), chart-mode
 #     forecast for weather.forecast_home.
-#   • Radar — jpettitt/weather-radar-card (custom:weather-radar-card), animated RainViewer loop.
+#   • Radar — timmaurice/lovelace-windy-card (custom:windy-card), animated Windy map loop.
 # Both cards are referenced directly (assumed installed via HACS). Deep-link a tab with
 # `?tab=forecast` / `?tab=radar`. Navbar is a plain card in `cards:`
 # (`- !include ../shared/navbar.yaml`); it's position:fixed so it needs no grid-area.
@@ -27,42 +27,67 @@ cards:
           icon: mdi:weather-partly-cloudy
           slug: forecast
           requires:
-            - element: clock-weather-card
-              name: Clock Weather Card
-              url: https://github.com/pkissling/clock-weather-card
+            - element: weather-forecast-card
+              name: Weather Forecast Card
+              url: https://github.com/troinine/ha-weather-forecast-card
           card:
-            type: custom:clock-weather-card
+            type: custom:weather-forecast-card
+            show_current: true
+            show_forecast: true
+            default_forecast: daily
+            forecast_types: daily
+            tap_action:
+              action: more-info
             entity: weather.forecast_home
-            animated_icon: true
-            forecast_rows: 7
-            card_mod:
-              style: |
-                /* clock-weather-card sizes to its content (the "today" section scales with
-                   card WIDTH), so forcing height:100% stretched it and, at full width, made
-                   the today section huge with a big gap above the forecast. Instead center
-                   the natural-height card and cap its width. */
-                :host {
-                  height: 100%;
-                  display: flex;
-                  align-items: center;
-                  justify-content: center;
-                }
-                ha-card {
-                  width: 100%;
-                  max-width: 700px;
-                  background: color-mix(in srgb, var(--card-background-color, #fff) 88%, gray) !important;
-                  -webkit-backdrop-filter: none !important;
-                  backdrop-filter: none !important;
-                }
+            show_condition_effects: true
+            forecast:
+              mode: chart
+              show_sun_times: false
+              use_color_thresholds: true
+              scroll_to_selected: true
+              default_chart_attribute: temperature_and_precipitation
+              extra_attribute: precipitation_probability
+              show_attribute_selector: false
+            forecast_action:
+              tap_action:
+                action: toggle-forecast
+              hold_action:
+                action: select-forecast-attribute
+            current:
+              secondary_info_attribute: wind_speed
+            grid_options:
+              rows: auto
+              columns: full
         - label: Radar
           icon: mdi:radar
           slug: radar
           requires:
-            - element: weather-radar-card
-              name: Weather Radar Card
-              url: https://github.com/jpettitt/weather-radar-card
+            - element: windy-card
+              name: Windy Card
+              url: https://github.com/timmaurice/lovelace-windy-card
           card:
-            type: custom:weather-radar-card
+            type: custom:windy-card
+            default_mode: map_only
+            metric_temp: °F
+            metric_rain: in
+            metric_wind: mph
+            zoom: 5
+            overlay: satellite
+            product: ecmwf
+            level: surface
+            aspect_ratio: ''
+            no_padding: true
+            overlay_loop:
+              - rain
+              - satellite
+              - temp
+            overlay_loop_delay: 10
+            autoplay: true
+            show_marker: false
+            show_spot: false
+            allow_geolocation: true
+            hide_message: true
+            hide_fullscreen_button: true
             card_mod:
               style: |
                 :host { height: 100%; }

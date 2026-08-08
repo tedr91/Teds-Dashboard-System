@@ -27,7 +27,7 @@ The integration serves the cards + themes itself, but the shipped **Ted's Dashbo
 - **card-mod** (`thomasloven/lovelace-card-mod`) — styling on a few views.
 - **Custom Icons** — an icon pack so Ted's icons can render as Streamline / Fluent / Pepicons (they fall back to built-in MDI when absent).
 - **Daylight Calendar Card** (`superdingo101/daylight-calendar-card`) — the Calendar views.
-- Per-view extras: **yet-another-media-player** and **Music Assistant** (+ `mass_queue`) for the Music view; **clock-weather-card** and a weather-radar card for the Weather view.
+- Per-view extras: **yet-another-media-player** and **Music Assistant** (+ `mass_queue`) for the Music view; **weather-forecast-card** (`troinine/ha-weather-forecast-card`) and **windy-card** (`timmaurice/lovelace-windy-card`) for the Weather view.
 
 Kiosk mode uses Home Assistant's **built-in** kiosk (2026.1+), driven per-device from Ted's Settings — no third-party kiosk plugin is required.
 
@@ -50,6 +50,10 @@ frontend:
 - Plus `announce`, `assist_response`, `notify`, and settings services.
 
 ## Changelog
+
+### v0.9.119
+
+- **Weather view: new Forecast and Radar cards.** The Forecast tab now uses **weather-forecast-card** (`troinine/ha-weather-forecast-card`) in chart mode with condition effects, and the Radar tab now uses **windy-card** (`timmaurice/lovelace-windy-card`) with an auto-cycling rain/satellite/temp overlay loop. Install both via HACS.
 
 ### v0.9.118
 
