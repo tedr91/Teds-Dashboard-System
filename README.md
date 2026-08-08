@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.127
+
+- **Alarm presence gate.** An alarm can now name an optional presence sensor; when nobody's present at the alarm time it skips both the wake-up light ramp and the alarm ring. Fails open, so a missing or unavailable sensor never suppresses an alarm. Bundles Ted's Cards v0.9.105.
+
 ### v0.9.126
 
 - **Alarm wake-up light.** Alarms can now gradually brighten a chosen light so it reaches full brightness exactly when the alarm rings, using a smooth parabolic ramp. An hour after ringing the light fades back to its previous state as an energy safeguard — but only if it's still where the ramp left it (so it won't override a change you made). Bundles Ted's Cards v0.9.104.

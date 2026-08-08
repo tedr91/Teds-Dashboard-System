@@ -88,11 +88,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             call.data.get("description", ""), call.data.get("enabled", True),
             call.data.get("location"),
             call.data.get("light_entity"), call.data.get("light_fade_minutes"),
-            call.data.get("light_target_pct"),
+            call.data.get("light_target_pct"), call.data.get("presence_entity"),
         )
 
     async def update_alarm(call: ServiceCall):
-        await manager.update_alarm(call.data["id"], **{k: call.data[k] for k in ("label", "time", "days", "description", "enabled", "location", "light_entity", "light_fade_minutes", "light_target_pct") if k in call.data})
+        await manager.update_alarm(call.data["id"], **{k: call.data[k] for k in ("label", "time", "days", "description", "enabled", "location", "light_entity", "light_fade_minutes", "light_target_pct", "presence_entity") if k in call.data})
 
     async def remove_alarm(call: ServiceCall):
         await manager.remove_alarm(call.data["id"])
@@ -239,7 +239,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         vol.Optional("location"): vol.Any(None, cv.string),
         vol.Optional("light_entity"): vol.Any(None, cv.string),
         vol.Optional("light_fade_minutes"): vol.Any(None, int),
-        vol.Optional("light_target_pct"): vol.Any(None, int)}))
+        vol.Optional("light_target_pct"): vol.Any(None, int),
+        vol.Optional("presence_entity"): vol.Any(None, cv.string)}))
     hass.services.async_register(DOMAIN, "update_alarm", update_alarm, schema=vol.Schema({vol.Required("id"): cv.string}, extra=vol.ALLOW_EXTRA))
     hass.services.async_register(DOMAIN, "remove_alarm", remove_alarm, schema=vol.Schema({vol.Required("id"): cv.string}))
     hass.services.async_register(DOMAIN, "start_timer", start_timer, schema=vol.Schema({

@@ -137,7 +137,8 @@ class TedsManager:
 
     # ── alarms ──────────────────────────────────────────────
     async def add_alarm(self, label, time, days, description="", enabled=True, location=None,
-                        light_entity=None, light_fade_minutes=None, light_target_pct=None):
+                        light_entity=None, light_fade_minutes=None, light_target_pct=None,
+                        presence_entity=None):
         # An empty `days` list is a valid one-shot alarm (rings once at the next
         # matching time, then disables itself). Only default to every-day when no
         # days field was supplied at all (None).
@@ -154,6 +155,8 @@ class TedsManager:
             "light_entity": light_entity,
             "light_fade_minutes": light_fade_minutes,
             "light_target_pct": light_target_pct,
+            # Optional presence gate: skip the light + ring when this entity isn't present.
+            "presence_entity": presence_entity,
         })
         await self._save()
         self._notify()
@@ -162,9 +165,9 @@ class TedsManager:
         for a in self.alarms:
             if a["id"] == alarm_id:
                 for k, v in changes.items():
-                    # `location`/`light_entity` may be cleared to None; other fields are
-                    # only overwritten when a value is actually provided.
-                    if k in ("location", "light_entity") or v is not None:
+                    # `location`/`light_entity`/`presence_entity` may be cleared to None;
+                    # other fields are only overwritten when a value is actually provided.
+                    if k in ("location", "light_entity", "presence_entity") or v is not None:
                         a[k] = v
                 # A disabled alarm (or one with the light removed) drops any active fade.
                 if not a.get("enabled") or not a.get("light_entity"):
@@ -188,6 +191,8 @@ class TedsManager:
         for a in self.alarms:
             if not a.get("enabled") or not a.get("light_entity"):
                 continue
+            if not self._present(a.get("presence_entity")):
+                continue
             fade_min = int(a.get("light_fade_minutes") or 0)
             if fade_min <= 0:
                 continue
@@ -207,6 +212,9 @@ class TedsManager:
             # then disable. Otherwise only ring on the selected weekdays.
             one_shot = not days
             if not one_shot and local.weekday() not in days:
+                continue
+            # A presence sensor gates the whole alarm: nobody in the room = don't fire.
+            if not self._present(a.get("presence_entity")):
                 continue
             loc = a.get("location")
             self.hass.bus.async_fire(EVENT_ALARM_RINGING, {
@@ -238,6 +246,18 @@ class TedsManager:
             return None
         area = ar.async_get(self.hass).async_get_area(location)
         return area.name if area else None
+
+    def _present(self, entity_id) -> bool:
+        """True when the optional presence entity says someone's there.
+
+        Fails OPEN: no sensor, or an unavailable/unknown one, never suppresses an alarm.
+        """
+        if not entity_id:
+            return True
+        state = self.hass.states.get(entity_id)
+        if state is None or state.state in ("unavailable", "unknown"):
+            return True
+        return state.state in ("on", "home")
 
     async def async_mark_area_nudged(self, device_id: str) -> bool:
         """Record a one-time 'assign this device a room' nudge. True the first time."""

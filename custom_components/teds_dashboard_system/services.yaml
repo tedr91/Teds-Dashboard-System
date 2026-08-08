@@ -10,6 +10,7 @@ add_alarm:
     light_entity: { selector: { entity: { domain: light } } }
     light_fade_minutes: { selector: { number: { min: 0, max: 120, unit_of_measurement: min } } }
     light_target_pct: { selector: { number: { min: 1, max: 100, unit_of_measurement: "%" } } }
+    presence_entity: { selector: { entity: { domain: [binary_sensor, person, device_tracker, input_boolean] } } }
 update_alarm:
   name: Update alarm
   fields:
