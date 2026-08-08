@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.133
+
+- Bundles Ted's Cards v0.9.111 (night mode redesigned into "Dynamic night mode": independently opt-in screen/background/font effects, day/night brightness levels, and a hide-background-at-night option).
+
 ### v0.9.132
 
 - Bundles Ted's Cards v0.9.110 (Settings → General: Personalization section now sits directly under Kiosk mode, above Automatic night mode).

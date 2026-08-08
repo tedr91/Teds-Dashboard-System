@@ -310,25 +310,32 @@ SETTINGS_DEFAULTS = {
     # Default weather entity used by Ted's weather/clock cards that opt in via
     # `dashboard_integration: true`. None = the card falls back to its own default.
     "weather_entity": None,
-    # Automatic Night Mode — dims the background, lowers screen brightness, and switches to a
-    # night font color on a nightly schedule, restoring day values in the morning.
-    "night_enabled": False,
+    # Dynamic Night Mode — on a nightly schedule, independently dim the screen, dim or hide the
+    # background, shift the font color, and switch to Dark Mode (each opt-in), restoring day
+    # values in the morning.
     "night_schedule_source": "sun_dusk_dawn",
     "night_start": "21:00:00",           # night begins (local time, HH:MM:SS)
     "night_end": "07:00:00",             # night ends (local time)
-    "night_dim_brightness": 75,          # target screen brightness percent at night
-    "night_dim_background": 25,          # target background brightness percent at night
-    "night_font_color": "red",           # font color used during night mode
     "night_transition_seconds": 30,      # transition duration into/out of night (seconds)
-    # Switch the device to Dark mode at night (via browser_mod), restoring the prior Auto/Light/Dark
-    # setting in the morning.
-    "night_dark_mode": True,
+    "night_dark_mode": False,            # switch this browser to Dark at night (via browser_mod)
+    # Screen sub-section.
+    "night_screen_auto": False,          # auto-adjust screen brightness at night
+    "night_screen_day": 100,             # target screen brightness percent during the day
+    "night_dim_brightness": 75,          # target screen brightness percent at night
     # Per-device screen-brightness entity (light/number/input_number). None = auto-resolve the
     # browser_mod screen light for the device.
     "night_brightness_entity": None,
-    # Internal: per-device "day" snapshot the frontend stores while night mode is active so it can
-    # restore brightness/color temp/on-off in the morning (or on disable). Not a user-facing field.
-    "night_day_snapshot": None,
+    # Background sub-section.
+    "night_background_auto": False,      # auto-adjust background brightness at night
+    "night_background_hide": False,      # replace the wallpaper with a calm solid gradient at night
+    "night_background_day": 100,         # target background brightness percent during the day
+    "night_dim_background": 25,          # target background brightness percent at night
+    # Font sub-section.
+    "night_font_shift": False,           # shift the primary font color at night
+    "night_font_color": "red",           # font color used at night when the shift is on
+    # Internal: per-device marker mirroring whether night mode is currently applied (survives a
+    # reload). Not a user-facing field.
+    "night_active": False,
     # Internal: per-device saved maximized state of Fullscreen cards, keyed by each card's
     # `state_key`. Shape: { <state_key>: bool }. Not a user-facing field.
     "fullscreen_states": {},
