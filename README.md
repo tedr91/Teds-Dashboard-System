@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.131
+
+- Bundles Ted's Cards v0.9.109 (Settings → General reorganized: Kiosk mode under Device type, new Personalization section for Theme/Icon set/Background, Weather moved to Advanced, night-mode settings stay visible when off).
+
 ### v0.9.130
 
 - Bundles Ted's Cards v0.9.108 (timer, settings, and vision dialogs now open as top-layer modals so they can't be clipped or pushed off-screen).
