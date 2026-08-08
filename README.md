@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.120
+
+- **Weather view: Radar map zoom increased.** The windy-card Radar tab now defaults to zoom level 7 (was 5) for a tighter regional view.
+
 ### v0.9.119
 
 - **Weather view: new Forecast and Radar cards.** The Forecast tab now uses **weather-forecast-card** (`troinine/ha-weather-forecast-card`) in chart mode with condition effects, and the Radar tab now uses **windy-card** (`timmaurice/lovelace-windy-card`) with an auto-cycling rain/satellite/temp overlay loop. Install both via HACS.

@@ -71,7 +71,7 @@ cards:
             metric_temp: °F
             metric_rain: in
             metric_wind: mph
-            zoom: 5
+            zoom: 7
             overlay: satellite
             product: ecmwf
             level: surface
