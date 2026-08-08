@@ -212,8 +212,8 @@ SETTINGS_DEFAULTS = {
     # Custom navbar hold-menu items: list of {name, icon?, tap_action}.
     "navbar_menu_items": [],
     # The navbar's five positional sections + their items (status items + buttons).
-    # Pre-populated to match the bar Ted's Dashboard ships with (0=weather, 1/2/3 empty
-    # [2 = View Launcher target], 4=assist/timers/alarms/datetime/notifications) so a
+    # Pre-populated to match the bar Ted's Dashboard ships with (0=weather/assist, 1/2/3
+    # empty [2 = View Launcher target], 4=timers/alarms/datetime/notifications) so a
     # dashboard-integrated navbar with no YAML `sections` renders it out of the box and
     # every piece is editable in Settings -> Navbar. Must match the frontend
     # DEFAULT_NAVBAR_SECTIONS in settings-schema.ts.

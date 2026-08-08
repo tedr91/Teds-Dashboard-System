@@ -108,6 +108,17 @@ QUICK_WINDOW_SECONDS = 10
 # entity leaking a background task forever, not to police slow models.
 _AB_PASS_TIMEOUT = 120
 
+# Hard ceiling on ANY single ai_task call, production or diagnostic. A hung provider
+# (e.g. an Ollama server wedged by another model) would otherwise strand the event at
+# "analyzing" forever, because the event only leaves that state after analysis returns.
+# Generous on purpose: local vision models legitimately take 10-20s and large cloud
+# models can take well over a minute. This exists to catch hangs, not slow models.
+_ANALYSIS_TIMEOUT = 180
+
+# Absolute ceiling on stage 3. Passes run CONCURRENTLY, so this only needs to clear one
+# _ANALYSIS_TIMEOUT plus orchestration overhead - it is not a sum of the passes.
+_STAGE3_CEILING = 300
+
 _LABELLED_SNAPSHOT_NOTE = (
     "The FIRST image is a labelled reference frame from Frigate showing the tracked "
     "object outlined by a bounding box with its label. Use it to identify the subject, "
@@ -1336,11 +1347,25 @@ class VisionEngine:
             await self.manager.update_vision_event(event_id, status="analyzing", **patch)
 
         passes: list | None = [] if s.get("vision_debug_passes") else None
-        final = await self._staged_analyze(
-            camera_id, cam_name, area_name, event_type,
-            quick_attach, quick_entity, full_attach, detailed_entity, two_pass, _push_quick,
-            capture=passes,
-        )
+        # The event is written as "analyzing" at stage 2 and only leaves that state at the
+        # update below. Anything that escapes or hangs in between strands it permanently
+        # (needs manual deletion), so stage 3 always resolves to a value.
+        try:
+            async with asyncio.timeout(_STAGE3_CEILING):
+                final = await self._staged_analyze(
+                    camera_id, cam_name, area_name, event_type,
+                    quick_attach, quick_entity, full_attach, detailed_entity,
+                    two_pass, _push_quick, capture=passes,
+                )
+        except TimeoutError:  # keep above `except Exception` - see the note in _analyze
+            _LOGGER.warning(
+                "Ted's Vision: analysis stage exceeded %ss for %s - completing the event "
+                "without a result", _STAGE3_CEILING, camera_id,
+            )
+            final = None
+        except Exception:  # noqa: BLE001 - an event must always reach a terminal state
+            _LOGGER.exception("Ted's Vision: analysis stage failed for %s", camera_id)
+            final = None
         self._apply_analysis(event, final)
         if passes:
             event["analysis_passes"] = passes
@@ -1581,10 +1606,16 @@ class VisionEngine:
             return result
         done = asyncio.Event()
         final: dict = {}
+        quick_result: dict = {}
 
         async def _quick() -> None:
             result = await _run("quick", quick_attach, quick_entity)
-            if done.is_set() or not result or on_quick is None:
+            if not result:
+                return
+            # Kept even when it doesn't publish, so a failed detailed pass can fall back
+            # to it instead of blanking a summary the user has already been shown.
+            quick_result.update(result)
+            if done.is_set() or on_quick is None:
                 return
             self._mark_published(capture, "quick")
             await on_quick(self._analysis_patch(result))
@@ -1596,8 +1627,14 @@ class VisionEngine:
                 final.update(result)
 
         await asyncio.gather(_quick(), _detailed())
-        self._mark_published(capture, "detailed")
-        return final or None
+        if final:
+            self._mark_published(capture, "detailed")
+            return final
+        # Detailed failed or timed out. Prefer pass 1's real answer over no answer.
+        if quick_result:
+            self._mark_published(capture, "quick")
+            return quick_result
+        return None
 
     def _camera_context(self, camera_id: str) -> tuple[str | None, str | None, str]:
         """Resolve a camera's area id, area name, and friendly name."""
@@ -1828,9 +1865,20 @@ class VisionEngine:
         if entity_id:
             data["entity_id"] = entity_id
         try:
-            result = await self.hass.services.async_call(
-                "ai_task", "generate_data", data, blocking=True, return_response=True
+            # NOTE: `except TimeoutError` MUST stay above `except Exception` — since
+            # Python 3.11 TimeoutError is a subclass of Exception, so the generic
+            # handler would otherwise swallow it and hide the real diagnosis.
+            async with asyncio.timeout(_ANALYSIS_TIMEOUT):
+                result = await self.hass.services.async_call(
+                    "ai_task", "generate_data", data, blocking=True, return_response=True
+                )
+        except TimeoutError:
+            _LOGGER.warning(
+                "Ted's Vision: ai_task.generate_data timed out after %ss on %s "
+                "(camera %s) - treating the pass as failed so the event can complete",
+                _ANALYSIS_TIMEOUT, entity_id or "the default entity", camera_id,
             )
+            return None
         except Exception:  # noqa: BLE001 - provider errors shouldn't crash the engine
             _LOGGER.exception("Ted's Vision: ai_task.generate_data failed")
             return None
