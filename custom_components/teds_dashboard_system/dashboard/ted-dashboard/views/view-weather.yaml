@@ -58,6 +58,28 @@ cards:
             grid_options:
               rows: auto
               columns: full
+            card_mod:
+              style: |
+                /* Auto-scale fonts by BOTH viewport height (vh) and the card's own width
+                   (container-query cqw, resolved against .wfc-container) so text stays
+                   readable on large wall panels without ballooning on phones. Uses the
+                   card's documented --ha-font-size-* hooks. Chart labels are computed at
+                   :host and can't read container units, so they scale by viewport instead. */
+                ha-card {
+                  --weather-forecast-card-chart-font-size: clamp(12px, 0.9vh + 0.6vw, 24px);
+                }
+                .wfc-current-weather-container {
+                  --ha-font-size-3xl: clamp(28px, 2.6vh + 1.8cqw, 60px);
+                  --ha-font-size-xl: clamp(20px, 2vh + 1.2cqw, 44px);
+                  --ha-font-size-m: clamp(14px, 1.2vh + 0.7cqw, 26px);
+                }
+                .wfc-forecast-container {
+                  --ha-font-size-xl: clamp(18px, 1.5vh + 0.8cqw, 34px);
+                  --ha-font-size-l: clamp(16px, 1.3vh + 0.7cqw, 30px);
+                  --ha-font-size-m: clamp(14px, 1.2vh + 0.7cqw, 26px);
+                  --ha-font-size-s: clamp(12px, 1vh + 0.6cqw, 22px);
+                  --forecast-item-width: clamp(55px, 3vh + 3cqw, 110px);
+                }
         - label: Radar
           icon: mdi:radar
           slug: radar

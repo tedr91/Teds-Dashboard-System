@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.123
+
+- **Weather view: Forecast fonts now scale with the display.** The Forecast card's text auto-scales using a blend of viewport height and the card's own width (via the card's documented font-size variables), so it stays readable on large wall panels without ballooning on phones.
+
 ### v0.9.122
 
 - **Weather view: Radar map now fills the whole tab.** The windy-card Radar map was a fixed 450px height, leaving blank space below it; it now stretches to fill the full tab height.
