@@ -90,6 +90,33 @@ cards:
             hide_fullscreen_button: true
             card_mod:
               style: |
+                /* aspect_ratio:'' makes the map a fixed 450px iframe, leaving blank space
+                   in the full-height tab. Stretch the whole chain so the map fills it. */
                 :host { height: 100%; }
+                ha-card {
+                  height: 100%;
+                  display: flex;
+                  flex-direction: column;
+                }
+                ha-card .card-content {
+                  flex: 1 1 auto;
+                  min-height: 0;
+                  display: flex;
+                  flex-direction: column;
+                }
+                ha-card .content {
+                  flex: 1 1 auto;
+                  min-height: 0;
+                  display: flex;
+                  flex-direction: column;
+                }
+                ha-card .iframe-container {
+                  flex: 1 1 auto;
+                  min-height: 0;
+                  height: 100% !important;
+                }
+                ha-card iframe {
+                  height: 100% !important;
+                }
   - !include ../shared/navbar.yaml
   - !include ../shared/background.yaml

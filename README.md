@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.122
+
+- **Weather view: Radar map now fills the whole tab.** The windy-card Radar map was a fixed 450px height, leaving blank space below it; it now stretches to fill the full tab height.
+
 ### v0.9.121
 
 - **Fixed: Vision events could freeze at “analyzing” when the AI provider hung.** The primary analysis pass called `ai_task.generate_data` with no timeout, so a wedged provider (e.g. an Ollama server stalled by another model) stranded the event forever — it had to be deleted by hand. Every ai_task call now has a 180s ceiling, and the whole analysis stage has a 300s ceiling, so an event always reaches a terminal state (`complete`, showing “Analysis unavailable”) instead of hanging. In two-pass mode, if the detailed pass fails but pass 1 already produced a real summary, that summary is now kept rather than blanked. The 0.9.118 diagnostic A/B detach is unchanged.
