@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.132
+
+- Bundles Ted's Cards v0.9.110 (Settings → General: Personalization section now sits directly under Kiosk mode, above Automatic night mode).
+
 ### v0.9.131
 
 - Bundles Ted's Cards v0.9.109 (Settings → General reorganized: Kiosk mode under Device type, new Personalization section for Theme/Icon set/Background, Weather moved to Advanced, night-mode settings stay visible when off).
