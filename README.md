@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.128
+
+- Bundles Ted's Cards v0.9.106 (alarm dialog now uses proper searchable entity pickers for the wake-up light and presence sensor).
+
 ### v0.9.127
 
 - **Alarm presence gate.** An alarm can now name an optional presence sensor; when nobody's present at the alarm time it skips both the wake-up light ramp and the alarm ring. Fails open, so a missing or unavailable sensor never suppresses an alarm. Bundles Ted's Cards v0.9.105.
