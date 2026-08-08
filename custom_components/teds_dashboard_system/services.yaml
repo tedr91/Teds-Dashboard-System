@@ -7,6 +7,9 @@ add_alarm:
     description: { selector: { text: {} } }
     enabled: { selector: { boolean: {} } }
     location: { selector: { area: {} } }
+    light_entity: { selector: { entity: { domain: light } } }
+    light_fade_minutes: { selector: { number: { min: 0, max: 120, unit_of_measurement: min } } }
+    light_target_pct: { selector: { number: { min: 1, max: 100, unit_of_measurement: "%" } } }
 update_alarm:
   name: Update alarm
   fields:

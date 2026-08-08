@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.126
+
+- **Alarm wake-up light.** Alarms can now gradually brighten a chosen light so it reaches full brightness exactly when the alarm rings, using a smooth parabolic ramp. An hour after ringing the light fades back to its previous state as an energy safeguard — but only if it's still where the ramp left it (so it won't override a change you made). Bundles Ted's Cards v0.9.104.
+
 ### v0.9.125
 
 - **Weather view: larger, bold Forecast text.** The Forecast card's fonts are now bigger and bold for better wall-panel readability (the on-chart temperature numbers enlarge but stay regular weight, as they're canvas-drawn).

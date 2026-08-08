@@ -12,6 +12,7 @@ from homeassistant.helpers.event import async_call_later, async_track_time_chang
 from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
+from .light_fade import LightFadeEngine
 from .playback import PlaybackEngine
 
 from .const import (
@@ -79,6 +80,8 @@ class TedsManager:
         # Writable dir where stitched announcement clips are cached + served.
         self.announce_cache_dir: str | None = None
         self.playback = PlaybackEngine(self)
+        # Runs per-alarm sunrise light ramps + safeguard fade-back (server-side).
+        self.light_fade = LightFadeEngine(self)
         self._listeners: list = []
         self._update_cbs: set = set()
 
@@ -130,9 +133,11 @@ class TedsManager:
             if t.get("cancel"):
                 t["cancel"]()
         self.playback.shutdown()
+        self.light_fade.shutdown()
 
     # ── alarms ──────────────────────────────────────────────
-    async def add_alarm(self, label, time, days, description="", enabled=True, location=None):
+    async def add_alarm(self, label, time, days, description="", enabled=True, location=None,
+                        light_entity=None, light_fade_minutes=None, light_target_pct=None):
         # An empty `days` list is a valid one-shot alarm (rings once at the next
         # matching time, then disables itself). Only default to every-day when no
         # days field was supplied at all (None).
@@ -144,6 +149,11 @@ class TedsManager:
             "days": list(days) if days is not None else [0, 1, 2, 3, 4, 5, 6],
             "enabled": enabled,
             "location": location,
+            # Optional wake-up light: ramp `light_entity` up to `light_target_pct`
+            # over `light_fade_minutes`, finishing when the alarm rings.
+            "light_entity": light_entity,
+            "light_fade_minutes": light_fade_minutes,
+            "light_target_pct": light_target_pct,
         })
         await self._save()
         self._notify()
@@ -152,15 +162,19 @@ class TedsManager:
         for a in self.alarms:
             if a["id"] == alarm_id:
                 for k, v in changes.items():
-                    # `location` may be set to None to make an alarm house-wide; other
-                    # fields are only overwritten when a value is actually provided.
-                    if k == "location" or v is not None:
+                    # `location`/`light_entity` may be cleared to None; other fields are
+                    # only overwritten when a value is actually provided.
+                    if k in ("location", "light_entity") or v is not None:
                         a[k] = v
+                # A disabled alarm (or one with the light removed) drops any active fade.
+                if not a.get("enabled") or not a.get("light_entity"):
+                    self.light_fade.cancel(alarm_id)
                 break
         await self._save()
         self._notify()
 
     async def remove_alarm(self, alarm_id):
+        self.light_fade.cancel(alarm_id)
         self.alarms = [a for a in self.alarms if a["id"] != alarm_id]
         await self._save()
         self._notify()
@@ -169,6 +183,21 @@ class TedsManager:
     def _tick(self, now: datetime) -> None:
         local = dt_util.as_local(now)
         hhmm = local.strftime("%H:%M")
+        # Start any wake-up light ramp that must COMPLETE at an alarm's time: it begins
+        # `light_fade_minutes` early, so trigger when now + fade lands on the ring time.
+        for a in self.alarms:
+            if not a.get("enabled") or not a.get("light_entity"):
+                continue
+            fade_min = int(a.get("light_fade_minutes") or 0)
+            if fade_min <= 0:
+                continue
+            ring_at = local + timedelta(minutes=fade_min)
+            if ring_at.strftime("%H:%M") != a.get("time"):
+                continue
+            days = a.get("days") or []
+            if days and ring_at.weekday() not in days:
+                continue
+            self.light_fade.start_wake_fade(a)
         rang = False
         for a in self.alarms:
             if not a.get("enabled") or a.get("time") != hhmm:
