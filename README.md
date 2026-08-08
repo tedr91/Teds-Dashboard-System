@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.130
+
+- Bundles Ted's Cards v0.9.108 (timer, settings, and vision dialogs now open as top-layer modals so they can't be clipped or pushed off-screen).
+
 ### v0.9.129
 
 - Bundles Ted's Cards v0.9.107 (fixes the alarm add/edit dialog running off-screen with unreachable buttons).
