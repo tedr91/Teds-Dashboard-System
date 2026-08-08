@@ -78,7 +78,6 @@ cards:
                   --ha-font-size-l: clamp(16px, 1.3vh + 0.7cqw, 30px);
                   --ha-font-size-m: clamp(14px, 1.2vh + 0.7cqw, 26px);
                   --ha-font-size-s: clamp(12px, 1vh + 0.6cqw, 22px);
-                  --forecast-item-width: clamp(55px, 3vh + 3cqw, 110px);
                 }
         - label: Radar
           icon: mdi:radar
@@ -103,7 +102,7 @@ cards:
               - rain
               - satellite
               - temp
-            overlay_loop_delay: 10
+            overlay_loop_delay: 20
             autoplay: true
             show_marker: false
             show_spot: false

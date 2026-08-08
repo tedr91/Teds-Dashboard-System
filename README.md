@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.124
+
+- **Weather view fixes.** The Radar overlay loop now dwells 20s per layer (was 10s). The Forecast card no longer clips the right-most day — removed a column-width override that conflicted with the card's fit-to-width math, so days spread cleanly across the tab.
+
 ### v0.9.123
 
 - **Weather view: Forecast fonts now scale with the display.** The Forecast card's text auto-scales using a blend of viewport height and the card's own width (via the card's documented font-size variables), so it stays readable on large wall panels without ballooning on phones.
