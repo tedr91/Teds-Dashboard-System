@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.129
+
+- Bundles Ted's Cards v0.9.107 (fixes the alarm add/edit dialog running off-screen with unreachable buttons).
+
 ### v0.9.128
 
 - Bundles Ted's Cards v0.9.106 (alarm dialog now uses proper searchable entity pickers for the wake-up light and presence sensor).
