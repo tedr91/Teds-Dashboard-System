@@ -336,6 +336,9 @@ SETTINGS_DEFAULTS = {
     # Internal: per-device marker mirroring whether night mode is currently applied (survives a
     # reload). Not a user-facing field.
     "night_active": False,
+    # Internal: per-device snapshot of the user's dark-theme preference before night mode forced
+    # Dark Mode on, so the morning can restore it. Not a user-facing field.
+    "night_dark_prev": None,
     # Internal: per-device saved maximized state of Fullscreen cards, keyed by each card's
     # `state_key`. Shape: { <state_key>: bool }. Not a user-facing field.
     "fullscreen_states": {},

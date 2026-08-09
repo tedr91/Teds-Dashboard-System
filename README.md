@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.136
+
+- Bundles Ted's Cards v0.9.114 (night mode's "Switch to Dark Mode" now uses Home Assistant's real user-scoped dark theme and restores the prior preference at dawn; enabling it warns that it cascades to the account's other devices, listing them).
+
 ### v0.9.135
 
 - Bundles Ted's Cards v0.9.113 (Calendar Card now follows the Home Assistant dark-mode toggle on the HA theme: white font and recessed event tints in dark mode; event tint softened to 85%).
