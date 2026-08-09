@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.135
+
+- Bundles Ted's Cards v0.9.113 (Calendar Card now follows the Home Assistant dark-mode toggle on the HA theme: white font and recessed event tints in dark mode; event tint softened to 85%).
+
 ### v0.9.134
 
 - Bundles Ted's Cards v0.9.112 (Calendar Card on HA theme: forces the wrapped Daylight calendar's custom cell/agenda surfaces fully transparent so the card no longer reads milkier than other cards on translucent themes).
