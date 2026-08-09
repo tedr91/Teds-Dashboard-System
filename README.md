@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.134
+
+- Bundles Ted's Cards v0.9.112 (Calendar Card on HA theme: forces the wrapped Daylight calendar's custom cell/agenda surfaces fully transparent so the card no longer reads milkier than other cards on translucent themes).
+
 ### v0.9.133
 
 - Bundles Ted's Cards v0.9.111 (night mode redesigned into "Dynamic night mode": independently opt-in screen/background/font effects, day/night brightness levels, and a hide-background-at-night option).
