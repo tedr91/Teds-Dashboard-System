@@ -51,6 +51,11 @@ frontend:
 
 ## Changelog
 
+### v0.9.137
+
+- **Serves the Room Card's header photos locally.** The 16 curated room photos now ship with the integration and are served from Home Assistant, so dashboards no longer fetch them from a public CDN on every load. A config-root fallback can retrieve them on demand if the bundle is ever missing.
+- Bundles Ted's Cards v0.9.115 (Room Card prefers these locally-served photos, with a CDN fallback for card-only installs).
+
 ### v0.9.136
 
 - Bundles Ted's Cards v0.9.114 (night mode's "Switch to Dark Mode" now uses Home Assistant's real user-scoped dark theme and restores the prior preference at dawn; enabling it warns that it cascades to the account's other devices, listing them).

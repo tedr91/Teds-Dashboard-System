@@ -65,6 +65,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     await _install_sentences(hass)
     await _register_sound_path(hass)
     await _register_background_path(hass)
+    await _register_room_photo_path(hass)
     manager.announce_cache_dir = await _register_announce_cache_path(hass)
     manager.media_folder = await _ensure_media_folder(hass)
     await _register_media_paths(hass)
@@ -615,6 +616,29 @@ async def _register_background_path(hass: HomeAssistant) -> None:
             pass
 
 
+async def _register_room_photo_path(hass: HomeAssistant) -> None:
+    """Serve bundled Room Card header photos at /teds_dashboard_system/room_photos/*."""
+    flag = f"{DOMAIN}_room_photos_registered"
+    if hass.data.get(flag):
+        return
+    photos_dir = os.path.join(os.path.dirname(__file__), "room_photos")
+    url = "/teds_dashboard_system/room_photos"
+    try:
+        from homeassistant.components.http import StaticPathConfig
+
+        # cache_headers=True: immutable curated assets, so let browsers cache hard.
+        await hass.http.async_register_static_paths(
+            [StaticPathConfig(url, photos_dir, True)]
+        )
+        hass.data[flag] = True
+    except Exception:  # noqa: BLE001 - fall back for older HA cores
+        try:
+            hass.http.register_static_path(url, photos_dir, True)
+            hass.data[flag] = True
+        except Exception:  # noqa: BLE001
+            pass
+
+
 async def _register_media_paths(hass: HomeAssistant) -> None:
     """Make Photos/Bing favorites, imported wallpapers, and the Bing "removed"
     blocklist survive integration updates:
@@ -640,6 +664,35 @@ async def _register_media_paths(hass: HomeAssistant) -> None:
         set_data_dir(data_dir)
     except OSError:
         pass
+
+    # Room Card photo download-fallback dir (config-root, survives updates). Registered here
+    # so set_data_dir runs before any download(); above the early-return so the second config
+    # entry still registers it.
+    from .room_photos import (
+        DIRNAME as _RP_DIR,
+        DOWNLOAD_URL as _RP_URL,
+        set_data_dir as _rp_set_data_dir,
+    )
+
+    _rp_set_data_dir(data_dir)
+
+    rp_dir = os.path.join(data_dir, _RP_DIR)
+    rp_flag = f"{DOMAIN}_room_photos_dl_registered"
+    if not hass.data.get(rp_flag):
+        try:
+            await hass.async_add_executor_job(lambda: os.makedirs(rp_dir, exist_ok=True))
+            from homeassistant.components.http import StaticPathConfig
+
+            await hass.http.async_register_static_paths(
+                [StaticPathConfig(_RP_URL, rp_dir, True)]
+            )
+            hass.data[rp_flag] = True
+        except Exception:  # noqa: BLE001
+            try:
+                hass.http.register_static_path(_RP_URL, rp_dir, True)
+                hass.data[rp_flag] = True
+            except Exception:  # noqa: BLE001
+                pass
 
     # Serve the media-folder albums (favorites + imported wallpapers) read-only.
     flag = f"{DOMAIN}_media_paths_registered"

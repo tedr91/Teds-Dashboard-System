@@ -97,6 +97,8 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, handle_mark_vision_reviewed)
     websocket_api.async_register_command(hass, handle_delete_vision_event)
     websocket_api.async_register_command(hass, handle_clear_vision_events)
+    websocket_api.async_register_command(hass, handle_list_room_photos)
+    websocket_api.async_register_command(hass, handle_download_room_photos)
     hass.data[_REGISTERED] = True
 
 
@@ -787,4 +789,35 @@ async def handle_clear_vision_events(
         if removed and getattr(mgr, "vision", None):
             await mgr.vision.cleanup_events(removed)
     connection.send_result(msg["id"], {"success": True})
+
+
+@websocket_api.websocket_command(
+    {vol.Required("type"): f"{DOMAIN}/list_room_photos"}
+)
+@websocket_api.async_response
+async def handle_list_room_photos(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict
+) -> None:
+    """Return {filename: url} for locally-available Room Card header photos."""
+    from .room_photos import scan
+
+    photos = await hass.async_add_executor_job(scan)
+    connection.send_result(msg["id"], {"photos": photos})
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): f"{DOMAIN}/download_room_photos",
+        vol.Required("files"): [str],
+    }
+)
+@websocket_api.async_response
+async def handle_download_room_photos(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict
+) -> None:
+    """Fallback fetch of room photos when the bundled copies are unavailable."""
+    from .room_photos import download
+
+    result = await download(hass, list(msg.get("files") or []))
+    connection.send_result(msg["id"], result)
 
