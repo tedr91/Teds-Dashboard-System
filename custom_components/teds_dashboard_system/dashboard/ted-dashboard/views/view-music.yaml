@@ -1,8 +1,10 @@
 # View: Music — Music Assistant player (custom:grid-layout). path: music
-# The content area holds a ted-music-card driving jianyu-li/yet-another-media-player (YAMP)
-# from this device's Settings → Sounds player, in a side-by-side split (now-playing player
-# left, library/search/queue right). Navbar is a plain card (position:fixed).
-# PREREQUISITE: install "yet-another-media-player" via HACS.
+# The content area holds a self-contained ted-music-card driving this device's
+# Settings → Sounds player: a now-playing player with Media/Queue/Recent/Lyrics tabs.
+# The Media tab browses the Music Assistant library as artwork tiles. Navbar is a
+# plain card (position:fixed).
+# PREREQUISITE: Music Assistant (integration + a player). The Queue/Recent/Lyrics
+# tabs also use the mass_queue custom integration.
 type: custom:grid-layout
 path: music
 title: Music
@@ -18,46 +20,8 @@ cards:
     card:
       type: custom:ted-music-card
       player_source: settings
-      engine: yamp
-      fill: true
-      # Side-by-side: 60% now-playing player (left) + 40% library/search/queue (right).
-      # Both panes drive this device's resolved Music Assistant player and stay in sync
-      # via HA state. Collapses to player-only on narrow screens (< ~700px).
-      split: 60
-      yamp_config:
-        template: large_modern
-        # Follow the HA theme. ted-music-card forces YAMP's search/menu overlay
-        # (--yamp-overlay-bg) to a near-opaque, theme-tinted surface so the now-playing
-        # artwork doesn't bleed through on our translucent themes.
-        match_theme: true
-        artwork_object_fit: cover
-        # Give YAMP's in-menu search overlay a real height (used by the LEFT player's
-        # hamburger search); the RIGHT pane's dedicated search renders in the card body.
-        card_mod:
-          style: |
-            .entity-options-overlay {
-              align-items: stretch !important;
-            }
-            .entity-options-container {
-              height: 96% !important;
-            }
-      # Left pane = pure now-playing player (search lives in the right pane).
-      # When idle (nothing playing), show a static idle image instead of the equalizer
-      # splash. Placeholder uses a bundled backend wallpaper; swap for your own image.
-      left_config:
-        idle_screen: default
-        idle_image: /teds_dashboard_system/backgrounds/general/MountainStream.webp
-        show_idle_artwork_when_not_playing: true
-        # Auto-open the synced lyrics view whenever something is playing.
-        always_show_lyrics: true
-        # Highlight advances 0.5s to compensate for the lyric line lagging the audio.
-        lyrics_pre_roll: 0.5
-      # Right pane = dedicated search / library / queue. card_type:search + hide_menu_player
-      # come from the card's per-engine base; crisp_clean gives a clean list-style browse.
-      right_config:
-        template: crisp_clean
-        # On first load, open the Playlist tab (not Favorites).
-        default_search_filter: playlist
-        default_search_favorites: false
+      # Media tab presents the library as artwork tiles (Playlists / Albums / Artists /
+      # Favorites) with a Recently-played row; switchable to a list from the card.
+      media_layout: tiles
   - !include ../shared/navbar.yaml
   - !include ../shared/background.yaml
