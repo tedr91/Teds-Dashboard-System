@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.138
+
+- Bundles Ted's Cards v0.9.116 (Room Card auto-populate section ordering, zones/plugs buckets, and the new Group scenes option).
+
 ### v0.9.137
 
 - **Serves the Room Card's header photos locally.** The 16 curated room photos now ship with the integration and are served from Home Assistant, so dashboards no longer fetch them from a public CDN on every load. A config-root fallback can retrieve them on demand if the bundle is ever missing.
