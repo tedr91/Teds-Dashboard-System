@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.153
+
+- Bundles Ted's Cards v0.9.131 (Music Card: dark-mode readability scrim over the blurred background).
+
 ### v0.9.152
 
 - Bundles Ted's Cards v0.9.130 (Music Card: removed the “Recent” tab).
