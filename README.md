@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.142
+
+- Bundles Ted's Cards v0.9.120 (Calendar Card: the embedded Daylight Calendar's own 1px border no longer shows as a stray hairline over Ted's frosted surface in the HA and Ted's Style modes).
+
 ### v0.9.141
 
 - Bundles Ted's Cards v0.9.119 (cards now follow your Home Assistant theme by default, with Ted's Style opt-in and an adaptive light/dark card outline). The dashboard navbar now follows **Settings → General → Personalization → Theme** instead of a fixed Ted's Style, fixing the out-of-place bright card border on a light theme.
