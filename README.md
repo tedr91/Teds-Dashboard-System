@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.140
+
+- Bundles Ted's Cards v0.9.118 (Music Media tab: Favorites-first filter order with the filter pills moved below the Recently-played row on a cleaner background; and an idle player now matches your other cards' themed surface — same color, opacity, and blur — instead of an opaque fill).
+
 ### v0.9.139
 
 - Bundles Ted's Cards v0.9.117 (the Music view's Media tab becomes an artwork browser — a tiles/list toggle, a **Playlists / Albums / Artists / Favorites** filter, and a **Recently played** row, tap-to-play on this device's player). Also drops the stale Yet Another Media Player config from the Music view and removes it from the prerequisites (the card no longer uses YAMP).
