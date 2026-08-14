@@ -93,8 +93,9 @@ Microsoft Windows 11:
   ha-card-backdrop-filter: 'blur(22px) saturate(125%)'
   ha-card-border-width: '1px'
   ha-card-box-shadow: '0 2px 4px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.04)'
-  # (ha-card-border-color is left unset so HA's default falls back to
-  #  --divider-color, which we set to the correct Win11 stroke value per mode.)
+  # (ha-card-border-color is set explicitly per mode below to the authentic Win11
+  #  Fluent CardStrokeColorDefault — a dark stroke in BOTH modes — rather than falling
+  #  back to --divider-color, so internal dividers stay independent.)
 
   # ---------------------------------------------------------------------------
   # 4. Dialogs & popovers — TRUE Mica blur via HA's built-in dialog vars
@@ -213,7 +214,10 @@ Microsoft Windows 11:
       rgb-primary-text-color:   '26, 26, 26'
       rgb-secondary-text-color: '92, 92, 92'
 
-      # ── Dividers / lines (also used as fallback for ha-card border) ──
+      # ── Card outline stroke (Win11 Fluent CardStrokeColorDefault, light = black ~6%) ──
+      ha-card-border-color: 'rgba(0, 0, 0, 0.0578)'
+
+      # ── Dividers / lines ──
       divider-color: 'rgba(0, 0, 0, 0.0578)'
       table-row-background-color: '#FFFFFF'
       table-row-alternative-background-color: '#FAFAFA'
@@ -406,7 +410,10 @@ Microsoft Windows 11:
       rgb-primary-text-color:   '255, 255, 255'
       rgb-secondary-text-color: '200, 200, 200'
 
-      # ── Dividers / lines (also used as fallback for ha-card border) ──
+      # ── Card outline stroke (Win11 Fluent CardStrokeColorDefault, dark = black ~10%) ──
+      ha-card-border-color: 'rgba(0, 0, 0, 0.1)'
+
+      # ── Dividers / lines ──
       divider-color: 'rgba(255, 255, 255, 0.0931)'
       table-row-background-color: '#2B2B2B'
       table-row-alternative-background-color: '#262626'

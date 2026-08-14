@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.154
+
+- Bundles Ted's Cards v0.9.132 (Fullscreen Card: square corners when maximized, so a themed border-radius no longer rounds the screen corners). Also refreshes the bundled Windows 11 theme with the authentic per-mode card outline stroke (Fluent CardStrokeColorDefault).
+
 ### v0.9.153
 
 - Bundles Ted's Cards v0.9.131 (Music Card: dark-mode readability scrim over the blurred background).
