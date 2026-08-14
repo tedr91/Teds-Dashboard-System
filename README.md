@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.145
+
+- Bundles Ted's Cards v0.9.123 (Room Card auto-populate: switches/plugs move to Others; smarter possessive area-name stripping).
+
 ### v0.9.144
 
 - Bundles Ted's Cards v0.9.122 (Calendar Card Agenda view: day-row top padding increased to 5px for a little more space above each day).
