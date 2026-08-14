@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.147
+
+- Bundles Ted's Cards v0.9.125 (Music Card: new "Micro" player mode + two-row Mini bar with an auto-sizing thumbnail).
+
 ### v0.9.146
 
 - Bundles Ted's Cards v0.9.124 (Night Mode dark theme now reliably returns to light at dawn on multi-panel setups).
