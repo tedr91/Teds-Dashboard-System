@@ -89,14 +89,15 @@ Apple macOS - Glass:
   border-radius-chip:   '980px'  # capsule chips
 
   # ---------------------------------------------------------------------------
-  # 3. Card geometry — LIQUID GLASS content cards: translucent + blurred frosted
-  #    surface (per-mode fill below), a subtle light glass edge, and a soft
-  #    floating shadow kept in BOTH modes so glass cards read over the wallpaper.
+  # 3. Card geometry — LIQUID GLASS content cards (visionOS-style): translucent +
+  #    blurred frosted fill (per-mode below), NO hard border, and an inset-highlight
+  #    bevel + soft drop shadow that gives the glass its beveled, floating edge.
   # ---------------------------------------------------------------------------
   ha-card-backdrop-filter: 'saturate(180%) blur(20px)'
-  ha-card-border-width: '1px'
-  ha-card-box-shadow: '0 4px 16px rgba(0, 0, 0, 0.10), 0 1px 4px rgba(0, 0, 0, 0.06)'
-  # (ha-card-border-color + translucent ha-card-background are set per mode below.)
+  ha-card-border-width: '0'
+  ha-card-box-shadow: '0.5px 0.5px 1px 0 rgba(255, 255, 255, 0.40) inset, -0.5px -0.5px 1px 0 rgba(255, 255, 255, 0.10) inset, 0 2px 8px rgba(0, 0, 0, 0.12)'
+  # (translucent ha-card-background set per mode below; the glass edge is the inset
+  #  highlight in the box-shadow — no hard border — like visionOS Liquid Glass.)
 
   # ---------------------------------------------------------------------------
   # 4. Dialogs, popovers & menus — Liquid Glass (regular variant): translucent
@@ -182,10 +183,9 @@ Apple macOS - Glass:
       # ── Backgrounds — grouped surfaces ──
       primary-background-color:   '#F2F2F7'   # systemGroupedBackground
       secondary-background-color: '#E5E5EA'
-      card-background-color:           'rgba(255, 255, 255, 0.72)'   # menus (kept more opaque)
-      ha-card-background:              'rgba(255, 255, 255, 0.55)'   # Liquid Glass cards
-      ha-card-border-color:            'rgba(255, 255, 255, 0.55)'   # bright glass edge
-      paper-card-background-color:     'rgba(255, 255, 255, 0.55)'
+      card-background-color:           'rgba(255, 255, 255, 0.62)'   # menus (kept readable)
+      ha-card-background:              'rgba(255, 255, 255, 0.45)'   # Liquid Glass cards
+      paper-card-background-color:     'rgba(255, 255, 255, 0.45)'
       paper-listbox-background-color:  '#FFFFFF'
       paper-dialog-background-color:   'rgba(255, 255, 255, 0.80)'
       rgb-primary-background-color:   '242, 242, 247'
@@ -329,8 +329,8 @@ Apple macOS - Glass:
       ha-color-primary-90: '#B3D7FF'
       ha-color-primary-95: '#EBF5FF'
 
-      # ── Glass cards float in dark too — keep a soft shadow ──
-      ha-card-box-shadow: '0 4px 16px rgba(0, 0, 0, 0.30), 0 1px 4px rgba(0, 0, 0, 0.20)'
+      # ── Glass cards float in dark too — inset highlight bevel + soft drop shadow ──
+      ha-card-box-shadow: '0.5px 0.5px 1px 0 rgba(255, 255, 255, 0.30) inset, -0.5px -0.5px 1px 0 rgba(255, 255, 255, 0.08) inset, 0 2px 10px rgba(0, 0, 0, 0.35)'
 
       # ── HA 2026.x surface tokens (Apple dark hierarchy) ──
       ha-color-surface-default: '#000000'   # systemBackground
@@ -372,10 +372,9 @@ Apple macOS - Glass:
       # ── Backgrounds — Apple dark grouped surfaces ──
       primary-background-color:   '#000000'   # systemBackground
       secondary-background-color: '#1C1C1E'
-      card-background-color:           'rgba(28, 28, 30, 0.72)'   # menus (kept more opaque)
-      ha-card-background:              'rgba(28, 28, 30, 0.55)'   # Liquid Glass cards
-      ha-card-border-color:            'rgba(255, 255, 255, 0.14)'   # bright glass edge
-      paper-card-background-color:    'rgba(28, 28, 30, 0.55)'
+      card-background-color:           'rgba(28, 28, 30, 0.60)'   # menus (kept readable)
+      ha-card-background:              'rgba(28, 28, 30, 0.32)'   # Liquid Glass cards
+      paper-card-background-color:    'rgba(28, 28, 30, 0.32)'
       paper-listbox-background-color: '#2C2C2E'
       paper-dialog-background-color:  'rgba(40, 40, 42, 0.80)'
       rgb-primary-background-color:   '0, 0, 0'

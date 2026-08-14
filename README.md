@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.156
+
+- Bundles Ted's Cards v0.9.133 (translucent/glass themes no longer blur fully-transparent cards or the Room Card header photo). Also updates the bundled **Apple macOS - Glass** theme toward the visionOS liquid-glass look (inset-highlight bevel, no hard border, more transparent cards).
+
 ### v0.9.155
 
 - Bundled themes: renamed **Apple macOS 26 → Apple macOS** (refreshed for macOS 27 "Golden Gate") and added a new **Apple macOS - Glass** theme with translucent frosted-glass cards. The theme installer now cleans up themes it previously wrote that were renamed or removed, so the old "Apple macOS 26" won't linger. Re-select the theme in your Profile after updating.
