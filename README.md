@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.146
+
+- Bundles Ted's Cards v0.9.124 (Night Mode dark theme now reliably returns to light at dawn on multi-panel setups).
+
 ### v0.9.145
 
 - Bundles Ted's Cards v0.9.123 (Room Card auto-populate: switches/plugs move to Others; smarter possessive area-name stripping).
