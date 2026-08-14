@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.151
+
+- Bundles Ted's Cards v0.9.129 (Music Card Mini: progress bar no longer renders past rounded card corners).
+
 ### v0.9.150
 
 - Bundles Ted's Cards v0.9.128 (Music Card Mini: equalizer matches the full player — three bars, slightly slower).
