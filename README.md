@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.158
+
+- Bundles Ted's Cards v0.9.135 (Room Card auto-populate: brushed-metal effect on generated tiles).
+
 ### v0.9.157
 
 - Bundles Ted's Cards v0.9.134 (Room Card photo cards keep their frosted-glass body while the photo stays crisp; fully-transparent cards like the Clock no longer show a glass edge-glow under `ha-card::before`-based glass themes).
