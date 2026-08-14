@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.149
+
+- Bundles Ted's Cards v0.9.127 (Music Card Mini: tap-to-open menu replacing the “…” button + now-playing equalizer).
+
 ### v0.9.148
 
 - Bundles Ted's Cards v0.9.126 (Music Card: adaptive Mini player + YAML-only `dashboard_integration`). Music dashboard views updated to `dashboard_integration`.
