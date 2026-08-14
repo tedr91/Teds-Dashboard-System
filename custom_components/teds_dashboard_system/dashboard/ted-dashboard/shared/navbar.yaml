@@ -3,7 +3,8 @@
 # The bar is position:fixed, so each view's copy reads as one continuous navbar.
 # Contents live in navbar-sections.yaml (shared with the auto-hide variant).
 type: custom:ted-navbar-card
-theme: ted-style
+# No explicit `theme:` — with dashboard_integration the bar follows the user's
+# Settings → General → Personalization → Theme setting (defaults to the HA theme).
 dashboard_integration: true
 # Our view layouts already reserve the bar's strip (they subtract
 # --ted-navbar-bottom-reserve from their height), so the bar must NOT reserve it again.

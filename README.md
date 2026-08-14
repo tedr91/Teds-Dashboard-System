@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.141
+
+- Bundles Ted's Cards v0.9.119 (cards now follow your Home Assistant theme by default, with Ted's Style opt-in and an adaptive light/dark card outline). The dashboard navbar now follows **Settings → General → Personalization → Theme** instead of a fixed Ted's Style, fixing the out-of-place bright card border on a light theme.
+
 ### v0.9.140
 
 - Bundles Ted's Cards v0.9.118 (Music Media tab: Favorites-first filter order with the filter pills moved below the Recently-played row on a cleaner background; and an idle player now matches your other cards' themed surface — same color, opacity, and blur — instead of an opaque fill).

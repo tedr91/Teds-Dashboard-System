@@ -3,7 +3,8 @@
 # (e.g. the nightstand view). Shares navbar-sections.yaml with the normal bar.
 # Aligned to the LEFT edge (vertical bar) on the nightstand view.
 type: custom:ted-navbar-card
-theme: ted-style
+# No explicit `theme:` — follows the user's Settings → General → Personalization →
+# Theme setting via dashboard_integration (defaults to the HA theme).
 dashboard_integration: true
 # Our view layouts already reserve the bar's strip (they subtract
 # --ted-navbar-bottom-reserve from their height), so the bar must NOT reserve it again.
