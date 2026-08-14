@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.150
+
+- Bundles Ted's Cards v0.9.128 (Music Card Mini: equalizer matches the full player — three bars, slightly slower).
+
 ### v0.9.149
 
 - Bundles Ted's Cards v0.9.127 (Music Card Mini: tap-to-open menu replacing the “…” button + now-playing equalizer).
