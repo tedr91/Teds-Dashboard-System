@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.143
+
+- Bundles Ted's Cards v0.9.121 (Calendar Card Agenda view: even 4px top/bottom row padding, and the under-date line is now a vertical divider on the right of the date column at 50% opacity instead of a horizontal underline).
+
 ### v0.9.142
 
 - Bundles Ted's Cards v0.9.120 (Calendar Card: the embedded Daylight Calendar's own 1px border no longer shows as a stray hairline over Ted's frosted surface in the HA and Ted's Style modes).

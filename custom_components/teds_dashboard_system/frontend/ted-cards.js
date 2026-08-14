@@ -6978,9 +6978,25 @@ const e="ted",t="__tedDefineGuardInstalled__",i=`${e}-`;if("undefined"!=typeof c
     .calendar .calendar-container.agenda-compact-events .agenda-event-title {
       min-width: 0;
     }
-    /* Trim daylight's 8px blank strip above each day row. */
+    /* Even 4px breathing room above/below each Agenda day row (daylight defaults to an
+       8px top strip and no bottom padding). */
     .calendar .agenda-day-row {
-      padding-top: 2px;
+      padding-top: 4px;
+      padding-bottom: 4px;
+    }
+    /* Turn daylight's under-date underline into a vertical divider on the RIGHT of the
+       date column, at 50% opacity. Keeps daylight's today-vs-other coloring (today = blue,
+       others = the grid color, light or dark). */
+    .calendar .agenda-day-label {
+      border-bottom: none !important;
+      border-right: 2px solid
+        color-mix(in srgb, var(--calendar-grid-color, #e5e7eb) 50%, transparent) !important;
+    }
+    .calendar .calendar-container.dark-mode .agenda-day-label {
+      border-right-color: color-mix(in srgb, var(--calendar-grid-color, #5b6676) 50%, transparent) !important;
+    }
+    .calendar .agenda-day-row.today .agenda-day-label {
+      border-right-color: color-mix(in srgb, #3b82f6 50%, transparent) !important;
     }
     .loading {
       height: 100%;
