@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.152
+
+- Bundles Ted's Cards v0.9.130 (Music Card: removed the “Recent” tab).
+
 ### v0.9.151
 
 - Bundles Ted's Cards v0.9.129 (Music Card Mini: progress bar no longer renders past rounded card corners).
