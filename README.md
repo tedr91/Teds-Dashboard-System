@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.144
+
+- Bundles Ted's Cards v0.9.122 (Calendar Card Agenda view: day-row top padding increased to 5px for a little more space above each day).
+
 ### v0.9.143
 
 - Bundles Ted's Cards v0.9.121 (Calendar Card Agenda view: even 4px top/bottom row padding, and the under-date line is now a vertical divider on the right of the date column at 50% opacity instead of a horizontal underline).
