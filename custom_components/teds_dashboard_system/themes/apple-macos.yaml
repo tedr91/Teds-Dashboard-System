@@ -1,0 +1,496 @@
+# =============================================================================
+#  Apple macOS — Home Assistant Theme
+#
+#  Modeled on Apple's macOS 27 "Golden Gate" / Liquid Glass design language:
+#  SF Pro typography, the system blue tint (#007AFF light / #0A84FF dark),
+#  grouped-list surfaces, rounder "concentric" corners (16 px cards, capsule
+#  buttons), translucent glass chrome, and "elevation through lightness" in dark.
+#
+#  macOS 27 "Golden Gate" refines Liquid Glass for more uniform refraction and
+#  improved contrast/readability, so the glass chrome (sidebar, header, dialogs)
+#  is a touch more opaque + more saturated here than the first Liquid Glass draft.
+#
+#  Native HA 2026.x theme — no UIX or card-mod required.
+#  Single theme with `modes:` so HA's "Auto" theme mode follows the OS.
+#
+#  Token values follow Apple's HIG + Liquid Glass guidance:
+#  - Tint = system blue (primitive.blue.500); vibrant on materials.
+#  - Surfaces = systemGroupedBackground hierarchy (page → card → inner).
+#  - Labels/separators = Apple semantic label & separator opacities.
+#  - Radii: controls 12 / cards 16 / sheets 20 px; buttons & chips = capsule.
+#
+#  Liquid Glass is a CHROME material: the sidebar, header, dialogs and popovers
+#  are translucent glass that floats over content, while CONTENT cards stay on
+#  solid (standard) materials — per Apple's "don't use Liquid Glass in the
+#  content layer" guidance. (The companion "Apple macOS - Glass" theme opts the
+#  content cards into Liquid Glass too.) Shadows are active in light mode and
+#  removed in dark, where the lightness step (#000 page -> #1C1C1E card) conveys
+#  elevation.
+# =============================================================================
+
+Apple macOS:
+  # ---------------------------------------------------------------------------
+  # 1. Typography — SF Pro via -apple-system, graceful fallbacks elsewhere
+  # ---------------------------------------------------------------------------
+  ha-font-family-body: '-apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro", "Helvetica Neue", Helvetica, Arial, sans-serif'
+  ha-font-family-heading: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro", "Helvetica Neue", Helvetica, Arial, sans-serif'
+  ha-font-family-code: 'ui-monospace, "SF Mono", "Menlo", "Monaco", "Cascadia Mono", "Courier New", monospace'
+
+  # Legacy font vars (paper-elements / pre-2026 HA)
+  primary-font-family: 'var(--ha-font-family-heading)'
+  paper-font-common-base_-_font-family: 'var(--ha-font-family-body)'
+  paper-font-common-code_-_font-family: 'var(--ha-font-family-code)'
+  code-editor-font-family: 'var(--ha-font-family-code)'
+
+  paper-font-body1_-_font-family: 'var(--ha-font-family-body)'
+  paper-font-subhead_-_font-family: 'var(--ha-font-family-body)'
+  paper-font-headline_-_font-family: 'var(--ha-font-family-heading)'
+  paper-font-title_-_font-family: 'var(--ha-font-family-heading)'
+  paper-font-caption_-_font-family: 'var(--ha-font-family-body)'
+  paper-font-display1_-_font-family: 'var(--ha-font-family-heading)'
+  paper-font-display2_-_font-family: 'var(--ha-font-family-heading)'
+  paper-font-display3_-_font-family: 'var(--ha-font-family-heading)'
+  paper-font-display4_-_font-family: 'var(--ha-font-family-heading)'
+
+  # Apple type ramp — Subheadline 15/20, Title 3 20/25, Title 2 22/28
+  paper-font-body1_-_font-weight: '400'
+  paper-font-body1_-_font-size: '15px'
+  paper-font-body1_-_line-height: '20px'
+  paper-font-subhead_-_font-weight: '600'
+  paper-font-subhead_-_font-size: '15px'
+  paper-font-subhead_-_line-height: '20px'
+  paper-font-headline_-_font-weight: '600'
+  paper-font-headline_-_font-size: '20px'
+  paper-font-headline_-_line-height: '25px'
+  paper-font-title_-_font-weight: '600'
+  paper-font-title_-_font-size: '22px'
+  paper-font-title_-_line-height: '28px'
+
+  # ---------------------------------------------------------------------------
+  # 2. macOS 27 corner-radius system — rounder, "concentric"
+  #    controls 12 · cards 16 · sheets 20 px · buttons & chips = capsule
+  # ---------------------------------------------------------------------------
+  ha-border-radius-sm:  '8px'
+  ha-border-radius-md:  '12px'   # controls (inputs, small surfaces)
+  ha-border-radius-lg:  '16px'   # cards / grouped sections
+  ha-border-radius-xl:  '20px'
+  ha-border-radius-2xl: '26px'   # sheets / large panels
+  ha-border-radius-3xl: '34px'
+  # Component-specific radius overrides
+  ha-card-border-radius:   '16px'
+  ha-dialog-border-radius: '20px'
+  # Legacy aliases
+  mdc-shape-small:    '10px'
+  mdc-shape-medium:   '16px'
+  mdc-shape-large:    '20px'
+  border-radius-card:   '16px'
+  border-radius-button: '980px'  # capsule — Tahoe pill buttons
+  border-radius-chip:   '980px'  # capsule chips
+
+  # ---------------------------------------------------------------------------
+  # 3. Card geometry — SOLID grouped surface (content layer keeps standard
+  #    materials, NOT Liquid Glass, per Apple); subtle hairline border; soft
+  #    Apple shadow in light mode (removed in dark via the dark override below).
+  # ---------------------------------------------------------------------------
+  ha-card-backdrop-filter: 'none'
+  ha-card-border-width: '1px'
+  ha-card-box-shadow: '0 4px 16px rgba(0, 0, 0, 0.08), 0 1px 4px rgba(0, 0, 0, 0.04)'  # shadow.md
+  # (ha-card-border-color falls back to --divider-color, set per mode below.)
+
+  # ---------------------------------------------------------------------------
+  # 4. Dialogs, popovers & menus — Liquid Glass (regular variant): translucent
+  #    + blur, like macOS / iOS sheets and alerts. Surface fill set per mode.
+  #    macOS 27 Golden Gate: higher saturation for more uniform refraction.
+  # ---------------------------------------------------------------------------
+  ha-dialog-surface-backdrop-filter: 'saturate(200%) blur(24px)'
+  ha-dialog-scrim-backdrop-filter: 'blur(4px)'
+
+  # Apple elevation — soft, diffuse shadows for menus and popovers.
+  wa-shadow-m: '0 8px 24px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08)'
+  wa-shadow-l: '0 16px 48px rgba(0, 0, 0, 0.18), 0 4px 12px rgba(0, 0, 0, 0.12)'
+
+  # ---------------------------------------------------------------------------
+  # 5. App-header sizing
+  # ---------------------------------------------------------------------------
+  app-header-background-color: 'var(--primary-background-color)'
+  app-header-text-color: 'var(--primary-text-color)'
+  app-header-border-bottom: '1px solid var(--divider-color)'
+
+  # ---------------------------------------------------------------------------
+  # 6. Light / Dark token sets
+  # ---------------------------------------------------------------------------
+  modes:
+    # =========================================================================
+    #  LIGHT  (systemGroupedBackground #F2F2F7, #FFFFFF cards, #007AFF tint)
+    # =========================================================================
+    light:
+      # ── Default light wallpaper (soft pastel waves) ──
+      # For a solid grouped canvas use '#F2F2F7' instead.
+      lovelace-background: 'center / cover no-repeat fixed url("https://cdn.jsdelivr.net/gh/tedr91/Teds-Themes@main/backgrounds/apple-macos/apple-macos-light.webp")'
+
+      # ── Apple system blue ramp ──
+      ha-color-primary-05: '#002D82'
+      ha-color-primary-10: '#003DA8'
+      ha-color-primary-20: '#0051D4'
+      ha-color-primary-30: '#0066E6'
+      ha-color-primary-40: '#007AFF'   # primitive.blue.500 (light tint)
+      ha-color-primary-50: '#2E90FF'
+      ha-color-primary-60: '#0A84FF'
+      ha-color-primary-70: '#4DA3FF'
+      ha-color-primary-80: '#80BDFF'
+      ha-color-primary-90: '#B3D7FF'
+      ha-color-primary-95: '#EBF5FF'
+
+      # ── HA 2026.x surface tokens (grouped-background hierarchy) ──
+      ha-color-surface-default: '#F2F2F7'   # systemGroupedBackground
+      ha-color-surface-low:     '#E5E5EA'   # systemGray6/5
+      ha-color-surface-lower:   '#D1D1D6'   # systemGray4
+
+      # ── HA 2026.x text tokens (Apple label colors) ──
+      ha-color-text-primary:    '#1C1C1E'                  # label (near-black)
+      ha-color-text-secondary:  'rgba(60, 60, 67, 0.60)'  # secondaryLabel
+      ha-color-text-disabled:   'rgba(60, 60, 67, 0.30)'  # tertiaryLabel
+      ha-color-text-link:       '#007AFF'
+
+      # ── HA 2026.x border tokens (Apple separators) ──
+      ha-color-border-neutral-quiet:  'rgba(60, 60, 67, 0.18)'   # quaternaryLabel
+      ha-color-border-neutral-normal: 'rgba(60, 60, 67, 0.29)'   # separator (nonOpaque)
+      ha-color-border-neutral-loud:   '#C6C6C8'                  # separator (opaque)
+
+      # ── HA 2026.x form/input background (Apple fill) ──
+      ha-color-form-background:           '#FFFFFF'
+      ha-color-form-background-hover:     '#FFFFFF'
+      ha-color-form-background-disabled:  'rgba(118, 118, 128, 0.12)'
+
+      # ── HA 2026.x dialog surface (read by wa-dialog) — vibrant ──
+      ha-dialog-surface-background: 'rgba(255, 255, 255, 0.80)'
+
+      # ── Web Awesome surface tokens (dropdowns + dialogs) ──
+      wa-color-surface-raised:   'rgba(255, 255, 255, 0.96)'   # ← wa-popover (combo-box dropdowns)
+      wa-color-surface-default:  '#FFFFFF'
+      wa-color-surface-border:   'rgba(60, 60, 67, 0.18)'
+
+      # ── Brand / accent (legacy aliases) ──
+      primary-color: '#007AFF'        # system blue
+      light-primary-color: '#4DA3FF'
+      dark-primary-color: '#0051D4'
+      accent-color: '#007AFF'
+      rgb-primary-color: '0, 122, 255'
+      rgb-accent-color: '0, 122, 255'
+
+      # ── Backgrounds — grouped surfaces ──
+      primary-background-color:   '#F2F2F7'   # systemGroupedBackground
+      secondary-background-color: '#E5E5EA'
+      card-background-color:           '#FFFFFF'   # secondarySystemGroupedBackground
+      ha-card-background:              '#FFFFFF'
+      paper-card-background-color:     '#FFFFFF'
+      paper-listbox-background-color:  '#FFFFFF'
+      paper-dialog-background-color:   'rgba(255, 255, 255, 0.80)'
+      rgb-primary-background-color:   '242, 242, 247'
+      rgb-secondary-background-color: '229, 229, 234'
+      rgb-card-background-color:      '255, 255, 255'
+
+      # ── Text — Apple label opacities ──
+      primary-text-color:    '#1C1C1E'
+      secondary-text-color:  'rgba(60, 60, 67, 0.60)'
+      text-primary-color:    '#FFFFFF'                 # text on tint fills
+      disabled-text-color:   'rgba(60, 60, 67, 0.30)'
+      rgb-primary-text-color:   '28, 28, 30'
+      rgb-secondary-text-color: '60, 60, 67'
+
+      # ── Dividers / lines (also fallback for ha-card border) ──
+      divider-color: 'rgba(60, 60, 67, 0.18)'
+      table-row-background-color: '#FFFFFF'
+      table-row-alternative-background-color: '#F2F2F7'
+
+      # Icons
+      state-icon-color:           'rgba(60, 60, 67, 0.60)'
+      state-icon-active-color:    '#007AFF'
+      state-icon-unavailable-color: 'rgba(60, 60, 67, 0.30)'
+      paper-item-icon-color:        'rgba(60, 60, 67, 0.60)'
+      paper-item-icon-active-color: '#007AFF'
+      rgb-state-icon-color:        '60, 60, 67'
+      rgb-state-icon-active-color: '0, 122, 255'
+
+      # Sidebar (Liquid Glass — translucent chrome; Golden Gate: higher contrast)
+      sidebar-background-color:           'rgba(242, 242, 247, 0.80)'
+      sidebar-icon-color:                 'rgba(60, 60, 67, 0.60)'
+      sidebar-text-color:                 '#1C1C1E'
+      sidebar-selected-background-color:  'rgba(0, 122, 255, 0.12)'
+      sidebar-selected-icon-color:        '#007AFF'
+      sidebar-selected-text-color:        '#007AFF'
+
+      # App header (Liquid Glass — translucent chrome; Golden Gate: higher contrast)
+      app-header-background-color: 'rgba(249, 249, 251, 0.80)'
+      app-header-text-color:       '#1C1C1E'
+      app-header-edit-background-color: '#E5E5EA'
+
+      # Inputs / form fields
+      input-background-color:     '#FFFFFF'
+      input-fill-color:           'rgba(118, 118, 128, 0.12)'
+      input-ink-color:            '#1C1C1E'
+      input-label-ink-color:      'rgba(60, 60, 67, 0.60)'
+      input-disabled-fill-color:  'rgba(118, 118, 128, 0.08)'
+      input-disabled-ink-color:   'rgba(60, 60, 67, 0.30)'
+      input-disabled-label-ink-color: 'rgba(60, 60, 67, 0.30)'
+      input-dropdown-icon-color:  'rgba(60, 60, 67, 0.60)'
+      input-idle-line-color:      'rgba(60, 60, 67, 0.29)'
+      input-hover-line-color:     '#007AFF'
+      input-disabled-line-color:  'rgba(60, 60, 67, 0.18)'
+      input-outlined-idle-border-color:     'rgba(60, 60, 67, 0.29)'
+      input-outlined-hover-border-color:    '#007AFF'
+      input-outlined-disabled-border-color: 'rgba(60, 60, 67, 0.18)'
+
+      # Material design (MDC) — buttons, chips, dialogs
+      mdc-theme-primary:    '#007AFF'
+      mdc-theme-secondary:  '#007AFF'
+      mdc-theme-on-primary: '#FFFFFF'
+      mdc-theme-on-secondary: '#FFFFFF'
+      mdc-theme-surface:    '#FFFFFF'
+      mdc-theme-on-surface: '#1C1C1E'
+      mdc-button-outline-color: 'rgba(60, 60, 67, 0.29)'
+
+      # Switches — iconic iOS green toggle
+      switch-checked-color:           '#34C759'
+      switch-checked-button-color:    '#FFFFFF'
+      switch-checked-track-color:     '#34C759'
+      switch-unchecked-button-color:  '#FFFFFF'
+      switch-unchecked-track-color:   '#E9E9EA'
+      paper-toggle-button-checked-button-color: '#FFFFFF'
+      paper-toggle-button-checked-bar-color:    '#34C759'
+      paper-toggle-button-unchecked-button-color: '#FFFFFF'
+      paper-toggle-button-unchecked-bar-color:    '#E9E9EA'
+
+      # Sliders
+      slider-color:                       '#007AFF'
+      slider-bar-color:                   'rgba(120, 120, 128, 0.20)'
+      paper-slider-knob-color:            '#FFFFFF'
+      paper-slider-knob-start-color:      '#FFFFFF'
+      paper-slider-pin-color:             '#007AFF'
+      paper-slider-active-color:          '#007AFF'
+      paper-slider-secondary-color:       'rgba(0, 122, 255, 0.30)'
+      paper-slider-container-color:       'rgba(120, 120, 128, 0.20)'
+
+      # Tabs
+      paper-tabs-selection-bar-color: '#007AFF'
+
+      # Labels / badges (Apple system colors)
+      label-badge-background-color: '#FFFFFF'
+      label-badge-text-color:       '#1C1C1E'
+      label-badge-red:              '#FF3B30'
+      label-badge-green:            '#34C759'
+      label-badge-blue:             '#007AFF'
+      label-badge-yellow:           '#FF9500'
+      label-badge-grey:             '#8E8E93'
+
+      # Status colors (Apple system palette)
+      warning-color: '#FF9500'   # systemOrange
+      error-color:   '#FF3B30'   # systemRed
+      success-color: '#34C759'   # systemGreen
+      info-color:    '#007AFF'   # systemBlue
+
+      # Code blocks
+      code-editor-background-color: '#F2F2F7'
+      markdown-code-background-color: 'rgba(118, 118, 128, 0.12)'
+
+      # Calendar
+      calendar-background-color: '#FFFFFF'
+
+      # Energy dashboard (Apple system palette)
+      energy-grid-consumption-color: '#007AFF'
+      energy-grid-return-color:      '#34C759'
+      energy-solar-color:            '#FFCC00'
+      energy-non-fossil-color:       '#30D158'
+      energy-battery-out-color:      '#AF52DE'
+      energy-battery-in-color:       '#5856D6'
+      energy-gas-color:              '#FF9500'
+      energy-water-color:            '#5AC8FA'
+
+    # =========================================================================
+    #  DARK  (systemBackground #000000, #1C1C1E cards, #0A84FF tint)
+    # =========================================================================
+    dark:
+      # ── Default dark wallpaper (3D purple/blue wave) ──
+      # For a solid system canvas use '#000000' instead.
+      lovelace-background: 'center / cover no-repeat fixed url("https://cdn.jsdelivr.net/gh/tedr91/Teds-Themes@main/backgrounds/apple-macos/apple-macos-dark.webp")'
+
+      # ── Apple system blue ramp (shared; dark tint = blue.500 dark) ──
+      ha-color-primary-05: '#002D82'
+      ha-color-primary-10: '#003DA8'
+      ha-color-primary-20: '#0051D4'
+      ha-color-primary-30: '#0066E6'
+      ha-color-primary-40: '#007AFF'
+      ha-color-primary-50: '#2E90FF'
+      ha-color-primary-60: '#0A84FF'   # primitive.blue.500 (dark tint)
+      ha-color-primary-70: '#4DA3FF'
+      ha-color-primary-80: '#80BDFF'
+      ha-color-primary-90: '#B3D7FF'
+      ha-color-primary-95: '#EBF5FF'
+
+      # ── Elevation via lightness: no card shadow in dark mode ──
+      ha-card-box-shadow: 'none'
+
+      # ── HA 2026.x surface tokens (Apple dark hierarchy) ──
+      ha-color-surface-default: '#000000'   # systemBackground
+      ha-color-surface-low:     '#1C1C1E'   # secondarySystemBackground
+      ha-color-surface-lower:   '#2C2C2E'   # tertiarySystemBackground
+
+      # ── HA 2026.x text tokens (Apple dark label colors) ──
+      ha-color-text-primary:    '#FFFFFF'                      # label
+      ha-color-text-secondary:  'rgba(235, 235, 245, 0.60)'   # secondaryLabel
+      ha-color-text-disabled:   'rgba(235, 235, 245, 0.30)'   # tertiaryLabel
+      ha-color-text-link:       '#0A84FF'
+
+      # ── HA 2026.x border tokens (Apple dark separators) ──
+      ha-color-border-neutral-quiet:  'rgba(84, 84, 88, 0.40)'
+      ha-color-border-neutral-normal: 'rgba(84, 84, 88, 0.65)'   # separator (nonOpaque)
+      ha-color-border-neutral-loud:   '#38383A'                  # separator (opaque)
+
+      # ── HA 2026.x form/input background (Apple dark fill) ──
+      ha-color-form-background:           '#1C1C1E'
+      ha-color-form-background-hover:     '#2C2C2E'
+      ha-color-form-background-disabled:  'rgba(118, 118, 128, 0.24)'
+
+      # ── HA 2026.x dialog surface (read by wa-dialog) — vibrant ──
+      ha-dialog-surface-background: 'rgba(40, 40, 42, 0.80)'
+
+      # ── Web Awesome surface tokens (dropdowns + dialogs) ──
+      wa-color-surface-raised:   'rgba(44, 44, 46, 0.96)'   # ← wa-popover (combo-box dropdowns)
+      wa-color-surface-default:  '#1C1C1E'
+      wa-color-surface-border:   'rgba(84, 84, 88, 0.65)'
+
+      # ── Brand / accent — Apple dark tint skews brighter ──
+      primary-color: '#0A84FF'
+      light-primary-color: '#4DA3FF'
+      dark-primary-color: '#007AFF'
+      accent-color: '#0A84FF'
+      rgb-primary-color: '10, 132, 255'
+      rgb-accent-color: '10, 132, 255'
+
+      # ── Backgrounds — Apple dark grouped surfaces ──
+      primary-background-color:   '#000000'   # systemBackground
+      secondary-background-color: '#1C1C1E'
+      card-background-color:           '#1C1C1E'   # secondarySystemGroupedBackground
+      ha-card-background:              '#1C1C1E'
+      paper-card-background-color:    '#1C1C1E'
+      paper-listbox-background-color: '#2C2C2E'
+      paper-dialog-background-color:  'rgba(40, 40, 42, 0.80)'
+      rgb-primary-background-color:   '0, 0, 0'
+      rgb-secondary-background-color: '28, 28, 30'
+      rgb-card-background-color:      '28, 28, 30'
+
+      # ── Text — Apple dark label opacities ──
+      primary-text-color:    '#FFFFFF'
+      secondary-text-color:  'rgba(235, 235, 245, 0.60)'
+      text-primary-color:    '#FFFFFF'                       # text on tint
+      disabled-text-color:   'rgba(235, 235, 245, 0.30)'
+      rgb-primary-text-color:   '255, 255, 255'
+      rgb-secondary-text-color: '235, 235, 245'
+
+      # ── Dividers / lines (also fallback for ha-card border) ──
+      divider-color: 'rgba(84, 84, 88, 0.65)'
+      table-row-background-color: '#1C1C1E'
+      table-row-alternative-background-color: '#2C2C2E'
+
+      # Icons
+      state-icon-color:           'rgba(235, 235, 245, 0.60)'
+      state-icon-active-color:    '#0A84FF'
+      state-icon-unavailable-color: 'rgba(235, 235, 245, 0.30)'
+      paper-item-icon-color:        'rgba(235, 235, 245, 0.60)'
+      paper-item-icon-active-color: '#0A84FF'
+      rgb-state-icon-color:        '235, 235, 245'
+      rgb-state-icon-active-color: '10, 132, 255'
+
+      # Sidebar (Liquid Glass — translucent chrome; Golden Gate: higher contrast)
+      sidebar-background-color:           'rgba(28, 28, 30, 0.80)'
+      sidebar-icon-color:                 'rgba(235, 235, 245, 0.60)'
+      sidebar-text-color:                 '#FFFFFF'
+      sidebar-selected-background-color:  'rgba(10, 132, 255, 0.24)'
+      sidebar-selected-icon-color:        '#0A84FF'
+      sidebar-selected-text-color:        '#0A84FF'
+
+      # App header (Liquid Glass — translucent chrome; Golden Gate: higher contrast)
+      app-header-background-color: 'rgba(0, 0, 0, 0.80)'
+      app-header-text-color:       '#FFFFFF'
+      app-header-edit-background-color: '#1C1C1E'
+
+      # Inputs / form fields
+      input-background-color:     '#1C1C1E'
+      input-fill-color:           'rgba(118, 118, 128, 0.24)'
+      input-ink-color:            '#FFFFFF'
+      input-label-ink-color:      'rgba(235, 235, 245, 0.60)'
+      input-disabled-fill-color:  'rgba(118, 118, 128, 0.18)'
+      input-disabled-ink-color:   'rgba(235, 235, 245, 0.30)'
+      input-disabled-label-ink-color: 'rgba(235, 235, 245, 0.30)'
+      input-dropdown-icon-color:  'rgba(235, 235, 245, 0.60)'
+      input-idle-line-color:      'rgba(84, 84, 88, 0.65)'
+      input-hover-line-color:     '#0A84FF'
+      input-disabled-line-color:  'rgba(84, 84, 88, 0.40)'
+      input-outlined-idle-border-color:     'rgba(84, 84, 88, 0.65)'
+      input-outlined-hover-border-color:    '#0A84FF'
+      input-outlined-disabled-border-color: 'rgba(84, 84, 88, 0.40)'
+
+      # Material design (MDC)
+      mdc-theme-primary:    '#0A84FF'
+      mdc-theme-secondary:  '#0A84FF'
+      mdc-theme-on-primary: '#FFFFFF'
+      mdc-theme-on-secondary: '#FFFFFF'
+      mdc-theme-surface:    '#1C1C1E'
+      mdc-theme-on-surface: '#FFFFFF'
+      mdc-button-outline-color: 'rgba(84, 84, 88, 0.65)'
+
+      # Switches — iconic iOS green toggle (dark)
+      switch-checked-color:           '#30D158'
+      switch-checked-button-color:    '#FFFFFF'
+      switch-checked-track-color:     '#30D158'
+      switch-unchecked-button-color:  '#FFFFFF'
+      switch-unchecked-track-color:   '#39393D'
+      paper-toggle-button-checked-button-color: '#FFFFFF'
+      paper-toggle-button-checked-bar-color:    '#30D158'
+      paper-toggle-button-unchecked-button-color: '#FFFFFF'
+      paper-toggle-button-unchecked-bar-color:    '#39393D'
+
+      # Sliders
+      slider-color:                       '#0A84FF'
+      slider-bar-color:                   'rgba(120, 120, 128, 0.32)'
+      paper-slider-knob-color:            '#FFFFFF'
+      paper-slider-knob-start-color:      '#FFFFFF'
+      paper-slider-pin-color:             '#0A84FF'
+      paper-slider-active-color:          '#0A84FF'
+      paper-slider-secondary-color:       'rgba(10, 132, 255, 0.30)'
+      paper-slider-container-color:       'rgba(120, 120, 128, 0.32)'
+
+      # Tabs
+      paper-tabs-selection-bar-color: '#0A84FF'
+
+      # Labels / badges (Apple dark system colors)
+      label-badge-background-color: '#1C1C1E'
+      label-badge-text-color:       '#FFFFFF'
+      label-badge-red:              '#FF453A'
+      label-badge-green:            '#30D158'
+      label-badge-blue:             '#0A84FF'
+      label-badge-yellow:           '#FF9F0A'
+      label-badge-grey:             '#8E8E93'
+
+      # Status colors (Apple dark system palette)
+      warning-color: '#FF9F0A'   # systemOrange (dark)
+      error-color:   '#FF453A'   # systemRed (dark)
+      success-color: '#30D158'   # systemGreen (dark)
+      info-color:    '#0A84FF'   # systemBlue (dark)
+
+      # Code blocks
+      code-editor-background-color: '#1C1C1E'
+      markdown-code-background-color: '#2C2C2E'
+
+      # Calendar
+      calendar-background-color: '#1C1C1E'
+
+      # Energy dashboard (Apple dark system palette)
+      energy-grid-consumption-color: '#0A84FF'
+      energy-grid-return-color:      '#30D158'
+      energy-solar-color:            '#FFD60A'
+      energy-non-fossil-color:       '#30D158'
+      energy-battery-out-color:      '#BF5AF2'
+      energy-battery-in-color:       '#5E5CE6'
+      energy-gas-color:              '#FF9F0A'
+      energy-water-color:            '#64D2FF'

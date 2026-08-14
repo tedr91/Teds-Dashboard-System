@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.155
+
+- Bundled themes: renamed **Apple macOS 26 → Apple macOS** (refreshed for macOS 27 "Golden Gate") and added a new **Apple macOS - Glass** theme with translucent frosted-glass cards. The theme installer now cleans up themes it previously wrote that were renamed or removed, so the old "Apple macOS 26" won't linger. Re-select the theme in your Profile after updating.
+
 ### v0.9.154
 
 - Bundles Ted's Cards v0.9.132 (Fullscreen Card: square corners when maximized, so a themed border-radius no longer rounds the screen corners). Also refreshes the bundled Windows 11 theme with the authentic per-mode card outline stroke (Fluent CardStrokeColorDefault).

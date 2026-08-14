@@ -48,9 +48,8 @@ def _write_themes(
     """
     os.makedirs(dest_dir, exist_ok=True)
     changed = False
-    for name in sorted(os.listdir(src_dir)):
-        if not name.endswith((".yaml", ".yml")):
-            continue
+    src_names = {n for n in os.listdir(src_dir) if n.endswith((".yaml", ".yml"))}
+    for name in sorted(src_names):
         dest = os.path.join(dest_dir, name)
         exists = os.path.isfile(dest)
         ours = name in recorded
@@ -65,6 +64,17 @@ def _write_themes(
             continue  # already up to date
         shutil.copyfile(os.path.join(src_dir, name), dest)
         recorded[name] = version
+        changed = True
+    # Remove themes we previously installed that are no longer bundled (renamed or
+    # dropped) so a rename doesn't leave a stale theme on the user's system.
+    for name in [n for n in recorded if n not in src_names]:
+        dest = os.path.join(dest_dir, name)
+        try:
+            if os.path.isfile(dest):
+                os.remove(dest)
+        except OSError:
+            _LOGGER.debug("Could not remove orphaned theme %s", name)
+        recorded.pop(name, None)
         changed = True
     return changed, recorded
 

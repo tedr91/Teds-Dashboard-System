@@ -1,10 +1,18 @@
 # =============================================================================
-#  Apple macOS 26 (Tahoe) — Home Assistant Theme
+#  Apple macOS - Glass — Home Assistant Theme
 #
-#  Modeled on Apple's macOS 26 "Tahoe" / Liquid Glass design language:
+#  The "Apple macOS" theme with Liquid Glass extended to the CONTENT layer:
+#  cards become translucent + blurred (frosted glass) instead of solid grouped
+#  surfaces. Everything else matches the base macOS 27 "Golden Gate" theme.
+#
+#  Modeled on Apple's macOS 27 "Golden Gate" / Liquid Glass design language:
 #  SF Pro typography, the system blue tint (#007AFF light / #0A84FF dark),
 #  grouped-list surfaces, rounder "concentric" corners (16 px cards, capsule
 #  buttons), translucent glass chrome, and "elevation through lightness" in dark.
+#
+#  macOS 27 "Golden Gate" refines Liquid Glass for more uniform refraction and
+#  improved contrast/readability, so the glass chrome (sidebar, header, dialogs)
+#  is a touch more opaque + more saturated here than the first Liquid Glass draft.
 #
 #  Native HA 2026.x theme — no UIX or card-mod required.
 #  Single theme with `modes:` so HA's "Auto" theme mode follows the OS.
@@ -15,14 +23,13 @@
 #  - Labels/separators = Apple semantic label & separator opacities.
 #  - Radii: controls 12 / cards 16 / sheets 20 px; buttons & chips = capsule.
 #
-#  Liquid Glass is a CHROME material: the sidebar, header, dialogs and popovers
-#  are translucent glass that floats over content, while CONTENT cards stay on
-#  solid (standard) materials — per Apple's "don't use Liquid Glass in the
-#  content layer" guidance. Shadows are active in light mode and removed in
-#  dark, where the lightness step (#000 page -> #1C1C1E card) conveys elevation.
+#  Liquid Glass extends to CONTENT cards here: cards are translucent + blurred
+#  so the wallpaper/content shows through (unlike the base theme, where content
+#  cards stay solid per Apple's usual guidance). A soft shadow + a subtle light
+#  edge keep each glass card legible and floating in both modes.
 # =============================================================================
 
-Apple macOS 26:
+Apple macOS - Glass:
   # ---------------------------------------------------------------------------
   # 1. Typography — SF Pro via -apple-system, graceful fallbacks elsewhere
   # ---------------------------------------------------------------------------
@@ -61,7 +68,7 @@ Apple macOS 26:
   paper-font-title_-_line-height: '28px'
 
   # ---------------------------------------------------------------------------
-  # 2. macOS 26 Tahoe corner-radius system — rounder, "concentric"
+  # 2. macOS 27 corner-radius system — rounder, "concentric"
   #    controls 12 · cards 16 · sheets 20 px · buttons & chips = capsule
   # ---------------------------------------------------------------------------
   ha-border-radius-sm:  '8px'
@@ -82,20 +89,21 @@ Apple macOS 26:
   border-radius-chip:   '980px'  # capsule chips
 
   # ---------------------------------------------------------------------------
-  # 3. Card geometry — SOLID grouped surface (content layer keeps standard
-  #    materials, NOT Liquid Glass, per Apple); subtle hairline border; soft
-  #    Apple shadow in light mode (removed in dark via the dark override below).
+  # 3. Card geometry — LIQUID GLASS content cards: translucent + blurred frosted
+  #    surface (per-mode fill below), a subtle light glass edge, and a soft
+  #    floating shadow kept in BOTH modes so glass cards read over the wallpaper.
   # ---------------------------------------------------------------------------
-  ha-card-backdrop-filter: 'none'
+  ha-card-backdrop-filter: 'saturate(180%) blur(20px)'
   ha-card-border-width: '1px'
-  ha-card-box-shadow: '0 4px 16px rgba(0, 0, 0, 0.08), 0 1px 4px rgba(0, 0, 0, 0.04)'  # shadow.md
-  # (ha-card-border-color falls back to --divider-color, set per mode below.)
+  ha-card-box-shadow: '0 4px 16px rgba(0, 0, 0, 0.10), 0 1px 4px rgba(0, 0, 0, 0.06)'
+  # (ha-card-border-color + translucent ha-card-background are set per mode below.)
 
   # ---------------------------------------------------------------------------
   # 4. Dialogs, popovers & menus — Liquid Glass (regular variant): translucent
   #    + blur, like macOS / iOS sheets and alerts. Surface fill set per mode.
+  #    macOS 27 Golden Gate: higher saturation for more uniform refraction.
   # ---------------------------------------------------------------------------
-  ha-dialog-surface-backdrop-filter: 'saturate(180%) blur(24px)'
+  ha-dialog-surface-backdrop-filter: 'saturate(200%) blur(24px)'
   ha-dialog-scrim-backdrop-filter: 'blur(4px)'
 
   # Apple elevation — soft, diffuse shadows for menus and popovers.
@@ -119,7 +127,7 @@ Apple macOS 26:
     light:
       # ── Default light wallpaper (soft pastel waves) ──
       # For a solid grouped canvas use '#F2F2F7' instead.
-      lovelace-background: 'center / cover no-repeat fixed url("https://cdn.jsdelivr.net/gh/tedr91/Teds-Themes@main/backgrounds/apple-macos-26/apple-macos-26-light.webp")'
+      lovelace-background: 'center / cover no-repeat fixed url("https://cdn.jsdelivr.net/gh/tedr91/Teds-Themes@main/backgrounds/apple-macos/apple-macos-light.webp")'
 
       # ── Apple system blue ramp ──
       ha-color-primary-05: '#002D82'
@@ -174,9 +182,10 @@ Apple macOS 26:
       # ── Backgrounds — grouped surfaces ──
       primary-background-color:   '#F2F2F7'   # systemGroupedBackground
       secondary-background-color: '#E5E5EA'
-      card-background-color:           '#FFFFFF'   # secondarySystemGroupedBackground
-      ha-card-background:              '#FFFFFF'
-      paper-card-background-color:     '#FFFFFF'
+      card-background-color:           'rgba(255, 255, 255, 0.72)'   # menus (kept more opaque)
+      ha-card-background:              'rgba(255, 255, 255, 0.55)'   # Liquid Glass cards
+      ha-card-border-color:            'rgba(255, 255, 255, 0.55)'   # bright glass edge
+      paper-card-background-color:     'rgba(255, 255, 255, 0.55)'
       paper-listbox-background-color:  '#FFFFFF'
       paper-dialog-background-color:   'rgba(255, 255, 255, 0.80)'
       rgb-primary-background-color:   '242, 242, 247'
@@ -205,16 +214,16 @@ Apple macOS 26:
       rgb-state-icon-color:        '60, 60, 67'
       rgb-state-icon-active-color: '0, 122, 255'
 
-      # Sidebar (Liquid Glass — translucent chrome)
-      sidebar-background-color:           'rgba(242, 242, 247, 0.72)'
+      # Sidebar (Liquid Glass — translucent chrome; Golden Gate: higher contrast)
+      sidebar-background-color:           'rgba(242, 242, 247, 0.80)'
       sidebar-icon-color:                 'rgba(60, 60, 67, 0.60)'
       sidebar-text-color:                 '#1C1C1E'
       sidebar-selected-background-color:  'rgba(0, 122, 255, 0.12)'
       sidebar-selected-icon-color:        '#007AFF'
       sidebar-selected-text-color:        '#007AFF'
 
-      # App header (Liquid Glass — translucent chrome)
-      app-header-background-color: 'rgba(249, 249, 251, 0.72)'
+      # App header (Liquid Glass — translucent chrome; Golden Gate: higher contrast)
+      app-header-background-color: 'rgba(249, 249, 251, 0.80)'
       app-header-text-color:       '#1C1C1E'
       app-header-edit-background-color: '#E5E5EA'
 
@@ -305,7 +314,7 @@ Apple macOS 26:
     dark:
       # ── Default dark wallpaper (3D purple/blue wave) ──
       # For a solid system canvas use '#000000' instead.
-      lovelace-background: 'center / cover no-repeat fixed url("https://cdn.jsdelivr.net/gh/tedr91/Teds-Themes@main/backgrounds/apple-macos-26/apple-macos-26-dark.webp")'
+      lovelace-background: 'center / cover no-repeat fixed url("https://cdn.jsdelivr.net/gh/tedr91/Teds-Themes@main/backgrounds/apple-macos/apple-macos-dark.webp")'
 
       # ── Apple system blue ramp (shared; dark tint = blue.500 dark) ──
       ha-color-primary-05: '#002D82'
@@ -320,8 +329,8 @@ Apple macOS 26:
       ha-color-primary-90: '#B3D7FF'
       ha-color-primary-95: '#EBF5FF'
 
-      # ── Elevation via lightness: no card shadow in dark mode ──
-      ha-card-box-shadow: 'none'
+      # ── Glass cards float in dark too — keep a soft shadow ──
+      ha-card-box-shadow: '0 4px 16px rgba(0, 0, 0, 0.30), 0 1px 4px rgba(0, 0, 0, 0.20)'
 
       # ── HA 2026.x surface tokens (Apple dark hierarchy) ──
       ha-color-surface-default: '#000000'   # systemBackground
@@ -363,9 +372,10 @@ Apple macOS 26:
       # ── Backgrounds — Apple dark grouped surfaces ──
       primary-background-color:   '#000000'   # systemBackground
       secondary-background-color: '#1C1C1E'
-      card-background-color:           '#1C1C1E'   # secondarySystemGroupedBackground
-      ha-card-background:              '#1C1C1E'
-      paper-card-background-color:    '#1C1C1E'
+      card-background-color:           'rgba(28, 28, 30, 0.72)'   # menus (kept more opaque)
+      ha-card-background:              'rgba(28, 28, 30, 0.55)'   # Liquid Glass cards
+      ha-card-border-color:            'rgba(255, 255, 255, 0.14)'   # bright glass edge
+      paper-card-background-color:    'rgba(28, 28, 30, 0.55)'
       paper-listbox-background-color: '#2C2C2E'
       paper-dialog-background-color:  'rgba(40, 40, 42, 0.80)'
       rgb-primary-background-color:   '0, 0, 0'
@@ -394,16 +404,16 @@ Apple macOS 26:
       rgb-state-icon-color:        '235, 235, 245'
       rgb-state-icon-active-color: '10, 132, 255'
 
-      # Sidebar (Liquid Glass — translucent chrome)
-      sidebar-background-color:           'rgba(28, 28, 30, 0.72)'
+      # Sidebar (Liquid Glass — translucent chrome; Golden Gate: higher contrast)
+      sidebar-background-color:           'rgba(28, 28, 30, 0.80)'
       sidebar-icon-color:                 'rgba(235, 235, 245, 0.60)'
       sidebar-text-color:                 '#FFFFFF'
       sidebar-selected-background-color:  'rgba(10, 132, 255, 0.24)'
       sidebar-selected-icon-color:        '#0A84FF'
       sidebar-selected-text-color:        '#0A84FF'
 
-      # App header (Liquid Glass — translucent chrome)
-      app-header-background-color: 'rgba(0, 0, 0, 0.72)'
+      # App header (Liquid Glass — translucent chrome; Golden Gate: higher contrast)
+      app-header-background-color: 'rgba(0, 0, 0, 0.80)'
       app-header-text-color:       '#FFFFFF'
       app-header-edit-background-color: '#1C1C1E'
 
