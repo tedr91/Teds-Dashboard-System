@@ -61,7 +61,7 @@ cards:
         dashboard_integration: true
         auto_max_rows: true
       - type: custom:ted-music-card
-        player_source: settings
+        dashboard_integration: true
         mode: mini
   - !include ../shared/navbar.yaml
   - !include ../shared/background.yaml

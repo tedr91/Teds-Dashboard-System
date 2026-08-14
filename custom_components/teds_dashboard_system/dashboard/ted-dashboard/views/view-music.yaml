@@ -19,7 +19,7 @@ cards:
     fill: true
     card:
       type: custom:ted-music-card
-      player_source: settings
+      dashboard_integration: true
       # Media tab presents the library as artwork tiles (Playlists / Albums / Artists /
       # Favorites) with a Recently-played row; switchable to a list from the card.
       media_layout: tiles

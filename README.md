@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.148
+
+- Bundles Ted's Cards v0.9.126 (Music Card: adaptive Mini player + YAML-only `dashboard_integration`). Music dashboard views updated to `dashboard_integration`.
+
 ### v0.9.147
 
 - Bundles Ted's Cards v0.9.125 (Music Card: new "Micro" player mode + two-row Mini bar with an auto-sizing thumbnail).
