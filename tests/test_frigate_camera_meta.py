@@ -57,38 +57,64 @@ class _Registry:
         self.entities = {e.entity_id: e for e in entities}
 
 
-def _meta_for(entities):
+class _Hass:
+    def __init__(self, frigate_data=None):
+        # Mirrors hass.data["frigate"][entry_id]["config"]["mqtt"]["client_id"].
+        self.data = {"frigate": frigate_data} if frigate_data is not None else {}
+
+
+def _meta_for(entities, frigate_data=None):
     frigate = _load_frigate()
     frigate.er.async_get = lambda _hass: _Registry(entities)
-    return frigate.frigate_camera_meta(object())
+    return frigate.frigate_camera_meta(_Hass(frigate_data))
+
+
+_DATA = {"an-entry": {"config": {"mqtt": {"client_id": "frigate"}}}}
 
 
 def test_parses_entry_and_camera_name():
-    meta = _meta_for([_Entity("camera.front_yard", "abc123:camera:front_yard")])
+    meta = _meta_for(
+        [_Entity("camera.front_yard", "an-entry:camera:front_yard")], _DATA
+    )
     assert meta == {
-        "camera.front_yard": {"instance_id": "abc123", "camera_name": "front_yard"}
+        "camera.front_yard": {"instance_id": "frigate", "camera_name": "front_yard"}
     }
 
 
 def test_camera_name_with_underscores_kept_intact():
-    meta = _meta_for([_Entity("camera.front_door_package", "abc123:camera:front_door_package")])
+    meta = _meta_for(
+        [_Entity("camera.front_door_package", "an-entry:camera:front_door_package")], _DATA
+    )
     assert meta["camera.front_door_package"]["camera_name"] == "front_door_package"
+
+
+def test_instance_id_is_mqtt_client_id_not_entry_id():
+    # The proxy expects Frigate's MQTT client_id, never the HA config-entry id.
+    data = {"e1": {"config": {"mqtt": {"client_id": "myfrigate"}}}}
+    meta = _meta_for([_Entity("camera.cam", "e1:camera:cam")], data)
+    assert meta["camera.cam"]["instance_id"] == "myfrigate"
+
+
+def test_instance_id_empty_when_client_id_unavailable():
+    # No hass.data for the entry -> empty (card falls back to the no-instance path).
+    meta = _meta_for([_Entity("camera.cam", "e1:camera:cam")], {})
+    assert meta["camera.cam"]["instance_id"] == ""
 
 
 def test_skips_non_frigate_and_non_camera_and_disabled():
     entities = [
         _Entity("camera.unifi", "xyz", platform="unifiprotect"),
-        _Entity("switch.front_yard_detect", "abc123:switch:front_yard:detect", domain="switch"),
-        _Entity("camera.off", "abc123:camera:off", disabled=True),
-        _Entity("camera.keep", "abc123:camera:keep"),
+        _Entity("switch.front_yard_detect", "an-entry:switch:front_yard:detect", domain="switch"),
+        _Entity("camera.off", "an-entry:camera:off", disabled=True),
+        _Entity("camera.keep", "an-entry:camera:keep"),
     ]
-    assert list(_meta_for(entities)) == ["camera.keep"]
+    assert list(_meta_for(entities, _DATA)) == ["camera.keep"]
 
 
 def test_skips_malformed_unique_id():
     entities = [
         _Entity("camera.bad", "no-colon-camera-marker"),
         _Entity("camera.empty_instance", ":camera:foo"),
-        _Entity("camera.good", "id:camera:good"),
+        _Entity("camera.good", "an-entry:camera:good"),
     ]
-    assert list(_meta_for(entities)) == ["camera.good"]
+    assert list(_meta_for(entities, _DATA)) == ["camera.good"]

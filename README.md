@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.165
+
+- **Bundles Ted's Cards v0.9.140** — the Camera Card now streams Frigate cameras over go2rtc **WebRTC** with **audio** (Opus) and **H.265** at sub-second latency, falling back to the MSE player and then the thumbnail; only the primary tile is unmuted in multi-camera layouts. Also fixes the wrong Frigate instance id this integration reported, so the card can actually reach go2rtc through Frigate's proxy.
+
 ### v0.9.164
 
 - **Bundles Ted's Cards v0.9.139** — the Camera Card gains a native MSE live player so Frigate **H.265** cameras stream live in real time, plus a grace period so a quick tab switch no longer tears feeds down. This integration now surfaces each Frigate camera's instance/stream name so the card can reach go2rtc through Frigate's WebSocket proxy.

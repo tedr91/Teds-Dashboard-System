@@ -137,19 +137,36 @@ def frigate_camera_entity(hass: HomeAssistant, cam_name: str) -> str | None:
 def frigate_camera_meta(hass: HomeAssistant) -> dict[str, dict]:
     """Map each Frigate camera entity to the data the card needs for MSE playback.
 
-    Frigate camera unique_ids are ``{entry_id}:camera:{camera_name}``; ``instance_id``
-    is the config entry id used in the HA MSE proxy URL and ``camera_name`` is the
-    go2rtc stream base name. Covers every Frigate camera (not just adopted ones).
+    Frigate camera unique_ids are ``{entry_id}:camera:{camera_name}``. ``instance_id``
+    is the value Frigate's HA MSE proxy expects in its URL — the Frigate **MQTT
+    client_id**, NOT the HA config-entry id — resolved from ``hass.data``; empty when
+    unavailable (the card then uses Frigate's single-instance proxy path). ``camera_name``
+    is the go2rtc stream base name. Covers every Frigate camera (not just adopted ones).
     """
     out: dict[str, dict] = {}
     for ent in er.async_get(hass).entities.values():
         if ent.platform != FRIGATE_DOMAIN or ent.domain != "camera" or ent.disabled:
             continue
-        instance_id, sep, rest = (ent.unique_id or "").partition(":camera:")
-        if not sep or not instance_id or not rest:
+        entry_id, sep, rest = (ent.unique_id or "").partition(":camera:")
+        if not sep or not entry_id or not rest:
             continue
-        out[ent.entity_id] = {"instance_id": instance_id, "camera_name": rest}
+        out[ent.entity_id] = {
+            "instance_id": _frigate_instance_id(hass, entry_id),
+            "camera_name": rest,
+        }
     return out
+
+
+def _frigate_instance_id(hass: HomeAssistant, entry_id: str) -> str:
+    """The Frigate MQTT client_id for a config entry — the id Frigate's proxy matches
+    in ``/api/frigate/{id}/...``. Empty when unavailable (card falls back to the
+    no-instance proxy path, which serves the single configured instance)."""
+    data = hass.data.get(FRIGATE_DOMAIN)
+    entry = data.get(entry_id) if isinstance(data, dict) else None
+    config = entry.get("config") if isinstance(entry, dict) else None
+    mqtt = config.get("mqtt") if isinstance(config, dict) else None
+    client_id = mqtt.get("client_id") if isinstance(mqtt, dict) else None
+    return str(client_id) if client_id else ""
 
 
 def detect_frigate(hass: HomeAssistant) -> dict:
