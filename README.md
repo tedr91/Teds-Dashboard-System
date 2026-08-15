@@ -51,6 +51,11 @@ frontend:
 
 ## Changelog
 
+### v0.9.159
+
+- Bundles Ted's Cards v0.9.136 (Launcher Buttons transparency/blur; Button Card entity default icons; Agenda spacing).
+- **Dashboard:** wall-panel Room Cards are now auto-height and bottom-justified above the Music card; the navbar follows the global Theme setting (dropped the transparency/blur overrides); adds the **Web View** view; and the bundled dashboard is back in sync with the standalone Teds-Dashboard.
+
 ### v0.9.158
 
 - Bundles Ted's Cards v0.9.135 (Room Card auto-populate: brushed-metal effect on generated tiles).

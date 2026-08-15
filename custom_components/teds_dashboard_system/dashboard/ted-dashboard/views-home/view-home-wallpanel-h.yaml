@@ -33,10 +33,10 @@ cards:
           gap: 12px;
         }
         #root > * { margin: 0 !important; }
-        /* Room Card (2nd child) fills the middle; the mini Music bar sits at the
-           bottom. When the Room Card hides (no device area) its slot still holds
-           the flex space, keeping the clock at the top and Music at the bottom. */
-        #root > *:nth-child(2) { flex: 1 1 auto; min-height: 0; }
+        /* Clock stays at the top; the Room Card (2nd child) sits at its own natural
+           (auto) height and is bottom-justified — its auto top-margin pushes it and
+           the mini Music bar down so both sit together at the bottom. */
+        #root > *:nth-child(2) { flex: 0 1 auto; min-height: 0; margin-top: auto !important; }
     cards:
       - type: custom:ted-clock-weather-card
         theme: ted-style
@@ -54,7 +54,6 @@ cards:
             .cwc { padding: 8px !important; }
       - type: custom:ted-room-card
         dashboard_integration: true
-        auto_max_rows: true
       - type: custom:ted-music-card
         dashboard_integration: true
         mode: mini

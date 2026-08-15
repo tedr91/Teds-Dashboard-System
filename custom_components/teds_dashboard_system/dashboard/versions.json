@@ -16,6 +16,7 @@
     "view-photos": "1.0.0",
     "view-settings": "1.0.1",
     "view-weather": "1.0.1",
+    "view-webview": "1.0.0",
     "view-home-handheld": "1.0.0",
     "view-home-nightstand": "1.0.0",
     "view-home-wallpanel-h": "1.2.2",
@@ -39,7 +40,8 @@
       "views/view-assist-response.yaml",
       "views/view-announce.yaml",
       "views/view-notifications.yaml",
-      "views/view-settings.yaml"
+      "views/view-settings.yaml",
+      "views/view-webview.yaml"
     ]
   },
   "compat": {

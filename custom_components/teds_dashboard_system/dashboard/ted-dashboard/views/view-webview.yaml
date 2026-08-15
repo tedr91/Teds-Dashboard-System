@@ -1,0 +1,17 @@
+# View: Web View — a full-bleed web page (iframe) for the current dashboard. path: webview
+# Loads whatever URL is passed via the `?url=` query string (e.g. the music card's
+# "Party Mode!" action opens Music Assistant's fullscreen /#/party dashboard here).
+# Marked subview so it stays out of the navbar launcher; navigated to on demand.
+type: custom:grid-layout
+path: webview
+title: Web View
+icon: mdi:web
+subview: true
+layout: !include ../shared/layout-content.yaml
+cards:
+  - type: custom:ted-webview-card
+    view_layout:
+      grid-area: content
+    fill: true
+  - !include ../shared/navbar.yaml
+  - !include ../shared/background.yaml
