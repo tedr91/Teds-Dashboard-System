@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.175
+
+- **Vision tab: bundled Ted's Cards v0.9.149** — adds a layout toggle button (top-right of the card header) so you can switch between list and tile view instantly, without editing YAML.
+
 ### v0.9.174
 
 - **Vision tab: bundled Ted's Cards v0.9.148** — the Cameras → Vision timeline now supports a larger tile layout with the same metadata as the list view, the severity reduced to a color-dot indicator, and the summary placed under the title row. Also ships the bundled theme wallpaper fix for HA header colors so the theme contract remains valid in Home Assistant.
