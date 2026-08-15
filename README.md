@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.170
+
+- **Bundles Ted's Cards v0.9.145** — smooth Frigate live on the MSE path (Edge etc.): the live-edge tracker no longer fast-forwards playback (which overloaded the decoder), and the MSE path serves the low-res detect stream so decode keeps up.
+
 ### v0.9.169
 
 - **Bundles Ted's Cards v0.9.144** — the Camera Card now chooses its Frigate live transport by browser capability (WebRTC where H.265 decodes over it, else MSE), fixing the frozen feed on browsers like Microsoft Edge.
