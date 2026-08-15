@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.173
+
+- **Theme wallpapers now load locally instead of from the jsDelivr CDN.** The bundled themes' default wallpapers are served same-origin from the integration, so the dashboard background no longer triggers browser tracking-prevention warnings.
+
 ### v0.9.172
 
 - **Bundles Ted's Cards v0.9.147** — the Room Card no longer briefly loads bundled header photos from the jsDelivr CDN on first paint (which tripped browser tracking-prevention warnings); it now waits for the local copy before falling back.

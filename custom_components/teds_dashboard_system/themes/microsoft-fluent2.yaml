@@ -117,7 +117,7 @@ Microsoft Fluent 2:
     light:
       # ── Default light wallpaper (neutral concrete gradient) ──
       # Fluent is flat by design; for a solid canvas use '#F5F5F5' instead.
-      lovelace-background: 'center / cover no-repeat fixed url("https://cdn.jsdelivr.net/gh/tedr91/Teds-Themes@main/backgrounds/microsoft-fluent2/microsoft-fluent2-light.webp")'
+      lovelace-background: 'center / cover no-repeat fixed url("/teds_dashboard_system/backgrounds/light-mode/microsoft-fluent2-light.webp")'
 
       # ── Fluent brand ramp (default communication blue, shades 10–160) ──
       ha-color-primary-05: '#061724'
@@ -303,7 +303,7 @@ Microsoft Fluent 2:
     dark:
       # ── Default dark wallpaper (dark-grey brushstroke) ──
       # For a solid canvas use '#1F1F1F' instead.
-      lovelace-background: 'center / cover no-repeat fixed url("https://cdn.jsdelivr.net/gh/tedr91/Teds-Themes@main/backgrounds/microsoft-fluent2/microsoft-fluent2-dark.webp")'
+      lovelace-background: 'center / cover no-repeat fixed url("/teds_dashboard_system/backgrounds/dark-mode/microsoft-fluent2-dark.webp")'
 
       # ── Fluent brand ramp (shared absolute ramp; dark fill = shade 100) ──
       ha-color-primary-05: '#061724'
