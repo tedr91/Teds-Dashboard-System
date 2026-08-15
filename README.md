@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.169
+
+- **Bundles Ted's Cards v0.9.144** — the Camera Card now chooses its Frigate live transport by browser capability (WebRTC where H.265 decodes over it, else MSE), fixing the frozen feed on browsers like Microsoft Edge.
+
 ### v0.9.168
 
 - **Bundles Ted's Cards v0.9.143** — the Camera Card's primary live tile no longer freezes on load, and every tile now starts muted with a mute/unmute speaker toggle on the primary live tile.
