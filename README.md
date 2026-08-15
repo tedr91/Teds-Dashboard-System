@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.174
+
+- **Vision tab: bundled Ted's Cards v0.9.148** — the Cameras → Vision timeline now supports a larger tile layout with the same metadata as the list view, the severity reduced to a color-dot indicator, and the summary placed under the title row. Also ships the bundled theme wallpaper fix for HA header colors so the theme contract remains valid in Home Assistant.
+
 ### v0.9.173
 
 - **Theme wallpapers now load locally instead of from the jsDelivr CDN.** The bundled themes' default wallpapers are served same-origin from the integration, so the dashboard background no longer triggers browser tracking-prevention warnings.

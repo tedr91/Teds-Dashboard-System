@@ -114,7 +114,9 @@ Apple macOS - Glass:
   # ---------------------------------------------------------------------------
   # 5. App-header sizing
   # ---------------------------------------------------------------------------
-  app-header-background-color: 'var(--primary-background-color)'
+  # Concrete color: HA copies this top-level value straight into manifest.json
+  # theme_color, where a var() reference is not a valid color. Modes override it.
+  app-header-background-color: '#F2F2F7'
   app-header-text-color: 'var(--primary-text-color)'
   app-header-border-bottom: '1px solid var(--divider-color)'
 

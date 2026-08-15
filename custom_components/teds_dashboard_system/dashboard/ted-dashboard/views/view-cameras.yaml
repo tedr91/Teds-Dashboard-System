@@ -46,5 +46,6 @@ cards:
           card:
             type: custom:ted-vision-card
             theme: ted-style
+            layout: tiles
   - !include ../shared/navbar.yaml
   - !include ../shared/background.yaml
