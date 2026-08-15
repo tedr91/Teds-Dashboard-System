@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.163
+
+- **Bundles Ted's Cards v0.9.138** — launcher button icons follow the theme's text color instead of always white.
+
 ### v0.9.162
 
 - **Bundles Ted's Cards v0.9.137** — grouped launcher buttons' stacked-card shadow now follows the theme corner radius instead of a fixed one.
