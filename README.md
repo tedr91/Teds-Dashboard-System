@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.167
+
+- **Bundles Ted's Cards v0.9.142** — a grouped launcher button's multi-view hint shadow now hides when its background transparency is 100%.
+
 ### v0.9.166
 
 - **Bundles Ted's Cards v0.9.141** — the Camera Card's primary (first) tile now defaults to **live** (one always-on feed, with audio for Frigate cameras) while the other tiles stay on lightweight **auto** thumbnails.
