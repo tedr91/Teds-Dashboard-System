@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.162
+
+- **Bundles Ted's Cards v0.9.137** — grouped launcher buttons' stacked-card shadow now follows the theme corner radius instead of a fixed one.
+
 ### v0.9.161
 
 - **Fix: dashboard content actually re-deploys on update.** The content version gate had been set equal to a value some systems already had installed, so the file mirror kept getting skipped. Bumped it strictly higher so the theme-following navbar and the auto-height wall-panel Room Cards (bundled since 0.9.159) finally deploy.
