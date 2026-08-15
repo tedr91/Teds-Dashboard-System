@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.166
+
+- **Bundles Ted's Cards v0.9.141** — the Camera Card's primary (first) tile now defaults to **live** (one always-on feed, with audio for Frigate cameras) while the other tiles stay on lightweight **auto** thumbnails.
+
 ### v0.9.165
 
 - **Bundles Ted's Cards v0.9.140** — the Camera Card now streams Frigate cameras over go2rtc **WebRTC** with **audio** (Opus) and **H.265** at sub-second latency, falling back to the MSE player and then the thumbnail; only the primary tile is unmuted in multi-camera layouts. Also fixes the wrong Frigate instance id this integration reported, so the card can actually reach go2rtc through Frigate's proxy.
