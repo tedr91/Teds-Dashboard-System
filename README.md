@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.161
+
+- **Fix: dashboard content actually re-deploys on update.** The content version gate had been set equal to a value some systems already had installed, so the file mirror kept getting skipped. Bumped it strictly higher so the theme-following navbar and the auto-height wall-panel Room Cards (bundled since 0.9.159) finally deploy.
+
 ### v0.9.160
 
 - **Fix: Launcher Buttons Transparency/Blur now persist.** The backend was silently dropping the two new settings (they weren't in its allow-list) so they snapped back to 75/0 — they're now saved.
