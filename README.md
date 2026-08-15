@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.168
+
+- **Bundles Ted's Cards v0.9.143** — the Camera Card's primary live tile no longer freezes on load, and every tile now starts muted with a mute/unmute speaker toggle on the primary live tile.
+
 ### v0.9.167
 
 - **Bundles Ted's Cards v0.9.142** — a grouped launcher button's multi-view hint shadow now hides when its background transparency is 100%.
