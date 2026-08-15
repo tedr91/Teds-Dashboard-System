@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.176
+
+- **Vision tab: bundled Ted's Cards v0.9.150** — tiles is now the default view with four selectable tile sizes (Small/Medium/Large/X-Large), the layout toggle button moved next to "Mark all reviewed"/"Clear all", and "Hide viewed" is now "Show viewed events" (defaults off).
+
 ### v0.9.175
 
 - **Vision tab: bundled Ted's Cards v0.9.149** — adds a layout toggle button (top-right of the card header) so you can switch between list and tile view instantly, without editing YAML.
