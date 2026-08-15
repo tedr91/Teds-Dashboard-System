@@ -268,6 +268,9 @@ SETTINGS_DEFAULTS = {
     "launcher_button_color": "white",
     # Ring color marking the current view's button.
     "launcher_highlight_color": "accent",
+    # Launcher button background transparency (0–100%) and blur (0–100%).
+    "launcher_button_transparency": 75,
+    "launcher_button_blur": 0,
     # Announce — spoken announcements broadcast to Ted's Dashboard devices/areas.
     # Global list of predefined messages: [{id, label, text, icon?}].
     "announce_messages": [],

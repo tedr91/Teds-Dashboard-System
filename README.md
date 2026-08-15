@@ -51,6 +51,11 @@ frontend:
 
 ## Changelog
 
+### v0.9.160
+
+- **Fix: Launcher Buttons Transparency/Blur now persist.** The backend was silently dropping the two new settings (they weren't in its allow-list) so they snapped back to 75/0 — they're now saved.
+- **Fix: dashboard changes actually reach the live system on update.** Bumped the dashboard content version gate so the theme-following navbar and the auto-height wall-panel views (bundled in 0.9.159) are re-deployed — the version-gated mirror had been skipping them.
+
 ### v0.9.159
 
 - Bundles Ted's Cards v0.9.136 (Launcher Buttons transparency/blur; Button Card entity default icons; Agenda spacing).
