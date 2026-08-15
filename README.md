@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.164
+
+- **Bundles Ted's Cards v0.9.139** — the Camera Card gains a native MSE live player so Frigate **H.265** cameras stream live in real time, plus a grace period so a quick tab switch no longer tears feeds down. This integration now surfaces each Frigate camera's instance/stream name so the card can reach go2rtc through Frigate's WebSocket proxy.
+
 ### v0.9.163
 
 - **Bundles Ted's Cards v0.9.138** — launcher button icons follow the theme's text color instead of always white.

@@ -134,6 +134,24 @@ def frigate_camera_entity(hass: HomeAssistant, cam_name: str) -> str | None:
     return _frigate_camera_entity(hass, cam_name)
 
 
+def frigate_camera_meta(hass: HomeAssistant) -> dict[str, dict]:
+    """Map each Frigate camera entity to the data the card needs for MSE playback.
+
+    Frigate camera unique_ids are ``{entry_id}:camera:{camera_name}``; ``instance_id``
+    is the config entry id used in the HA MSE proxy URL and ``camera_name`` is the
+    go2rtc stream base name. Covers every Frigate camera (not just adopted ones).
+    """
+    out: dict[str, dict] = {}
+    for ent in er.async_get(hass).entities.values():
+        if ent.platform != FRIGATE_DOMAIN or ent.domain != "camera" or ent.disabled:
+            continue
+        instance_id, sep, rest = (ent.unique_id or "").partition(":camera:")
+        if not sep or not instance_id or not rest:
+            continue
+        out[ent.entity_id] = {"instance_id": instance_id, "camera_name": rest}
+    return out
+
+
 def detect_frigate(hass: HomeAssistant) -> dict:
     """Return Frigate presence and the camera entity ids it exposes.
 

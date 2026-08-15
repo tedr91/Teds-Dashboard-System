@@ -71,6 +71,9 @@ class TedsManager:
         self.frigate_adopted: bool = False
         self.frigate_prompt_notified: bool = False
         self.frigate: dict = {"installed": False, "cameras": [], "capability": "absent"}
+        # entity_id -> {instance_id, camera_name} for every Frigate camera; the card
+        # uses it to drive its MSE live player. Derived (not persisted).
+        self.frigate_cameras: dict[str, dict] = {}
         # Frigate MQTT review -> notification bridge (created in __init__.py setup).
         self.frigate_bridge = None
         # This integration's version (from the manifest), for status displays.
@@ -833,9 +836,14 @@ class TedsManager:
 
     def settings_payload(self) -> dict:
         """The full settings snapshot pushed to subscribers / exposed on the sensor."""
+        global_settings = dict(self.settings.get("global") or {})
+        if self.frigate_cameras:
+            global_settings["frigate_cameras"] = {
+                k: dict(v) for k, v in self.frigate_cameras.items()
+            }
         return {
             "defaults": dict(SETTINGS_DEFAULTS),
-            "global": dict(self.settings.get("global") or {}),
+            "global": global_settings,
             "devices": {k: dict(v) for k, v in (self.settings.get("devices") or {}).items()},
             "registry": {k: dict(v) for k, v in self.device_registry.items()},
         }
@@ -938,10 +946,16 @@ class TedsManager:
     async def refresh_requirements(self) -> None:
         """Re-run server-side dependency detection and update the sensor."""
         from .requirements import compute_requirements
-        from .frigate import detect_frigate, frigate_capability, frigate_url
+        from .frigate import (
+            detect_frigate,
+            frigate_camera_meta,
+            frigate_capability,
+            frigate_url,
+        )
 
         self.requirements = await compute_requirements(self.hass)
         det = detect_frigate(self.hass)
+        self.frigate_cameras = frigate_camera_meta(self.hass) if det["installed"] else {}
         # Auto opt-in: Frigate is present with cameras but this install has no camera
         # list of its own yet — adopt it silently (no prompt) so cameras work out of
         # the box. When a list already exists, leave it and prompt instead.
