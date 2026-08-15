@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.171
+
+- **Bundles Ted's Cards v0.9.146** — the Music Card volume control now opens a native Home Assistant slider dialog (full player and mini bar) with HA's touch-optimized slider and a mute toggle, replacing the inline slider that performed poorly on touch wall panels.
+
 ### v0.9.170
 
 - **Bundles Ted's Cards v0.9.145** — smooth Frigate live on the MSE path (Edge etc.): the live-edge tracker no longer fast-forwards playback (which overloaded the decoder), and the MSE path serves the low-res detect stream so decode keeps up.
