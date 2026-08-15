@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.172
+
+- **Bundles Ted's Cards v0.9.147** — the Room Card no longer briefly loads bundled header photos from the jsDelivr CDN on first paint (which tripped browser tracking-prevention warnings); it now waits for the local copy before falling back.
+
 ### v0.9.171
 
 - **Bundles Ted's Cards v0.9.146** — the Music Card volume control now opens a native Home Assistant slider dialog (full player and mini bar) with HA's touch-optimized slider and a mute toggle, replacing the inline slider that performed poorly on touch wall panels.
