@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.178
+
+- **Bundles Ted's Cards v0.9.152** — smarter Room Card photo auto-selection (more room-name synonyms, whole-word/most-specific matching, area-name fallback, per-room alternates) and a generic fallback photo so no Room Card is left blank.
+
 ### v0.9.177
 
 - **Vision tab: bundled Ted's Cards v0.9.151** — fixes a bug where re-overriding a device's Navbar sections (Inheriting → Overriding) could silently lose that device's type-specific layout, e.g. a Nightstand's weather/date-time-stripped bar reverting to the Global bar.
