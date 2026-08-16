@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.180
+
+- **Bundles Ted's Cards v0.9.154** — Room Card buttons scale responsively (2…N per row, biased to 5), tile drop shadows no longer clip on shadowed themes, and Light/Cover indicator bars + the Music mini-player progress strip follow the card's rounded corners.
+
 ### v0.9.179
 
 - **Bundles Ted's Cards v0.9.153** — Room Card header photos are now assigned across rooms (seeded from all area names): the best-fitting room in each type gets the main photo and the rest get alternates, updating as areas change.
