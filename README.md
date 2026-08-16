@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.177
+
+- **Vision tab: bundled Ted's Cards v0.9.151** — fixes a bug where re-overriding a device's Navbar sections (Inheriting → Overriding) could silently lose that device's type-specific layout, e.g. a Nightstand's weather/date-time-stripped bar reverting to the Global bar.
+
 ### v0.9.176
 
 - **Vision tab: bundled Ted's Cards v0.9.150** — tiles is now the default view with four selectable tile sizes (Small/Medium/Large/X-Large), the layout toggle button moved next to "Mark all reviewed"/"Clear all", and "Hide viewed" is now "Show viewed events" (defaults off).
