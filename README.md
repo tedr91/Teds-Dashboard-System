@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.179
+
+- **Bundles Ted's Cards v0.9.153** — Room Card header photos are now assigned across rooms (seeded from all area names): the best-fitting room in each type gets the main photo and the rest get alternates, updating as areas change.
+
 ### v0.9.178
 
 - **Bundles Ted's Cards v0.9.152** — smarter Room Card photo auto-selection (more room-name synonyms, whole-word/most-specific matching, area-name fallback, per-room alternates) and a generic fallback photo so no Room Card is left blank.
