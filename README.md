@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.181
+
+- Bundles the new **Google Material - Glass** theme (Teds-Themes) — Material 3 with a frosted-glass content layer (translucent tonal cards + blur), alongside the existing solid Google Material 3.
+
 ### v0.9.180
 
 - **Bundles Ted's Cards v0.9.154** — Room Card buttons scale responsively (2…N per row, biased to 5), tile drop shadows no longer clip on shadowed themes, and Light/Cover indicator bars + the Music mini-player progress strip follow the card's rounded corners.

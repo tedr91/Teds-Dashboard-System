@@ -1,0 +1,486 @@
+# =============================================================================
+#  Google Material - Glass — Home Assistant Theme
+#
+#  The "Google Material 3" theme with a frosted-glass content layer: cards become
+#  translucent + blurred over the wallpaper instead of solid tonal surfaces, while
+#  keeping the M3 identity (seed #6750A4, Roboto / Google Sans, 12 px cards, pill
+#  buttons). A soft M3 elevation shadow + a subtle glass edge keep each card legible.
+#
+#  Native HA 2026.x theme — no UIX or card-mod required.
+#  Single theme with `modes:` so HA's "Auto" theme mode follows the OS.
+#
+#  Token values are taken directly from the Material 3 baseline specification:
+#  - Color = the baseline tonal palettes (primary / secondary / tertiary /
+#    neutral / neutral-variant / error) mapped to M3 light & dark color roles.
+#  - Surfaces = the M3 `surface` + `surface-container-*` tonal roles, here made
+#    translucent so the wallpaper frosts through the card.
+#  - Radii (8/12/28 px) = shape.corner.small / medium / extra-large.
+#
+#  (Menus, dialogs and chrome stay on solid M3 surfaces; only the content cards
+#  opt into glass — the companion to the solid "Google Material 3" theme.)
+# =============================================================================
+
+Google Material - Glass:
+  # ---------------------------------------------------------------------------
+  # 1. Typography — Google Sans (brand) + Roboto (plain), graceful fallbacks
+  # ---------------------------------------------------------------------------
+  ha-font-family-body: '"Roboto", "Google Sans", system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif'
+  ha-font-family-heading: '"Google Sans", "Roboto", system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif'
+  ha-font-family-code: '"Roboto Mono", "Cascadia Mono", "Consolas", "Courier New", monospace'
+
+  # Legacy font vars (paper-elements / pre-2026 HA)
+  primary-font-family: 'var(--ha-font-family-heading)'
+  paper-font-common-base_-_font-family: 'var(--ha-font-family-body)'
+  paper-font-common-code_-_font-family: 'var(--ha-font-family-code)'
+  code-editor-font-family: 'var(--ha-font-family-code)'
+
+  paper-font-body1_-_font-family: 'var(--ha-font-family-body)'
+  paper-font-subhead_-_font-family: 'var(--ha-font-family-body)'
+  paper-font-headline_-_font-family: 'var(--ha-font-family-heading)'
+  paper-font-title_-_font-family: 'var(--ha-font-family-heading)'
+  paper-font-caption_-_font-family: 'var(--ha-font-family-body)'
+  paper-font-display1_-_font-family: 'var(--ha-font-family-heading)'
+  paper-font-display2_-_font-family: 'var(--ha-font-family-heading)'
+  paper-font-display3_-_font-family: 'var(--ha-font-family-heading)'
+  paper-font-display4_-_font-family: 'var(--ha-font-family-heading)'
+
+  # M3 type scale — Body Large 16/24 @400, Title Large 22/28, Title Medium 16/24 @500
+  paper-font-body1_-_font-weight: '400'
+  paper-font-body1_-_font-size: '16px'
+  paper-font-body1_-_line-height: '24px'
+  paper-font-subhead_-_font-weight: '500'
+  paper-font-subhead_-_font-size: '16px'
+  paper-font-subhead_-_line-height: '24px'
+  paper-font-headline_-_font-weight: '400'
+  paper-font-headline_-_font-size: '24px'
+  paper-font-headline_-_line-height: '32px'
+  paper-font-title_-_font-weight: '400'
+  paper-font-title_-_font-size: '22px'
+  paper-font-title_-_line-height: '28px'
+
+  # ---------------------------------------------------------------------------
+  # 2. M3 shape (corner-radius) system
+  #    small 8 (controls) · medium 12 (cards) · extra-large 28 (dialogs)
+  # ---------------------------------------------------------------------------
+  ha-border-radius-sm:  '8px'    # shape.corner.small
+  ha-border-radius-md:  '12px'   # shape.corner.medium (cards)
+  ha-border-radius-lg:  '16px'   # shape.corner.large  (FAB, large containers)
+  ha-border-radius-xl:  '28px'   # shape.corner.extra-large (dialogs, sheets)
+  ha-border-radius-2xl: '28px'
+  ha-border-radius-3xl: '28px'
+  # Component-specific radius overrides
+  ha-card-border-radius:   '12px'
+  ha-dialog-border-radius: '28px'
+  # Legacy aliases
+  mdc-shape-small:    '8px'
+  mdc-shape-medium:   '12px'
+  mdc-shape-large:    '16px'
+  border-radius-card:   '12px'
+  border-radius-button: '20px'   # M3 buttons are fully rounded (pill)
+  border-radius-chip:   '8px'
+
+  # ---------------------------------------------------------------------------
+  # 3. Card geometry — FROSTED GLASS content cards: translucent tonal surface
+  #    (per-mode fill below) + blur, no border, and an M3 elevation drop shadow
+  #    plus a subtle inset glass highlight so the wallpaper frosts through.
+  # ---------------------------------------------------------------------------
+  ha-card-backdrop-filter: 'saturate(160%) blur(20px)'
+  ha-card-border-width: '0'
+  ha-card-box-shadow: '0 1px 3px 1px rgba(0, 0, 0, 0.15), 0 1px 2px 0 rgba(0, 0, 0, 0.30), inset 0.5px 0.5px 1px 0 rgba(255, 255, 255, 0.30), inset -0.5px -0.5px 1px 0 rgba(255, 255, 255, 0.08)'
+  # (translucent ha-card-background set per mode below.)
+
+  # ---------------------------------------------------------------------------
+  # 4. Dialogs & popovers — solid M3 surfaces (no backdrop blur).
+  #    Scrim = M3 scrim (neutral 0) at low opacity.
+  # ---------------------------------------------------------------------------
+  ha-dialog-surface-backdrop-filter: 'none'
+  ha-dialog-scrim-backdrop-filter: 'none'
+
+  # M3 elevation — level2 for menus/dropdowns, level3 for dialogs.
+  wa-shadow-m: '0 2px 6px 2px rgba(0, 0, 0, 0.15), 0 1px 2px 0 rgba(0, 0, 0, 0.30)'   # level2
+  wa-shadow-l: '0 4px 8px 3px rgba(0, 0, 0, 0.15), 0 1px 3px 0 rgba(0, 0, 0, 0.30)'   # level3
+
+  # ---------------------------------------------------------------------------
+  # 5. App-header sizing
+  # ---------------------------------------------------------------------------
+  # Concrete color: HA copies this top-level value straight into manifest.json
+  # theme_color, where a var() reference is not a valid color. Modes override it.
+  app-header-background-color: '#F3EDF7'
+  app-header-text-color: 'var(--primary-text-color)'
+  app-header-border-bottom: '1px solid var(--divider-color)'
+
+  # ---------------------------------------------------------------------------
+  # 6. Light / Dark token sets
+  # ---------------------------------------------------------------------------
+  modes:
+    # =========================================================================
+    #  LIGHT  (M3 baseline light — surface-container canvas, #6750A4 primary)
+    # =========================================================================
+    light:
+      # ── Default light wallpaper (colorful M3 geometric shapes) ──
+      # For a solid surface-container canvas use '#F3EDF7' instead.
+      lovelace-background: 'center / cover no-repeat fixed url("https://cdn.jsdelivr.net/gh/tedr91/Teds-Themes@main/backgrounds/google-material-3/google-material-3-light.webp")'
+
+      # ── M3 primary tonal palette (baseline purple seed) ──
+      ha-color-primary-05: '#1A0049'
+      ha-color-primary-10: '#21005D'
+      ha-color-primary-20: '#381E72'
+      ha-color-primary-30: '#4F378B'
+      ha-color-primary-40: '#6750A4'   # primary (light) = P-40
+      ha-color-primary-50: '#7F67BE'
+      ha-color-primary-60: '#9A82DB'
+      ha-color-primary-70: '#B69DF8'
+      ha-color-primary-80: '#D0BCFF'   # primary (dark) = P-80
+      ha-color-primary-90: '#EADDFF'
+      ha-color-primary-95: '#F6EDFF'
+
+      # ── HA 2026.x surface tokens (M3 surface tonal elevation) ──
+      ha-color-surface-default: '#F3EDF7'   # surface-container
+      ha-color-surface-low:     '#ECE6F0'   # surface-container-high
+      ha-color-surface-lower:   '#E6E1E5'   # surface-container-highest
+
+      # ── HA 2026.x text tokens (M3 on-surface roles) ──
+      ha-color-text-primary:    '#1C1B1F'                  # on-surface
+      ha-color-text-secondary:  '#49454F'                  # on-surface-variant
+      ha-color-text-disabled:   'rgba(28, 27, 31, 0.38)'   # on-surface @38%
+      ha-color-text-link:       '#6750A4'
+
+      # ── HA 2026.x border tokens (M3 outline roles) ──
+      ha-color-border-neutral-quiet:  '#CAC4D0'   # outline-variant
+      ha-color-border-neutral-normal: '#79747E'   # outline
+      ha-color-border-neutral-loud:   '#49454F'   # on-surface-variant
+
+      # ── HA 2026.x form/input background (M3 filled field) ──
+      ha-color-form-background:           '#E6E1E5'   # surface-container-highest
+      ha-color-form-background-hover:     '#ECE6F0'
+      ha-color-form-background-disabled:  'rgba(28, 27, 31, 0.04)'
+
+      # ── HA 2026.x dialog surface (read by wa-dialog) — solid ──
+      ha-dialog-surface-background: '#ECE6F0'   # surface-container-high
+
+      # ── Web Awesome surface tokens (dropdowns + dialogs) — solid ──
+      wa-color-surface-raised:   '#F3EDF7'   # ← wa-popover (combo-box dropdowns) = surface-container
+      wa-color-surface-default:  '#FFFBFE'
+      wa-color-surface-border:   '#CAC4D0'
+
+      # ── Brand / accent (legacy aliases) ──
+      primary-color: '#6750A4'        # M3 primary (light)
+      light-primary-color: '#9A82DB'
+      dark-primary-color: '#4F378B'
+      accent-color: '#7D5260'         # M3 tertiary as accent
+      rgb-primary-color: '103, 80, 164'
+      rgb-accent-color: '125, 82, 96'
+
+      # ── Backgrounds — M3 tonal surfaces ──
+      primary-background-color:   '#F3EDF7'   # surface-container (tinted canvas)
+      secondary-background-color: '#ECE6F0'   # surface-container-high
+      card-background-color:           'rgba(255, 251, 254, 0.72)'   # menus (kept readable)
+      ha-card-background:              'rgba(255, 251, 254, 0.55)'   # frosted glass cards
+      paper-card-background-color:     'rgba(255, 251, 254, 0.55)'
+      paper-listbox-background-color:  '#FFFBFE'
+      paper-dialog-background-color:   '#ECE6F0'
+      rgb-primary-background-color:   '243, 237, 247'
+      rgb-secondary-background-color: '236, 230, 240'
+      rgb-card-background-color:      '255, 251, 254'
+
+      # ── Text — M3 on-surface roles ──
+      primary-text-color:    '#1C1B1F'
+      secondary-text-color:  '#49454F'
+      text-primary-color:    '#FFFFFF'                 # on-primary (text on fills)
+      disabled-text-color:   'rgba(28, 27, 31, 0.38)'
+      rgb-primary-text-color:   '28, 27, 31'
+      rgb-secondary-text-color: '73, 69, 79'
+
+      # ── Dividers / lines ──
+      divider-color: '#CAC4D0'   # outline-variant
+      table-row-background-color: '#FFFBFE'
+      table-row-alternative-background-color: '#F7F2FA'
+
+      # Icons
+      state-icon-color:           '#49454F'
+      state-icon-active-color:    '#6750A4'
+      state-icon-unavailable-color: 'rgba(28, 27, 31, 0.38)'
+      paper-item-icon-color:        '#49454F'
+      paper-item-icon-active-color: '#6750A4'
+      rgb-state-icon-color:        '73, 69, 79'
+      rgb-state-icon-active-color: '103, 80, 164'
+
+      # Sidebar (M3 navigation drawer — secondary-container active pill)
+      sidebar-background-color:           '#F3EDF7'
+      sidebar-icon-color:                 '#49454F'
+      sidebar-text-color:                 '#1C1B1F'
+      sidebar-selected-background-color:  '#E8DEF8'   # secondary-container
+      sidebar-selected-icon-color:        '#6750A4'
+      sidebar-selected-text-color:        '#6750A4'
+
+      # App header (M3 top app bar)
+      app-header-background-color: '#F3EDF7'
+      app-header-text-color:       '#1C1B1F'
+      app-header-edit-background-color: '#ECE6F0'
+
+      # Inputs / form fields
+      input-background-color:     '#FFFBFE'
+      input-fill-color:           '#E6E1E5'
+      input-ink-color:            '#1C1B1F'
+      input-label-ink-color:      '#49454F'
+      input-disabled-fill-color:  'rgba(28, 27, 31, 0.04)'
+      input-disabled-ink-color:   'rgba(28, 27, 31, 0.38)'
+      input-disabled-label-ink-color: 'rgba(28, 27, 31, 0.38)'
+      input-dropdown-icon-color:  '#49454F'
+      input-idle-line-color:      '#79747E'
+      input-hover-line-color:     '#6750A4'
+      input-disabled-line-color:  '#CAC4D0'
+      input-outlined-idle-border-color:     '#79747E'
+      input-outlined-hover-border-color:    '#6750A4'
+      input-outlined-disabled-border-color: '#CAC4D0'
+
+      # Material design (MDC) — buttons, chips, dialogs
+      mdc-theme-primary:    '#6750A4'
+      mdc-theme-secondary:  '#6750A4'
+      mdc-theme-on-primary: '#FFFFFF'
+      mdc-theme-on-secondary: '#FFFFFF'
+      mdc-theme-surface:    '#FFFBFE'
+      mdc-theme-on-surface: '#1C1B1F'
+      mdc-button-outline-color: '#79747E'
+
+      # Switches — M3 switch
+      switch-checked-color:           '#6750A4'
+      switch-checked-button-color:    '#FFFFFF'
+      switch-checked-track-color:     '#6750A4'
+      switch-unchecked-button-color:  '#79747E'
+      switch-unchecked-track-color:   '#E6E1E5'
+      paper-toggle-button-checked-button-color: '#FFFFFF'
+      paper-toggle-button-checked-bar-color:    '#6750A4'
+      paper-toggle-button-unchecked-button-color: '#79747E'
+      paper-toggle-button-unchecked-bar-color:    '#E6E1E5'
+
+      # Sliders
+      slider-color:                       '#6750A4'
+      slider-bar-color:                   '#E7E0EC'
+      paper-slider-knob-color:            '#6750A4'
+      paper-slider-knob-start-color:      '#6750A4'
+      paper-slider-pin-color:             '#6750A4'
+      paper-slider-active-color:          '#6750A4'
+      paper-slider-secondary-color:       'rgba(103, 80, 164, 0.30)'
+      paper-slider-container-color:       '#E7E0EC'
+
+      # Tabs
+      paper-tabs-selection-bar-color: '#6750A4'
+
+      # Labels / badges
+      label-badge-background-color: '#FFFBFE'
+      label-badge-text-color:       '#1C1B1F'
+      label-badge-red:              '#B3261E'
+      label-badge-green:            '#2E7D32'
+      label-badge-blue:             '#6750A4'
+      label-badge-yellow:           '#9A6700'
+      label-badge-grey:             '#79747E'
+
+      # Status colors
+      warning-color: '#9A6700'
+      error-color:   '#B3261E'   # M3 error (light)
+      success-color: '#2E7D32'
+      info-color:    '#6750A4'   # M3 primary
+
+      # Code blocks
+      code-editor-background-color: '#F7F2FA'
+      markdown-code-background-color: '#ECE6F0'
+
+      # Calendar
+      calendar-background-color: '#FFFBFE'
+
+      # Energy dashboard
+      energy-grid-consumption-color: '#6750A4'
+      energy-grid-return-color:      '#2E7D32'
+      energy-solar-color:            '#F9A825'
+      energy-non-fossil-color:       '#00A550'
+      energy-battery-out-color:      '#7D5260'
+      energy-battery-in-color:       '#4F378B'
+      energy-gas-color:              '#9A6700'
+      energy-water-color:            '#00639B'
+
+    # =========================================================================
+    #  DARK  (M3 baseline dark — surface #1C1B1F, #D0BCFF primary)
+    # =========================================================================
+    dark:
+      # ── Default dark wallpaper (vibrant tonal gradient) ──
+      # For a solid M3 surface canvas use '#1C1B1F' instead.
+      lovelace-background: 'center / cover no-repeat fixed url("https://cdn.jsdelivr.net/gh/tedr91/Teds-Themes@main/backgrounds/google-material-3/google-material-3-dark.webp")'
+
+      # ── M3 primary tonal palette (shared absolute palette) ──
+      ha-color-primary-05: '#1A0049'
+      ha-color-primary-10: '#21005D'
+      ha-color-primary-20: '#381E72'
+      ha-color-primary-30: '#4F378B'
+      ha-color-primary-40: '#6750A4'
+      ha-color-primary-50: '#7F67BE'
+      ha-color-primary-60: '#9A82DB'
+      ha-color-primary-70: '#B69DF8'
+      ha-color-primary-80: '#D0BCFF'   # primary (dark) = P-80
+      ha-color-primary-90: '#EADDFF'
+      ha-color-primary-95: '#F6EDFF'
+
+      # ── HA 2026.x surface tokens (M3 dark surface tonal elevation) ──
+      ha-color-surface-default: '#1C1B1F'   # surface
+      ha-color-surface-low:     '#211F26'   # surface-container
+      ha-color-surface-lower:   '#2B2930'   # surface-container-high
+
+      # ── HA 2026.x text tokens (M3 dark on-surface roles) ──
+      ha-color-text-primary:    '#E6E1E5'                    # on-surface
+      ha-color-text-secondary:  '#CAC4D0'                    # on-surface-variant
+      ha-color-text-disabled:   'rgba(230, 225, 229, 0.38)'  # on-surface @38%
+      ha-color-text-link:       '#D0BCFF'
+
+      # ── HA 2026.x border tokens (M3 dark outline roles) ──
+      ha-color-border-neutral-quiet:  '#49454F'   # outline-variant
+      ha-color-border-neutral-normal: '#938F99'   # outline
+      ha-color-border-neutral-loud:   '#CAC4D0'   # on-surface-variant
+
+      # ── HA 2026.x form/input background (M3 dark filled field) ──
+      ha-color-form-background:           '#36343B'   # surface-container-highest
+      ha-color-form-background-hover:     '#2B2930'
+      ha-color-form-background-disabled:  'rgba(230, 225, 229, 0.04)'
+
+      # ── HA 2026.x dialog surface (read by wa-dialog) — solid ──
+      ha-dialog-surface-background: '#2B2930'   # surface-container-high
+
+      # ── Web Awesome surface tokens (dropdowns + dialogs) — solid ──
+      wa-color-surface-raised:   '#211F26'   # ← wa-popover (combo-box dropdowns) = surface-container
+      wa-color-surface-default:  '#211F26'
+      wa-color-surface-border:   '#49454F'
+
+      # ── Brand / accent — M3 dark primary (P-80) ──
+      primary-color: '#D0BCFF'
+      light-primary-color: '#EADDFF'
+      dark-primary-color: '#9A82DB'
+      accent-color: '#EFB8C8'         # M3 tertiary (dark) as accent
+      rgb-primary-color: '208, 188, 255'
+      rgb-accent-color: '239, 184, 200'
+
+      # ── Backgrounds — M3 dark tonal surfaces ──
+      primary-background-color:   '#1C1B1F'   # surface
+      secondary-background-color: '#2B2930'   # surface-container-high
+      card-background-color:           'rgba(33, 31, 38, 0.72)'   # menus (kept readable)
+      ha-card-background:              'rgba(33, 31, 38, 0.45)'   # frosted glass cards
+      paper-card-background-color:    'rgba(33, 31, 38, 0.45)'
+      paper-listbox-background-color: '#211F26'
+      paper-dialog-background-color:  '#2B2930'
+      rgb-primary-background-color:   '28, 27, 31'
+      rgb-secondary-background-color: '43, 41, 48'
+      rgb-card-background-color:      '33, 31, 38'
+
+      # ── Text — M3 dark on-surface roles ──
+      primary-text-color:    '#E6E1E5'
+      secondary-text-color:  '#CAC4D0'
+      text-primary-color:    '#381E72'                       # on-primary (dark)
+      disabled-text-color:   'rgba(230, 225, 229, 0.38)'
+      rgb-primary-text-color:   '230, 225, 229'
+      rgb-secondary-text-color: '202, 196, 208'
+
+      # ── Dividers / lines ──
+      divider-color: '#49454F'   # outline-variant (dark)
+      table-row-background-color: '#211F26'
+      table-row-alternative-background-color: '#2B2930'
+
+      # Icons
+      state-icon-color:           '#CAC4D0'
+      state-icon-active-color:    '#D0BCFF'
+      state-icon-unavailable-color: 'rgba(230, 225, 229, 0.38)'
+      paper-item-icon-color:        '#CAC4D0'
+      paper-item-icon-active-color: '#D0BCFF'
+      rgb-state-icon-color:        '202, 196, 208'
+      rgb-state-icon-active-color: '208, 188, 255'
+
+      # Sidebar (M3 navigation drawer — secondary-container active pill)
+      sidebar-background-color:           '#211F26'
+      sidebar-icon-color:                 '#CAC4D0'
+      sidebar-text-color:                 '#E6E1E5'
+      sidebar-selected-background-color:  '#4A4458'   # secondary-container (dark)
+      sidebar-selected-icon-color:        '#D0BCFF'
+      sidebar-selected-text-color:        '#D0BCFF'
+
+      # App header (M3 top app bar)
+      app-header-background-color: '#1C1B1F'
+      app-header-text-color:       '#E6E1E5'
+      app-header-edit-background-color: '#211F26'
+
+      # Inputs / form fields
+      input-background-color:     '#211F26'
+      input-fill-color:           '#36343B'
+      input-ink-color:            '#E6E1E5'
+      input-label-ink-color:      '#CAC4D0'
+      input-disabled-fill-color:  'rgba(230, 225, 229, 0.04)'
+      input-disabled-ink-color:   'rgba(230, 225, 229, 0.38)'
+      input-disabled-label-ink-color: 'rgba(230, 225, 229, 0.38)'
+      input-dropdown-icon-color:  '#CAC4D0'
+      input-idle-line-color:      '#938F99'
+      input-hover-line-color:     '#D0BCFF'
+      input-disabled-line-color:  '#49454F'
+      input-outlined-idle-border-color:     '#938F99'
+      input-outlined-hover-border-color:    '#D0BCFF'
+      input-outlined-disabled-border-color: '#49454F'
+
+      # Material design (MDC)
+      mdc-theme-primary:    '#D0BCFF'
+      mdc-theme-secondary:  '#D0BCFF'
+      mdc-theme-on-primary: '#381E72'
+      mdc-theme-on-secondary: '#381E72'
+      mdc-theme-surface:    '#211F26'
+      mdc-theme-on-surface: '#E6E1E5'
+      mdc-button-outline-color: '#938F99'
+
+      # Switches — M3 switch (dark)
+      switch-checked-color:           '#D0BCFF'
+      switch-checked-button-color:    '#381E72'
+      switch-checked-track-color:     '#D0BCFF'
+      switch-unchecked-button-color:  '#938F99'
+      switch-unchecked-track-color:   '#36343B'
+      paper-toggle-button-checked-button-color: '#381E72'
+      paper-toggle-button-checked-bar-color:    '#D0BCFF'
+      paper-toggle-button-unchecked-button-color: '#938F99'
+      paper-toggle-button-unchecked-bar-color:    '#36343B'
+
+      # Sliders
+      slider-color:                       '#D0BCFF'
+      slider-bar-color:                   '#49454F'
+      paper-slider-knob-color:            '#D0BCFF'
+      paper-slider-knob-start-color:      '#D0BCFF'
+      paper-slider-pin-color:             '#D0BCFF'
+      paper-slider-active-color:          '#D0BCFF'
+      paper-slider-secondary-color:       'rgba(208, 188, 255, 0.30)'
+      paper-slider-container-color:       '#49454F'
+
+      # Tabs
+      paper-tabs-selection-bar-color: '#D0BCFF'
+
+      # Labels / badges
+      label-badge-background-color: '#211F26'
+      label-badge-text-color:       '#E6E1E5'
+      label-badge-red:              '#F2B8B5'
+      label-badge-green:            '#81C995'
+      label-badge-blue:             '#D0BCFF'
+      label-badge-yellow:           '#F9BE4B'
+      label-badge-grey:             '#938F99'
+
+      # Status colors (M3 dark)
+      warning-color: '#F9BE4B'
+      error-color:   '#F2B8B5'   # M3 error (dark)
+      success-color: '#81C995'
+      info-color:    '#D0BCFF'   # M3 primary (dark)
+
+      # Code blocks
+      code-editor-background-color: '#211F26'
+      markdown-code-background-color: '#2B2930'
+
+      # Calendar
+      calendar-background-color: '#211F26'
+
+      # Energy dashboard
+      energy-grid-consumption-color: '#D0BCFF'
+      energy-grid-return-color:      '#81C995'
+      energy-solar-color:            '#FFD54F'
+      energy-non-fossil-color:       '#5EDC91'
+      energy-battery-out-color:      '#EFB8C8'
+      energy-battery-in-color:       '#B69DF8'
+      energy-gas-color:              '#F9BE4B'
+      energy-water-color:            '#8ECDFF'
