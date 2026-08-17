@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.185
+
+- Wall-panel home views (landscape + portrait): the Room Card's room name is now 150% size for better readability on wall panels.
+
 ### v0.9.184
 
 - Bundles Ted's Cards v0.9.156 (Automatic Night Mode no longer gets stuck in dark — dawn now restores light even when no "day" snapshot was recorded, so wallpanels reliably return to light in the morning).

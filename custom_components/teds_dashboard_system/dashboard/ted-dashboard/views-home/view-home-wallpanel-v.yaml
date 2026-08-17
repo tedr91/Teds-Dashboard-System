@@ -61,6 +61,7 @@ cards:
           rolling_days_agenda: 1
       - type: custom:ted-room-card
         dashboard_integration: true
+        header_name_size: 150
       - type: custom:ted-music-card
         dashboard_integration: true
         mode: mini

@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "dashboard": "0.9.36",
+  "dashboard": "0.9.37",
   "shared": "1.0.0",
   "views": {
     "view-welcome": "1.0.8",
@@ -19,8 +19,8 @@
     "view-webview": "1.0.0",
     "view-home-handheld": "1.0.0",
     "view-home-nightstand": "1.0.0",
-    "view-home-wallpanel-h": "1.2.2",
-    "view-home-wallpanel-v": "1.1.0"
+    "view-home-wallpanel-h": "1.2.3",
+    "view-home-wallpanel-v": "1.1.1"
   },
   "layout": {
     "order": [
