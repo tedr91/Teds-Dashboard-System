@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.183
+
+- **Fixed: per-device Navbar sections overrides (e.g. Nightstand) had no effect on the live dashboard.** `navbar.yaml`/`navbar-autohide.yaml` hard-coded a static `sections:` list, which always wins over the editable Settings → Navbar → Navbar sections setting — so global and per-device overrides were silently ignored. The shared bar now leaves `sections:` unset so the setting (and its per-device overrides) actually drives it.
+
 ### v0.9.182
 
 - Bundles Ted's Cards v0.9.155 (navbar launcher: the current-view highlight no longer resizes/shifts the active tile when the launcher buttons are set to 100% transparency).
