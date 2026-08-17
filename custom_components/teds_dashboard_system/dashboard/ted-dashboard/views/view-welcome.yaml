@@ -8,8 +8,10 @@
 # so the guidance must still render even when Layout Card isn't installed yet.
 #
 # `panel: true` renders ONLY the first card, full-width — so everything lives in a
-# single vertical-stack. The navbar + background includes are nested INSIDE that
-# stack so they still render (both are fixed/invisible, so nesting is harmless).
+# horizontal-stack (adds side padding, since a panel view can't use grid-layout's
+# own padding) wrapping a single vertical-stack. The navbar + background includes
+# are nested INSIDE that vertical-stack so they still render (both are
+# fixed/invisible, so nesting is harmless).
 panel: true
 path: home-welcome
 title: Home-Welcome
@@ -22,17 +24,25 @@ cards:
   # gated by a state/attribute condition so it only appears when that dependency
   # is missing. MDI icons are used here so the boxes render even when the
   # custom-icons pack is the thing that's missing.
-  - type: vertical-stack
+  - type: horizontal-stack
     card_mod:
       style: |
-        :host { height: 100%; }
         #root {
-          height: 100%;
-          overflow-y: auto;
+          padding: 0 24px;
           box-sizing: border-box;
-          padding-bottom: var(--ted-navbar-bottom-reserve, 48px);
         }
     cards:
+    - type: vertical-stack
+      card_mod:
+        style: |
+          :host { height: 100%; }
+          #root {
+            height: 100%;
+            overflow-y: auto;
+            box-sizing: border-box;
+            padding-bottom: var(--ted-navbar-bottom-reserve, 48px);
+          }
+      cards:
       # Always-on header + core fallback for the two blockers (layout-card /
       # Ted's Cards) — these can't be MessageBoxes because the view won't render
       # without them, so a core markdown card carries the warning.
