@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.188
+
+- **Bundles Ted's Cards v0.9.159** — responsive Room Card layouts now keep normal buttons at least 68px wide before stepping down to fewer buttons per row.
+
 ### v0.9.187
 
 - **Bundles Ted's Cards v0.9.158** — auto-populated Room Card brightness and volume status items are now icon-only.
