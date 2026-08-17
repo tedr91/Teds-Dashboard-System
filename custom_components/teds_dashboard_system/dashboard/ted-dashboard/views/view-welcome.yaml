@@ -8,10 +8,9 @@
 # so the guidance must still render even when Layout Card isn't installed yet.
 #
 # `panel: true` renders ONLY the first card, full-width — so everything lives in a
-# horizontal-stack (adds side padding, since a panel view can't use grid-layout's
-# own padding) wrapping a single vertical-stack. The navbar + background includes
-# are nested INSIDE that vertical-stack so they still render (both are
-# fixed/invisible, so nesting is harmless).
+# single vertical-stack, padded via card_mod (a panel view can't use grid-layout's
+# own padding). The navbar + background includes are nested INSIDE that stack so
+# they still render (both are fixed/invisible, so nesting is harmless).
 panel: true
 path: home-welcome
 title: Home-Welcome
@@ -24,26 +23,18 @@ cards:
   # gated by a state/attribute condition so it only appears when that dependency
   # is missing. MDI icons are used here so the boxes render even when the
   # custom-icons pack is the thing that's missing.
-  - type: horizontal-stack
+  - type: vertical-stack
     card_mod:
       style: |
+        :host { height: 100%; }
         #root {
-          padding: 0 16px;
+          height: 100%;
+          overflow-y: auto;
           box-sizing: border-box;
+          /* overflow-y:auto forces overflow-x:auto too; padding on all sides keeps card shadows from clipping */
+          padding: 24px 24px var(--ted-navbar-bottom-reserve, 48px) 24px;
         }
     cards:
-    - type: vertical-stack
-      card_mod:
-        style: |
-          :host { height: 100%; }
-          #root {
-            height: 100%;
-            overflow-y: auto;
-            box-sizing: border-box;
-            /* overflow-y:auto forces overflow-x:auto too, so this side padding also keeps card shadows from clipping */
-            padding: 24px 8px var(--ted-navbar-bottom-reserve, 48px) 8px;
-          }
-      cards:
       # Always-on header + core fallback for the two blockers (layout-card /
       # Ted's Cards) — these can't be MessageBoxes because the view won't render
       # without them, so a core markdown card carries the warning.

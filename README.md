@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.192
+
+- **Welcome view** — simplified padding: dropped the horizontal-stack wrapper, the 24px gutter now applies directly on the vertical-stack (single clip-safe buffer for card shadows on all sides).
+
 ### v0.9.191
 
 - **Welcome view** — fixed card shadows getting clipped at the left/right side padding.
