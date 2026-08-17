@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.190
+
+- **Welcome view** content now also has 24px of top padding.
+
 ### v0.9.189
 
 - **Welcome view** now gets 24px of side padding, wrapping its content in a horizontal-stack (panel views can't use grid-layout's own padding).
