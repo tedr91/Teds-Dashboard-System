@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.184
+
+- Bundles Ted's Cards v0.9.156 (Automatic Night Mode no longer gets stuck in dark — dawn now restores light even when no "day" snapshot was recorded, so wallpanels reliably return to light in the morning).
+
 ### v0.9.183
 
 - **Fixed: per-device Navbar sections overrides (e.g. Nightstand) had no effect on the live dashboard.** `navbar.yaml`/`navbar-autohide.yaml` hard-coded a static `sections:` list, which always wins over the editable Settings → Navbar → Navbar sections setting — so global and per-device overrides were silently ignored. The shared bar now leaves `sections:` unset so the setting (and its per-device overrides) actually drives it.
