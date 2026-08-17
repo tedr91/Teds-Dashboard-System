@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.187
+
+- **Bundles Ted's Cards v0.9.158** — auto-populated Room Card brightness and volume status items are now icon-only.
+
 ### v0.9.186
 
 - **Bundles Ted's Cards v0.9.157** — brightness status items show a level-matching lightbulb icon, and Room Card auto-populate gives presence a color-coded icon, temperature its value only, and brightness/volume that compact to icon-only when the room name would clip.
