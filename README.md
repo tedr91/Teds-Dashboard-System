@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.193
+
+- **Bundles Ted's Cards v0.9.160** — auto-populated Room Card scene buttons now use Name → State → Icon ordering, with the hidden State preserving the middle slot and the Icon placed at the bottom.
+
 ### v0.9.192
 
 - **Welcome view** — simplified padding: dropped the horizontal-stack wrapper, the 24px gutter now applies directly on the vertical-stack (single clip-safe buffer for card shadows on all sides).
