@@ -28,7 +28,7 @@ cards:
     card_mod:
       style: |
         #root {
-          padding: 0 24px;
+          padding: 0 16px;
           box-sizing: border-box;
         }
     cards:
@@ -40,8 +40,8 @@ cards:
             height: 100%;
             overflow-y: auto;
             box-sizing: border-box;
-            padding-top: 24px;
-            padding-bottom: var(--ted-navbar-bottom-reserve, 48px);
+            /* overflow-y:auto forces overflow-x:auto too, so this side padding also keeps card shadows from clipping */
+            padding: 24px 8px var(--ted-navbar-bottom-reserve, 48px) 8px;
           }
       cards:
       # Always-on header + core fallback for the two blockers (layout-card /

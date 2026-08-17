@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.191
+
+- **Welcome view** — fixed card shadows getting clipped at the left/right side padding.
+
 ### v0.9.190
 
 - **Welcome view** content now also has 24px of top padding.
