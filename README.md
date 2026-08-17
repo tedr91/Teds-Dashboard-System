@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.182
+
+- Bundles Ted's Cards v0.9.155 (navbar launcher: the current-view highlight no longer resizes/shifts the active tile when the launcher buttons are set to 100% transparency).
+
 ### v0.9.181
 
 - Bundles the new **Google Material - Glass** theme (Teds-Themes) — Material 3 with a frosted-glass content layer (translucent tonal cards + blur), alongside the existing solid Google Material 3.
