@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.186
+
+- **Bundles Ted's Cards v0.9.157** — brightness status items show a level-matching lightbulb icon, and Room Card auto-populate gives presence a color-coded icon, temperature its value only, and brightness/volume that compact to icon-only when the room name would clip.
+
 ### v0.9.185
 
 - Wall-panel home views (landscape + portrait): the Room Card's room name is now 150% size for better readability on wall panels.
