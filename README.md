@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.195
+
+- **Bundles Ted's Cards v0.9.162** — fixes the sliding active-view ring's alignment drift introduced in the previous bundle.
+
 ### v0.9.194
 
 - **Bundles Ted's Cards v0.9.161** — Navbar Card's launcher active-view ring now slides and stretches/morphs between buttons instead of instantly jumping, on both the horizontal and vertical (auto-hide) bars.
