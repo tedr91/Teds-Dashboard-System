@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.201
+
+- **Bundles Ted's Cards v0.9.168** — fixes the navbar hold-menu's auto-hide/float toggles, which stopped responding due to a lit-html DOM-corruption bug introduced by the v0.9.199 clock/progress-bar performance changes.
+
 ### v0.9.200
 
 - **Bundles Ted's Cards v0.9.167** — the Music Card no longer re-measures its layout (several synchronous layout reads) on every update; only when `hass` or its config actually changed.
