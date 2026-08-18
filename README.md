@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.196
+
+- **Device name and room self-management.** Adds a separately gated `set_device_name` WebSocket command so non-admin wall panels and phones can correct their Home Assistant device name without changing their Browser ID or entity IDs. Room self-assignment keeps its existing one-time un-scoped-device restriction. Bundles Ted's Cards v0.9.163.
+
 ### v0.9.195
 
 - **Bundles Ted's Cards v0.9.162** — fixes the sliding active-view ring's alignment drift introduced in the previous bundle.
@@ -741,7 +745,7 @@ frontend:
 ### v0.9.22
 
 - **Voice timers own the dashboard.** "Set a timer" spoken to a Ted's Dashboard panel now creates a Ted's timer with a live countdown on the Timers view — with full voice control (cancel, pause, resume, add/remove time). Phones and other devices keep Home Assistant's native timers. (Replaces the previous experimental timer bridge.)
-- **Room‑aware setup.** An un‑scoped panel is nudged to pick a room (voice commands are area‑scoped by the device), with a one‑tap fix dialog and a privileged `set_device_area` command so even kiosk accounts can self‑assign (gated by a new setting). Admins also get a Repair listing Companion‑app devices without an area.
+- **Device name and room setup.** An un-scoped panel is nudged to pick a room (voice commands are area-scoped by the device), while the same dialog lets kiosk accounts correct their panel name. Separate privileged `set_device_area` and `set_device_name` commands share one setting but keep their own gates: rooms are limited to un-scoped devices, while names are limited to Browser Mod and Companion app devices. Admins also get a Repair listing Companion app devices without an area.
 - Bundles Ted's Cards v0.9.19. Pairs with Ted's Cards v0.9.19+.
 
 ### v0.9.21

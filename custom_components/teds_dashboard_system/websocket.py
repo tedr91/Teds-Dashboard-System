@@ -90,6 +90,7 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, handle_list_dashboard_views)
     websocket_api.async_register_command(hass, handle_create_ma_player)
     websocket_api.async_register_command(hass, handle_set_device_area)
+    websocket_api.async_register_command(hass, handle_set_device_name)
     websocket_api.async_register_command(hass, handle_subscribe_vision_events)
     websocket_api.async_register_command(hass, handle_list_vision_events)
     websocket_api.async_register_command(hass, handle_list_camera_detectors)
@@ -142,6 +143,47 @@ async def handle_set_device_area(
         connection.send_error(msg["id"], "not_found", "Area not found")
         return
     dev_reg.async_update_device(msg["device_id"], area_id=area_id)
+    connection.send_result(msg["id"], {"success": True})
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): f"{DOMAIN}/set_device_name",
+        vol.Required("device_id"): str,
+        vol.Required("name"): vol.Any(None, str),
+    }
+)
+@websocket_api.async_response
+async def handle_set_device_name(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict
+) -> None:
+    """Set an HA device's user-defined name on behalf of the frontend."""
+    dev_reg = dr.async_get(hass)
+    device = dev_reg.async_get(msg["device_id"])
+    if device is None:
+        connection.send_error(msg["id"], "not_found", "Device not found")
+        return
+    is_admin = bool(connection.user and connection.user.is_admin)
+    if not is_admin:
+        mgr = _manager(hass)
+        allowed = bool(
+            mgr and mgr.effective_settings().get("allow_device_area_self_assign", True)
+        )
+        if not allowed:
+            connection.send_error(msg["id"], "unauthorized", "Self-assignment is disabled")
+            return
+        if not any(
+            domain in {"browser_mod", "mobile_app"}
+            for domain, _identifier in device.identifiers
+        ):
+            connection.send_error(msg["id"], "unauthorized", "Device cannot be self-named")
+            return
+    name = msg["name"].strip() if msg["name"] is not None else None
+    name = name or None
+    if name is not None and len(name) > 255:
+        connection.send_error(msg["id"], "invalid_format", "Device name is too long")
+        return
+    dev_reg.async_update_device(msg["device_id"], name_by_user=name)
     connection.send_result(msg["id"], {"success": True})
 
 

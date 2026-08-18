@@ -660,11 +660,11 @@ async def _answer(
 
 
 async def _maybe_area_nudge(hass: HomeAssistant, intent_obj: intent.Intent) -> None:
-    """Once per device, nudge an un-scoped calling device to pick a room.
+    """Once per device, nudge an un-scoped caller to open device name/room setup.
 
     Fires when the request came from a real device that has no area (and none was
     spoken/injected), so voice features can't be room-aware yet. House-wide (we
-    can't target the area we don't have); self-clears once the device is assigned.
+    can't target the area we don't have); self-clears once the room is assigned.
     """
     mgr = _manager(hass)
     if mgr is None:

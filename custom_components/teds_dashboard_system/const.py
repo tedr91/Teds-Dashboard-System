@@ -299,8 +299,8 @@ SETTINGS_DEFAULTS = {
     # into the dashboard yaml. Default on (turn off per device).
     "use_kiosk_mode": False,
     "kiosk_nudge_dismissed": False,
-    # When on, a kiosk (non-admin) wall-panel account may assign its own currently
-    # un-scoped device to an Area via the privileged set_device_area WS command.
+    # When on, privileged WS commands let a kiosk account set its device's name and
+    # area. Area is limited to un-scoped devices; names to browser_mod/mobile_app.
     "allow_device_area_self_assign": True,
     # Voice — the browser-based Assist satellite (Ted's Cards runs the HA pipeline in
     # the dashboard webview so TDS owns the voice UI). Requires the page over HTTPS.
