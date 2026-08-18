@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.198
+
+- **Bundles Ted's Cards v0.9.165** — reverts the Navbar Card's sliding active-view indicator (v0.9.161–v0.9.164). Each view mounts its own separate Navbar Card instance, so there's no persistent element to visibly slide/stretch between across a real navigation. Back to the original per-button instant highlight.
+
 ### v0.9.197
 
 - **Bundles Ted's Cards v0.9.164** — the Navbar Card's sliding active-view ring now actually stretches/morphs between taps (bridges across both buttons, then contracts), instead of just moving into place.
