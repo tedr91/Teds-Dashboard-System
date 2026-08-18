@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.200
+
+- **Bundles Ted's Cards v0.9.167** — the Music Card no longer re-measures its layout (several synchronous layout reads) on every update; only when `hass` or its config actually changed.
+
 ### v0.9.199
 
 - **Bundles Ted's Cards v0.9.166** — Music Card progress and the Navbar clock now patch their own DOM directly on each tick instead of re-rendering the whole card/bar every second.
