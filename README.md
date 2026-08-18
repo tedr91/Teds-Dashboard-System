@@ -51,6 +51,11 @@ frontend:
 
 ## Changelog
 
+### v0.9.199
+
+- **Bundles Ted's Cards v0.9.166** — Music Card progress and the Navbar clock now patch their own DOM directly on each tick instead of re-rendering the whole card/bar every second.
+- **Performance: debounced the settings broadcast.** `EVENT_SETTINGS` (the full settings snapshot pushed to every connected client) now coalesces bursts of rapid calls (e.g. several `set_settings()`/`register_device()` calls in a row) into one broadcast ~250ms later, instead of one broadcast per call.
+
 ### v0.9.198
 
 - **Bundles Ted's Cards v0.9.165** — reverts the Navbar Card's sliding active-view indicator (v0.9.161–v0.9.164). Each view mounts its own separate Navbar Card instance, so there's no persistent element to visibly slide/stretch between across a real navigation. Back to the original per-button instant highlight.

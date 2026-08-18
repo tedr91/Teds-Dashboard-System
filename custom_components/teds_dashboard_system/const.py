@@ -74,6 +74,11 @@ MEDIA_FOLDER_NAME = "Ted Dash System"
 # playback targeting after its last heartbeat.
 DEVICE_PRESENCE_TTL = 900
 
+# Debounce window (seconds) for EVENT_SETTINGS: the full settings snapshot is pushed to
+# every connected client, so a burst of calls (e.g. several `set_settings()` in a row)
+# coalesces into one broadcast instead of one per call.
+SETTINGS_FIRE_DEBOUNCE_S = 0.25
+
 # After a full Home Assistant startup, wait this long (seconds) then refresh every
 # browser_mod client once — dashboard clients often get stuck on a loading spinner
 # while HA was down, and a single reload recovers them. Gives browsers time to

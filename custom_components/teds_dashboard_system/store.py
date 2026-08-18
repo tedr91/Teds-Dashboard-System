@@ -29,6 +29,7 @@ from .const import (
     RECENT_ANNOUNCEMENTS_MAX,
     RECENT_TIMERS_MAX,
     SETTINGS_DEFAULTS,
+    SETTINGS_FIRE_DEBOUNCE_S,
     SETTINGS_KEYS,
     STORAGE_KEY,
     STORAGE_VERSION,
@@ -60,6 +61,8 @@ class TedsManager:
         self.settings: dict = {"global": {}, "devices": {}}
         # Devices that have registered themselves (device_id -> {area, name, last_seen}).
         self.device_registry: dict[str, dict] = {}
+        # Pending debounced EVENT_SETTINGS fire (see `_fire_settings`), if one is scheduled.
+        self._settings_fire_unsub = None
         # HA device_ids we've already nudged once about a missing area.
         self.area_nudged_devices: set[str] = set()
         # Server-side dependency detection results (req_id -> ok/missing/unknown).
@@ -132,6 +135,9 @@ class TedsManager:
     def shutdown(self) -> None:
         for unsub in self._listeners:
             unsub()
+        if self._settings_fire_unsub is not None:
+            self._settings_fire_unsub()
+            self._settings_fire_unsub = None
         for t in self.active.values():
             if t.get("cancel"):
                 t["cancel"]()
@@ -849,7 +855,20 @@ class TedsManager:
         }
 
     def _fire_settings(self) -> None:
-        self.hass.bus.async_fire(EVENT_SETTINGS, self.settings_payload())
+        """Fire EVENT_SETTINGS with the full snapshot, debounced: this payload goes to
+        every connected client (every wall panel's navbar), so bursts of calls in quick
+        succession (e.g. several `set_settings()`/`register_device()` calls, like a
+        client reporting viewport changes) coalesce into one broadcast instead of one
+        per call. In-process reads of `self.settings`/`settings_payload()` are unaffected
+        since those read the already-updated in-memory state, not the event."""
+        if self._settings_fire_unsub is not None:
+            return
+
+        def _fire(_now=None) -> None:
+            self._settings_fire_unsub = None
+            self.hass.bus.async_fire(EVENT_SETTINGS, self.settings_payload())
+
+        self._settings_fire_unsub = async_call_later(self.hass, SETTINGS_FIRE_DEBOUNCE_S, _fire)
 
     async def set_settings(self, values: dict, scope="global", device_id=None) -> None:
         """Set one or more setting keys at the given scope. `None` value clears a key."""
