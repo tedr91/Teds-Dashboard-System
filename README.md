@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.197
+
+- **Bundles Ted's Cards v0.9.164** — the Navbar Card's sliding active-view ring now actually stretches/morphs between taps (bridges across both buttons, then contracts), instead of just moving into place.
+
 ### v0.9.196
 
 - **Device name and room self-management.** Adds a separately gated `set_device_name` WebSocket command so non-admin wall panels and phones can correct their Home Assistant device name without changing their Browser ID or entity IDs. Room self-assignment keeps its existing one-time un-scoped-device restriction. Bundles Ted's Cards v0.9.163.
