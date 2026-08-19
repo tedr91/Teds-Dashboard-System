@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.202
+
+- **Bundles Ted's Cards v0.9.169** — music playback now defaults to the room's preferred provider (Sonos first) instead of name-matching the dashboard tablet or phone, with device-inherited area assignments supported.
+
 ### v0.9.201
 
 - **Bundles Ted's Cards v0.9.168** — fixes the navbar hold-menu's auto-hide/float toggles, which stopped responding due to a lit-html DOM-corruption bug introduced by the v0.9.199 clock/progress-bar performance changes.
