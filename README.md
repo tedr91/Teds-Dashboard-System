@@ -51,6 +51,11 @@ frontend:
 
 ## Changelog
 
+### v0.9.203
+
+- **Bundles Ted's Cards v0.9.170** — Dynamic Night Mode now restores each Home Assistant user's exact Auto, Light, or Dark preference, with independent per-user snapshots and correct ownership across multiple dashboard sessions.
+- **Updates night-mode snapshot storage** from a nullable scalar to a per-user mode map so Auto is persisted instead of being interpreted as a cleared setting.
+
 ### v0.9.202
 
 - **Bundles Ted's Cards v0.9.169** — music playback now defaults to the room's preferred provider (Sonos first) instead of name-matching the dashboard tablet or phone, with device-inherited area assignments supported.
