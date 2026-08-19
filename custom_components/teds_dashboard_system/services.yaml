@@ -120,6 +120,11 @@ clear_setting:
     key: { selector: { text: {} } }
     scope: { selector: { select: { options: ["global", "device"] } } }
     device_id: { selector: { text: {} } }
+set_night_theme_snapshot:
+  name: Set night theme snapshot
+  description: Internal authenticated-user storage for Dynamic Night Mode theme restoration.
+  fields:
+    mode: { selector: { select: { options: ["auto", "light", "dark"] } } }
 register_device:
   name: Register device
   fields:

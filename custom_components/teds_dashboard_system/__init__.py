@@ -176,6 +176,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             device_id=call.data.get("device_id"),
         )
 
+    async def set_night_theme_snapshot(call: ServiceCall):
+        user_id = call.context.user_id
+        if user_id is None:
+            raise Unauthorized(context=call.context)
+        await manager.set_night_theme_snapshot(user_id, call.data["mode"])
+
     async def register_device(call: ServiceCall):
         await manager.register_device(
             call.data["device_id"], call.data.get("area"), call.data.get("name"),
@@ -289,6 +295,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.services.async_register(DOMAIN, "clear_setting", clear_setting, schema=vol.Schema({
         vol.Optional("key"): cv.string, vol.Optional("scope"): vol.In(["global", "device"]),
         vol.Optional("device_id"): cv.string}))
+    hass.services.async_register(DOMAIN, "set_night_theme_snapshot", set_night_theme_snapshot, schema=vol.Schema({
+        vol.Required("mode"): vol.Any(None, vol.In(["auto", "light", "dark"]))}))
     hass.services.async_register(DOMAIN, "register_device", register_device, schema=vol.Schema({
         vol.Required("device_id"): cv.string, vol.Optional("area"): vol.Any(None, cv.string),
         vol.Optional("name"): vol.Any(None, cv.string),

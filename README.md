@@ -51,6 +51,11 @@ frontend:
 
 ## Changelog
 
+### v0.9.204
+
+- **Bundles Ted's Cards v0.9.171** — fixes the Unauthorized startup error on wall panels and nightstands signed in with non-admin Home Assistant users.
+- **Adds authenticated per-user night-theme snapshot storage.** The new internal service derives the caller's user ID from Home Assistant's service context and can mutate only that user's Auto/Light/Dark entry; the existing global-settings API remains admin-only.
+
 ### v0.9.203
 
 - **Bundles Ted's Cards v0.9.170** — Dynamic Night Mode now restores each Home Assistant user's exact Auto, Light, or Dark preference, with independent per-user snapshots and correct ownership across multiple dashboard sessions.

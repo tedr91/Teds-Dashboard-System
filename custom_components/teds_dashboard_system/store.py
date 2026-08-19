@@ -891,6 +891,22 @@ class TedsManager:
         self._fire_settings()
         self._notify()
 
+    async def set_night_theme_snapshot(self, user_id: str, mode: str | None) -> None:
+        """Save or clear one HA user's pre-night theme mode."""
+        raw = self.settings["global"].get("night_dark_prev")
+        snapshots = dict(raw) if isinstance(raw, dict) else {}
+        if mode is None:
+            snapshots.pop(user_id, None)
+        else:
+            snapshots[user_id] = mode
+        if snapshots:
+            self.settings["global"]["night_dark_prev"] = snapshots
+        else:
+            self.settings["global"].pop("night_dark_prev", None)
+        await self._save()
+        self._fire_settings()
+        self._notify()
+
     async def clear_settings(self, keys=None, scope="global", device_id=None) -> None:
         """Clear specific keys (or all) at a scope so they inherit again."""
         if scope == "device":
