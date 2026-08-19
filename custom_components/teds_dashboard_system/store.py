@@ -864,6 +864,7 @@ class TedsManager:
         if self._settings_fire_unsub is not None:
             return
 
+        @callback
         def _fire(_now=None) -> None:
             self._settings_fire_unsub = None
             self.hass.bus.async_fire(EVENT_SETTINGS, self.settings_payload())

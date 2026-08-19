@@ -51,6 +51,12 @@ frontend:
 
 ## Changelog
 
+### v0.9.205
+
+- **Bundles Ted's Cards v0.9.172** — Room Card auto-population now honors Home Assistant's `hidden` entity flag, so controls marked **Visible off** no longer reappear.
+- **Bundles the current Room Card header-photo set locally** and refreshes the CDN fallback pin.
+- **Marks the delayed settings event callback correctly** for Home Assistant's event loop.
+
 ### v0.9.204
 
 - **Bundles Ted's Cards v0.9.171** — fixes the Unauthorized startup error on wall panels and nightstands signed in with non-admin Home Assistant users.

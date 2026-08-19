@@ -34,7 +34,7 @@ DOWNLOAD_URL = "/teds_dashboard_system/room_photos_dl"
 # MUST point at a tag containing the .webp assets (see spec) and stay in sync
 # with PHOTO_CDN_BASE in Teds-Cards/src/cards/room-card/const.ts.
 _CDN_BASE = (
-    "https://cdn.jsdelivr.net/gh/tedr91/Teds-Cards@v0.9.115/images/room-header-photos/"
+    "https://cdn.jsdelivr.net/gh/tedr91/Teds-Cards@v0.9.172/images/room-header-photos/"
 )
 
 _ALLOWED_EXTS = (".jpg", ".jpeg", ".png", ".webp")
