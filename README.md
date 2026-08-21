@@ -51,6 +51,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.206
+
+- **Bundles Ted's Cards v0.9.173** — automatic music-player selection now prefers same-room HomePods over Sonos, keeps provider ranking stable after Music Assistant metadata loads, and chooses a combined HomePod stereo pair instead of a single left/right channel.
+
 ### v0.9.205
 
 - **Bundles Ted's Cards v0.9.172** — Room Card auto-population now honors Home Assistant's `hidden` entity flag, so controls marked **Visible off** no longer reappear.
