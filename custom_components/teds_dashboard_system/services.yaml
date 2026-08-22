@@ -99,11 +99,15 @@ remove_announcement:
     id: { required: true, selector: { text: {} } }
 assist_response:
   name: Assist response
-  description: Display a text answer (title + message + optional image) on the targeted Ted's Dashboard screens and switch them to the Assist-Response view.
+  description: Display an Assist answer with optional structured results on the targeted Ted's Dashboard screens and switch them to the Assist-Response view.
   fields:
     message: { required: true, selector: { text: { multiline: true } } }
     title: { selector: { text: {} } }
+    question: { selector: { text: {} } }
     image: { selector: { text: {} } }
+    results:
+      description: Normalized Weather or read-only Entity Card result payloads.
+      selector: { object: {} }
     areas: { selector: { area: { multiple: true } } }
     devices: { selector: { object: {} } }
     navigate: { selector: { boolean: {} } }

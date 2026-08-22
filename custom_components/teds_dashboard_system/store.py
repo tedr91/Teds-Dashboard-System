@@ -14,6 +14,7 @@ from homeassistant.util import dt as dt_util
 
 from .light_fade import LightFadeEngine
 from .playback import PlaybackEngine
+from .assist_results import normalize_assist_results
 
 from .const import (
     DEVICE_PRESENCE_TTL,
@@ -781,7 +782,7 @@ class TedsManager:
 
     # ── assist responses ────────────────────────────────────
     async def assist_response(self, message, title=None, image=None, areas=None,
-                              devices=None, navigate=True, question=None):
+                              devices=None, navigate=True, question=None, results=None):
         """Push a text answer to the targeted Assist-Response screens.
 
         Mirrors View Assist's "Info" view: an automation / voice pipeline calls this
@@ -803,6 +804,7 @@ class TedsManager:
             "image": image or None,
             "areas": areas,
             "devices": devices,
+            "results": normalize_assist_results(results),
             "ts": dt_util.utcnow().isoformat(),
         }
         # Store latest per target key (house-wide when no targets) for reload/late-join,

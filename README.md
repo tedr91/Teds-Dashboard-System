@@ -51,6 +51,11 @@ frontend:
 
 ## Changelog
 
+### v0.9.207
+
+- **Bundles Ted's Cards v0.9.174** — TDS Voice gains streamed response text, named tool indicators, a colorful microphone-reactive waveform, rich Weather results, and read-only Entity Card previews with interaction-aware expiry and prior-view restoration.
+- **Adds validated structured Assist results.** The `assist_response` service now accepts bounded Weather and Entity Card payloads that persist through the existing response history and WebSocket event path; malformed and unsupported entries are discarded.
+
 ### v0.9.206
 
 - **Bundles Ted's Cards v0.9.173** — automatic music-player selection now prefers same-room HomePods over Sonos, keeps provider ranking stable after Music Assistant metadata loads, and chooses a combined HomePod stereo pair instead of a single left/right channel.
