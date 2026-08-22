@@ -52,6 +52,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.211
+
+- **Bundles Ted's Cards v0.9.178** — Voice Assist uses robot icons for idle, unavailable, and active states, and its overlay fades in without moving or scaling the frosted surface.
+
 ### v0.9.210
 
 - **Bundles Ted's Cards v0.9.177** — the idle Voice Assist navbar button now uses a conversation icon, while the microphone appears only during active listening.
