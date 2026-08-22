@@ -9,6 +9,7 @@ A Home Assistant integration that installs and serves the whole **Ted's Dashboar
 - **Installs & registers the generic Ted's Dashboard** as a yaml-mode dashboard at `/ted-dashboard` (no `configuration.yaml` edit needed), with a **user override layer** (`dashboards/ted-dashboard-user/`) so your customizations survive updates.
 - **Auto-updates** the dashboard content from GitHub (an Update entity + optional auto-update).
 - **Backs the cards server-side** — alarms, timers, notifications, announcements, Assist-Response, per-device settings, and media/sound/background serving.
+- **Gives TDS Voice device-aware calendar access** — Assist queries use the calendars selected for the current device in Ted's Settings, including virtual-calendar members.
 
 ## Install
 
@@ -50,6 +51,12 @@ frontend:
 - Plus `announce`, `assist_response`, `notify`, and settings services.
 
 ## Changelog
+
+### v0.9.208
+
+- **TDS Voice can now query the calendars selected for the current dashboard device.** The new Assist LLM tool maps the request's Home Assistant device to its Browser Mod settings, honors global and per-device calendar selections, expands virtual-calendar members, and fails gracefully when a calendar backend is unavailable.
+- **The existing next-calendar-event intent is now device-aware.** It uses the same selected-calendar scope instead of reading only the global settings.
+- **Bundles Ted's Cards v0.9.175** — rich-result dialogs support click-outside dismissal and show a resettable 30-second countdown bar along the bottom edge.
 
 ### v0.9.207
 

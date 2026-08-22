@@ -27,6 +27,7 @@ from homeassistant.util import dt as dt_util
 import voluptuous as vol
 
 from .climate import apply_climate, resolve_climate_entity
+from .calendar_scope import expanded_calendars, selected_calendars, tds_device_id
 from .const import (
     DOMAIN,
     EVENT_NAVIGATE,
@@ -771,12 +772,22 @@ def _remaining_secs(timer: dict) -> int:
     return max(0, int((ends - dt_util.utcnow()).total_seconds()))
 
 
-def _calendar_entities(hass: HomeAssistant, mgr) -> list[str]:
-    """The configured calendars (calendars_list) else every calendar.* entity."""
-    chosen = (mgr.effective_settings() or {}).get("calendars_list") or []
-    if chosen:
-        return [e for e in chosen if hass.states.get(e)]
-    return [s.entity_id for s in hass.states.async_all("calendar")]
+def _calendar_entities(hass: HomeAssistant, mgr, device_id: str | None) -> list[str]:
+    """Calendars selected for the originating TDS dashboard device."""
+    global_calendars = (mgr.settings.get("global") or {}).get("calendars_list") or []
+    tds_id = None
+    if device_id and (device := dr.async_get(hass).async_get(device_id)):
+        tds_id = tds_device_id(device.identifiers)
+    chosen = selected_calendars(
+        global_calendars,
+        mgr.settings.get("devices") or {},
+        tds_id,
+    )
+    expanded = expanded_calendars(
+        chosen,
+        (mgr.settings.get("global") or {}).get("calendar_options"),
+    )
+    return [entity_id for entity_id in expanded if hass.states.get(entity_id)]
 
 
 def _parse_event_start(raw) -> tuple[datetime | None, bool]:
@@ -956,7 +967,7 @@ class NextCalendarEventIntent(intent.IntentHandler):
         mgr = _manager(hass)
         if mgr is None:
             return _speech(intent_obj, "Ted's Cards is not set up yet.")
-        calendars = _calendar_entities(hass, mgr)
+        calendars = _calendar_entities(hass, mgr, intent_obj.device_id)
         if not calendars:
             return _speech(intent_obj, "You don't have any calendars set up.")
         now = dt_util.now()
