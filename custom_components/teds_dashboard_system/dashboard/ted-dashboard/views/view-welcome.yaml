@@ -50,12 +50,15 @@ cards:
           {% if tc == 'missing' %}
           🟥 **Ted's Cards (frontend) isn't loaded** — install Ted's Cards via HACS and refresh.
           {% endif %}
-      # Device status at a glance — dependency/integration counts, this browser's
-      # Browser Mod registration + id, backend connection/version, weather and the
-      # media-player playback target. Client-side card (reads window.browser_mod);
-      # only renders when Ted's Cards frontend is loaded, which the markdown
-      # blocker above already covers when it isn't.
-      - type: custom:ted-status-card
+      # Keep system status easy to reach without duplicating it on Welcome.
+      - type: custom:ted-messagebox-card
+        severity: info
+        icon: mdi:information-outline
+        title: System status
+        message: >-
+          Review this device's setup, dependencies, integrations, and playback targets.
+        actions:
+          - { label: View system status, icon: mdi:information-outline, action: navigate, navigation_path: /ted-dashboard/settings?tab=about, variant: primary }
       # This browser isn't registered with Browser Mod yet — it has no name/area,
       # so per-device settings and area-scoped alerts can't target it. Offers a
       # one-tap register (falls back to the Browser Mod panel). Only shown once

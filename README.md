@@ -52,6 +52,11 @@ frontend:
 
 ## Changelog
 
+### v0.9.209
+
+- **Bundles Ted's Cards v0.9.176** — Settings now includes an About tab with system and device status, including direct-link and backend-unavailable support.
+- **Moves system status off Welcome and into Settings → About.** Welcome retains a direct link to the new location, and dashboard content advances to v0.9.42 so the managed YAML is deployed on update.
+
 ### v0.9.208
 
 - **TDS Voice can now query the calendars selected for the current dashboard device.** The new Assist LLM tool maps the request's Home Assistant device to its Browser Mod settings, honors global and per-device calendar selections, expands virtual-calendar members, and fails gracefully when a calendar backend is unavailable.
