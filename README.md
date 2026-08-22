@@ -52,6 +52,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.210
+
+- **Bundles Ted's Cards v0.9.177** — the idle Voice Assist navbar button now uses a conversation icon, while the microphone appears only during active listening.
+
 ### v0.9.209
 
 - **Bundles Ted's Cards v0.9.176** — Settings now includes an About tab with system and device status, including direct-link and backend-unavailable support.
