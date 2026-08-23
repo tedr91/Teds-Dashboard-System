@@ -52,6 +52,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.212
+
+- **Bundles Ted's Cards v0.9.179** — Music Assistant album art now uses the same-origin HTTPS image proxy for current-track, library, and queue images while preserving native HA, HTTPS CDN, and plain-HTTP-origin behavior.
+
 ### v0.9.211
 
 - **Bundles Ted's Cards v0.9.178** — Voice Assist uses robot icons for idle, unavailable, and active states, and its overlay fades in without moving or scaling the frosted surface.
