@@ -27,6 +27,29 @@ def test_maps_browser_mod_device_identifier() -> None:
     assert scope.tds_device_id({("mobile_app", "phone")}) is None
 
 
+def test_oversized_identifier_tuples_do_not_raise() -> None:
+    """HA does not guarantee 2-tuples; HomeKit Bridge children carry 3 elements.
+
+    Callers that sweep the whole device registry hit these, so unpacking has to be
+    defensive or `list_stale_devices` fails outright on any instance running HomeKit.
+    """
+    homekit = ("homekit", "01KVNGT3MHVM5ER3G1ZXNDSW1N", "homekit.bridge")
+
+    assert scope.tds_device_id({homekit}) is None
+    # Still found when a real browser_mod identifier sits alongside a 3-element one.
+    assert scope.tds_device_id([homekit, ("browser_mod", "kitchen")]) == "bm:kitchen"
+    # And a longer browser_mod identifier is still matched on its first two elements.
+    assert scope.tds_device_id([("browser_mod", "kitchen", "extra")]) == "bm:kitchen"
+
+
+def test_malformed_identifiers_are_skipped() -> None:
+    assert scope.tds_device_id([("browser_mod",)]) is None
+    assert scope.tds_device_id([("browser_mod", "")]) is None
+    assert scope.tds_device_id(["browser_mod", ("browser_mod", "kitchen")]) == "bm:kitchen"
+    assert scope.tds_device_id([]) is None
+    assert scope.tds_device_id(None) is None
+
+
 def test_device_inherits_global_calendars_without_override() -> None:
     assert scope.selected_calendars(
         ["calendar.family", "calendar.work"],
