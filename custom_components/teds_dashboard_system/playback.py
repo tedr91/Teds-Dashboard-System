@@ -39,6 +39,8 @@ _LOGGER = logging.getLogger(__name__)
 
 # MediaPlayerEntityFeature.MEDIA_ANNOUNCE bit (2**20).
 MEDIA_ANNOUNCE = 1 << 20
+# MediaPlayerEntityFeature.REPEAT_SET bit (2**18).
+REPEAT_SET = 1 << 18
 # Fallback sound length (seconds) when the real duration can't be determined.
 DEFAULT_DURATION = 5.0
 # Bundled sounds are served under this path; the files live in ./sounds/.
@@ -731,6 +733,21 @@ class PlaybackEngine:
                     return True
         return False
 
+    def _supports(self, mp, feature) -> bool:
+        """True when `mp` currently advertises the given MediaPlayerEntityFeature bit.
+
+        Read live (rather than snapshotted at play time) so the check stays correct for
+        both play-dict shapes — alert plays carry a snapshot, announcement plays don't.
+        A missing or non-numeric value reads as "unsupported" rather than raising.
+        """
+        st = self.hass.states.get(mp)
+        attrs = st.attributes if st else {}
+        try:
+            features = int(attrs.get("supported_features", 0) or 0)
+        except (TypeError, ValueError):
+            return False
+        return bool(features & feature)
+
     def _inspect(self, mp):
         """Return (announce_supported, snapshot) for a media player.
 
@@ -739,7 +756,7 @@ class PlaybackEngine:
         """
         st = self.hass.states.get(mp)
         attrs = st.attributes if st else {}
-        announce = bool(int(attrs.get("supported_features", 0) or 0) & MEDIA_ANNOUNCE)
+        announce = self._supports(mp, MEDIA_ANNOUNCE)
         snapshot = None
         if not announce and st is not None:
             content_id = attrs.get("media_content_id") if st.state == "playing" else None
@@ -883,10 +900,14 @@ class PlaybackEngine:
         """Stop a non-announce player immediately and restore its prior state."""
         mp = p["mp"]
         try:
-            await self.hass.services.async_call(
-                "media_player", "repeat_set",
-                {"entity_id": mp, "repeat": "off"}, blocking=False,
-            )
+            # Only clear repeat on players that implement it: `blocking=False` runs the
+            # call in HA's own task, so a ServiceNotSupported from e.g. a BrowserMod
+            # player is logged as an error instead of being caught below.
+            if self._supports(mp, REPEAT_SET):
+                await self.hass.services.async_call(
+                    "media_player", "repeat_set",
+                    {"entity_id": mp, "repeat": "off"}, blocking=False,
+                )
             await self.hass.services.async_call(
                 "media_player", "media_stop",
                 {"entity_id": mp}, blocking=False,

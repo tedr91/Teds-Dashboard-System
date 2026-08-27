@@ -15,6 +15,7 @@ from homeassistant.util import dt as dt_util
 from .light_fade import LightFadeEngine
 from .playback import PlaybackEngine
 from .assist_results import normalize_assist_results
+from .device_prune import candidate_rows, summarize
 
 from .const import (
     DEVICE_PRESENCE_TTL,
@@ -64,6 +65,10 @@ class TedsManager:
         self.device_registry: dict[str, dict] = {}
         # Pending debounced EVENT_SETTINGS fire (see `_fire_settings`), if one is scheduled.
         self._settings_fire_unsub = None
+        # Latest broadcast settings snapshot + its revision. The bus event carries only
+        # the revision; subscribers read the snapshot from here (see `_fire_settings`).
+        self.last_settings_payload: dict | None = None
+        self.settings_revision: int = 0
         # HA device_ids we've already nudged once about a missing area.
         self.area_nudged_devices: set[str] = set()
         # Server-side dependency detection results (req_id -> ok/missing/unknown).
@@ -857,19 +862,30 @@ class TedsManager:
         }
 
     def _fire_settings(self) -> None:
-        """Fire EVENT_SETTINGS with the full snapshot, debounced: this payload goes to
-        every connected client (every wall panel's navbar), so bursts of calls in quick
-        succession (e.g. several `set_settings()`/`register_device()` calls, like a
-        client reporting viewport changes) coalesce into one broadcast instead of one
-        per call. In-process reads of `self.settings`/`settings_payload()` are unaffected
-        since those read the already-updated in-memory state, not the event."""
+        """Signal a settings change, debounced.
+
+        The snapshot itself is stashed on `last_settings_payload` and the bus event
+        carries only a revision counter. Subscribers get the full snapshot from
+        `websocket.handle_subscribe_settings`, which reads the stash — so the payload is
+        built once per broadcast (not once per connection) and, crucially, never lands
+        on the event bus, where it blew past the recorder's 32 KB event-data limit and
+        logged a warning on every single settings change.
+
+        Debounced because this broadcast reaches every connected client (every wall
+        panel's navbar), so bursts of calls in quick succession (e.g. several
+        `set_settings()`/`register_device()` calls, like a client reporting viewport
+        changes) coalesce into one broadcast instead of one per call. In-process reads of
+        `self.settings`/`settings_payload()` are unaffected since those read the
+        already-updated in-memory state, not the event."""
         if self._settings_fire_unsub is not None:
             return
 
         @callback
         def _fire(_now=None) -> None:
             self._settings_fire_unsub = None
-            self.hass.bus.async_fire(EVENT_SETTINGS, self.settings_payload())
+            self.settings_revision += 1
+            self.last_settings_payload = self.settings_payload()
+            self.hass.bus.async_fire(EVENT_SETTINGS, {"revision": self.settings_revision})
 
         self._settings_fire_unsub = async_call_later(self.hass, SETTINGS_FIRE_DEBOUNCE_S, _fire)
 
@@ -971,6 +987,50 @@ class TedsManager:
             seen = dt_util.parse_datetime(entry.get("last_seen") or "")
             if seen and (now - seen).total_seconds() <= DEVICE_PRESENCE_TTL:
                 yield did, entry
+
+    def prune_candidates(self, live_ids=None) -> dict:
+        """Report registered devices with the context needed to judge each one.
+
+        Purely informational — see `device_prune` for why availability must never be
+        used to delete automatically. `live_ids` are the TDS device keys that still
+        exist as real Home Assistant devices; callers that can't determine them pass
+        nothing and every `device_exists` simply reads False.
+        """
+        rows = candidate_rows(
+            self.device_registry,
+            self.settings.get("devices") or {},
+            live_ids or (),
+            dt_util.utcnow(),
+            DEVICE_PRESENCE_TTL,
+        )
+        return {"candidates": rows, "summary": summarize(rows)}
+
+    async def prune_devices(self, device_ids) -> dict:
+        """Forget the explicitly supplied devices and their per-device settings.
+
+        Only ever removes IDs the caller named: there is no implicit reaping, because a
+        sleeping tablet is indistinguishable from an orphaned registration. A pruned
+        device that later reconnects re-registers from scratch and inherits the global
+        settings, so its stored overrides and area are genuinely lost.
+        """
+        removed: list[str] = []
+        unknown: list[str] = []
+        for device_id in device_ids or ():
+            if not isinstance(device_id, str) or not device_id:
+                continue
+            known = device_id in self.device_registry
+            known |= device_id in (self.settings.get("devices") or {})
+            if not known:
+                unknown.append(device_id)
+                continue
+            self.device_registry.pop(device_id, None)
+            self.settings.get("devices", {}).pop(device_id, None)
+            removed.append(device_id)
+        if removed:
+            await self._save()
+            self._fire_settings()
+            self._notify()
+        return {"removed": removed, "unknown": unknown}
 
     # ── notify sensors ──────────────────────────────────────
     def register(self, cb):

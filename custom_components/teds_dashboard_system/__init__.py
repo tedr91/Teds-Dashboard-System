@@ -12,7 +12,7 @@ import voluptuous as vol
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import EVENT_CALL_SERVICE, EVENT_HOMEASSISTANT_STARTED, Platform
-from homeassistant.core import Event, HomeAssistant, ServiceCall, callback
+from homeassistant.core import Event, HomeAssistant, ServiceCall, SupportsResponse, callback
 from homeassistant.exceptions import Unauthorized
 import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers import device_registry as dr, entity_registry as er, issue_registry as ir
@@ -21,6 +21,7 @@ from homeassistant.helpers.start import async_at_started
 from homeassistant.loader import async_get_integration
 
 from .bing_photos import cache_has_images as bing_cache_has_images, fetch_and_cache_bing
+from .calendar_scope import tds_device_id
 from .cards import async_setup_cards, async_unload_cards
 from .climate import apply_climate, resolve_climate_entity
 from .dashboard import (
@@ -193,6 +194,33 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             client_form_factor=call.data.get("client_form_factor"),
         )
 
+    async def _require_admin(call: ServiceCall) -> None:
+        """Admin-only guard for the device-registry maintenance services."""
+        user_id = call.context.user_id
+        if user_id is None:
+            return  # internal/trusted call (no user context)
+        user = await hass.auth.async_get_user(user_id)
+        if not (user and user.is_admin):
+            raise Unauthorized(context=call.context)
+
+    def _live_tds_devices() -> set[str]:
+        """TDS device keys ("bm:<id>") that still exist in HA's device registry."""
+        return {
+            tds_id
+            for device in dr.async_get(hass).devices.values()
+            if (tds_id := tds_device_id(device.identifiers))
+        }
+
+    async def list_stale_devices(call: ServiceCall):
+        """Report prune candidates. Reports only — never removes anything."""
+        await _require_admin(call)
+        return manager.prune_candidates(_live_tds_devices())
+
+    async def prune_devices(call: ServiceCall):
+        """Forget the explicitly listed devices and their per-device settings."""
+        await _require_admin(call)
+        return await manager.prune_devices(call.data["device_ids"])
+
     async def pause_timer(call: ServiceCall):
         manager.pause_timer(call.data["id"])
 
@@ -307,6 +335,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         vol.Optional("client_height"): vol.Any(None, int),
         vol.Optional("client_orientation"): vol.Any(None, cv.string),
         vol.Optional("client_form_factor"): vol.Any(None, cv.string)}))
+    hass.services.async_register(
+        DOMAIN, "list_stale_devices", list_stale_devices, schema=vol.Schema({}),
+        supports_response=SupportsResponse.ONLY,
+    )
+    hass.services.async_register(
+        DOMAIN, "prune_devices", prune_devices,
+        schema=vol.Schema({vol.Required("device_ids"): vol.All(cv.ensure_list, [cv.string], vol.Length(min=1))}),
+        supports_response=SupportsResponse.OPTIONAL,
+    )
 
     async def check_requirements(call: ServiceCall):
         await manager.refresh_requirements()

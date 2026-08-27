@@ -2,15 +2,25 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable, Mapping
+from collections.abc import Iterable, Mapping, Sequence
 from typing import Any
 
 
-def tds_device_id(identifiers: Iterable[tuple[str, str]]) -> str | None:
-    """Map Home Assistant device identifiers to TDS's settings key."""
-    for domain, identifier in identifiers:
-        if domain == "browser_mod" and identifier:
-            return f"bm:{identifier}"
+def tds_device_id(identifiers: Iterable[Sequence[str]]) -> str | None:
+    """Map Home Assistant device identifiers to TDS's settings key.
+
+    Unpacks defensively: HA does not guarantee 2-tuples, and real instances carry
+    longer ones (HomeKit Bridge child devices use a 3-element
+    `("homekit", <id>, "homekit.bridge")`). Anything that isn't a `("browser_mod", id)`
+    pair is skipped rather than raising, so callers can safely sweep the whole registry.
+    """
+    for identifier in identifiers or ():
+        if isinstance(identifier, (str, bytes)) or not isinstance(identifier, Sequence):
+            continue
+        if len(identifier) < 2 or identifier[0] != "browser_mod":
+            continue
+        if identifier[1]:
+            return f"bm:{identifier[1]}"
     return None
 
 

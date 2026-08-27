@@ -141,6 +141,30 @@ register_device:
     client_orientation: { selector: { text: {} } }
     client_form_factor: { selector: { text: {} } }
 
+list_stale_devices:
+  name: List stale dashboard devices
+  description: >-
+    Report every device registered with Ted's Dashboard System, with the context needed
+    to judge whether it is an orphan: stored name/area, last-seen time, whether it is
+    currently present, whether a matching Browser Mod device still exists in Home
+    Assistant, whether its ID is Browser Mod auto-generated, and its size in the settings
+    payload. Reports only — nothing is removed. `likely_orphan` is advisory: a sleeping
+    phone or tablet looks exactly like a dead registration, so confirm each ID yourself
+    before passing it to Prune dashboard devices.
+
+prune_devices:
+  name: Prune dashboard devices
+  description: >-
+    Forget the listed devices and their per-device settings overrides. Only the IDs you
+    supply are removed — there is no automatic pruning. A pruned device that reconnects
+    later re-registers from scratch and inherits the global settings, so its overrides
+    and stored area are lost.
+  fields:
+    device_ids:
+      required: true
+      example: '["bm:browser_mod_1a2b3c4d_5e6f7a8b"]'
+      selector: { object: {} }
+
 check_requirements:
   name: Check requirements
   description: Re-run server-side detection of optional dependencies (updates sensor.teds_requirements).

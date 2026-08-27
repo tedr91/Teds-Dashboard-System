@@ -27,6 +27,7 @@ from .bing_photos import (
     list_favorites,
     remove_bing_photo,
 )
+from .calendar_scope import tds_device_id
 from .const import (
     DASHBOARD_USER_DIR,
     DASHBOARDS_DIR,
@@ -76,6 +77,8 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, handle_subscribe_assist_responses)
     websocket_api.async_register_command(hass, handle_subscribe_dashboard_updated)
     websocket_api.async_register_command(hass, handle_register_device)
+    websocket_api.async_register_command(hass, handle_list_stale_devices)
+    websocket_api.async_register_command(hass, handle_prune_devices)
     websocket_api.async_register_command(hass, handle_list_backgrounds)
     websocket_api.async_register_command(hass, handle_list_sounds)
     websocket_api.async_register_command(hass, handle_list_bing_photos)
@@ -213,11 +216,22 @@ def handle_subscribe_notifications(
 def handle_subscribe_settings(
     hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict
 ) -> None:
-    """Push the current settings snapshot, then forward settings updates."""
+    """Push the current settings snapshot, then forward settings updates.
+
+    The bus event carries only a revision counter (keeping the 48 KB snapshot off the
+    recorder); the snapshot itself comes from the manager's stash, so what lands on the
+    wire here is unchanged.
+    """
 
     @callback
-    def forward(event: Event) -> None:
-        connection.send_message(websocket_api.event_message(msg["id"], event.data))
+    def forward(_event: Event) -> None:
+        mgr = _manager(hass)
+        if mgr is None:
+            return
+        payload = mgr.last_settings_payload
+        if payload is None:
+            payload = mgr.settings_payload()
+        connection.send_message(websocket_api.event_message(msg["id"], payload))
 
     connection.subscriptions[msg["id"]] = hass.bus.async_listen(EVENT_SETTINGS, forward)
     connection.send_result(msg["id"])
@@ -324,6 +338,60 @@ async def handle_register_device(
             client_form_factor=msg.get("client_form_factor"),
         )
     connection.send_result(msg["id"])
+
+
+def _live_tds_device_ids(hass: HomeAssistant) -> set[str]:
+    """TDS device keys ("bm:<id>") that still exist in HA's device registry."""
+    live: set[str] = set()
+    for device in dr.async_get(hass).devices.values():
+        tds_id = tds_device_id(device.identifiers)
+        if tds_id:
+            live.add(tds_id)
+    return live
+
+
+@websocket_api.websocket_command(
+    {vol.Required("type"): f"{DOMAIN}/list_stale_devices"}
+)
+@websocket_api.require_admin
+@callback
+def handle_list_stale_devices(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict
+) -> None:
+    """Report registered devices and how likely each is to be an orphan.
+
+    Reporting only — nothing is removed here. `likely_orphan` is advisory: a sleeping
+    tablet looks exactly like a dead registration, so an operator has to confirm each
+    ID before passing it to `prune_devices`.
+    """
+    mgr = _manager(hass)
+    if mgr is None:
+        connection.send_error(msg["id"], "not_found", "Manager unavailable")
+        return
+    connection.send_result(msg["id"], mgr.prune_candidates(_live_tds_device_ids(hass)))
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): f"{DOMAIN}/prune_devices",
+        vol.Required("device_ids"): [str],
+    }
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def handle_prune_devices(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict
+) -> None:
+    """Forget the explicitly listed devices and their per-device settings."""
+    mgr = _manager(hass)
+    if mgr is None:
+        connection.send_error(msg["id"], "not_found", "Manager unavailable")
+        return
+    device_ids = [d for d in msg["device_ids"] if isinstance(d, str) and d]
+    if not device_ids:
+        connection.send_error(msg["id"], "invalid_format", "No device_ids supplied")
+        return
+    connection.send_result(msg["id"], await mgr.prune_devices(device_ids))
 
 
 def _scan_backgrounds() -> dict:

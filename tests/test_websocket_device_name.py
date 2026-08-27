@@ -63,6 +63,7 @@ def _install_stubs() -> None:
             "clear_bing_cache", "favorite_bing_photo", "fetch_and_cache_bing",
             "import_photo", "list_favorites", "remove_bing_photo",
         ),
+        "calendar_scope": ("tds_device_id",),
         "frigate": ("async_mark_frigate_reviewed",),
         "vision": (
             "ai_task_entities", "discover_camera_detectors", "frigate_native_camera",
