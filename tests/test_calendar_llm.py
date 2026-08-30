@@ -117,6 +117,12 @@ def _load_llm_module():
 
 llm_module = _load_llm_module()
 
+# Remove the partial ``homeassistant`` stubs so they don't leak into other test
+# modules' collection (``llm.py`` already holds its own references from import).
+for _module_name in tuple(sys.modules):
+    if _module_name == "homeassistant" or _module_name.startswith("homeassistant."):
+        sys.modules.pop(_module_name, None)
+
 
 class _States:
     def get(self, entity_id):

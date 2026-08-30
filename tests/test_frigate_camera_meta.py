@@ -10,23 +10,36 @@ import sys
 import types
 
 
+def _stub(name: str) -> types.ModuleType:
+    """Return the module registered as *name*, creating a stub if needed.
+
+    Another test module may already have installed a PARTIAL ``homeassistant``
+    stub (they each stub only what their own subject imports). Reuse whatever is
+    there and top it up, rather than assuming it is complete.
+    """
+    existing = sys.modules.get(name)
+    if existing is not None:
+        return existing
+    module = types.ModuleType(name)
+    sys.modules[name] = module
+    return module
+
+
 def _install_ha_stubs() -> None:
-    if "homeassistant" in sys.modules:
-        return
-    ha = types.ModuleType("homeassistant")
-    core = types.ModuleType("homeassistant.core")
-    core.HomeAssistant = object
-    core.callback = lambda fn: fn
-    helpers = types.ModuleType("homeassistant.helpers")
+    if getattr(sys.modules.get("homeassistant"), "__file__", None):
+        return  # the real Home Assistant is installed; leave it alone
+    ha = _stub("homeassistant")
+    core = _stub("homeassistant.core")
+    if not hasattr(core, "HomeAssistant"):
+        core.HomeAssistant = object
+    if not hasattr(core, "callback"):
+        core.callback = lambda fn: fn
+    helpers = _stub("homeassistant.helpers")
     for name in ("area_registry", "device_registry", "entity_registry"):
-        sub = types.ModuleType(f"homeassistant.helpers.{name}")
+        sub = _stub(f"homeassistant.helpers.{name}")
         setattr(helpers, name, sub)
-        sys.modules[f"homeassistant.helpers.{name}"] = sub
     ha.core = core
     ha.helpers = helpers
-    sys.modules["homeassistant"] = ha
-    sys.modules["homeassistant.core"] = core
-    sys.modules["homeassistant.helpers"] = helpers
 
 
 def _load_frigate():

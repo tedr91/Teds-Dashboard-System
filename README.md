@@ -52,6 +52,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.214
+
+- **Fixes six test failures under reverse collection order.** `test_frigate_camera_meta.py` bailed out of installing its Home Assistant stubs whenever a `homeassistant` module was already present, trusting it to be complete. When `test_calendar_llm.py` was imported first (as under reverse ordering), its partial stub — missing `area_registry` — leaked in, so loading `frigate.py` raised `ImportError`. The stub installer is now additive and idempotent: it tops up whatever is registered, never overwrites existing attributes, and no-ops entirely when a real Home Assistant is installed. `test_calendar_llm.py` also now clears its `homeassistant` stubs after import, matching `test_websocket_device_name.py`. Test-only; no production or behavior change.
+
 ### v0.9.213
 
 - **Fixes 367 `ServiceNotSupported` errors per four days.** Stopping a non-announce player no longer calls `media_player.repeat_set` on players that don't implement it (Browser Mod players in particular). The call is now guarded by the `REPEAT_SET` supported-features bit, matching the existing `MEDIA_ANNOUNCE` check. The old call used `blocking=False`, so Home Assistant raised inside its own service task and the surrounding `try/except` could never suppress the error.
