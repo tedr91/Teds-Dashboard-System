@@ -52,6 +52,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.219
+
+- **Bundles Ted's Cards v0.9.184** — fixes the navbar liquid indicator lagging behind navigation: it now leads from the URL and tracks your taps immediately, and the bar is no longer torn down/rebuilt during a view swap.
+
 ### v0.9.218
 
 - **Bundles Ted's Cards v0.9.183** — reworks the navbar "Liquid morph" indicator into a liquid-glass tile: a single frosted-glass tile with a thin accent ring that flows and squash-stretches between launcher buttons, snapping to the active button on first appearance.
