@@ -52,6 +52,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.218
+
+- **Bundles Ted's Cards v0.9.183** — reworks the navbar "Liquid morph" indicator into a liquid-glass tile: a single frosted-glass tile with a thin accent ring that flows and squash-stretches between launcher buttons, snapping to the active button on first appearance.
+
 ### v0.9.217
 
 - **Bundles Ted's Cards v0.9.182** — adds a "Liquid morph" active-view navbar indicator (Settings → Navbar → Highlight style: Ring or Liquid morph): a single gooey blob that flows from the previous view's launcher button to the current one as you navigate. Uses your Highlight color.
