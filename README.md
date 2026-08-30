@@ -52,6 +52,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.216
+
+- **Bundles Ted's Cards v0.9.181** — fixes navbar launcher icons briefly disappearing when switching views: the persistent navbar's active-view highlight now restyles the current button in place instead of recreating it.
+
 ### v0.9.215
 
 - **Bundles Ted's Cards v0.9.180** — the navigation bar now persists across view changes: with dashboard integration the navbar is hosted once and survives navigation instead of being rebuilt for every view, cutting flicker and per-navigation work. Each view still chooses whether the bar auto-hides.
