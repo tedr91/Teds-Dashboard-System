@@ -52,6 +52,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.215
+
+- **Bundles Ted's Cards v0.9.180** — the navigation bar now persists across view changes: with dashboard integration the navbar is hosted once and survives navigation instead of being rebuilt for every view, cutting flicker and per-navigation work. Each view still chooses whether the bar auto-hides.
+
 ### v0.9.214
 
 - **Fixes six test failures under reverse collection order.** `test_frigate_camera_meta.py` bailed out of installing its Home Assistant stubs whenever a `homeassistant` module was already present, trusting it to be complete. When `test_calendar_llm.py` was imported first (as under reverse ordering), its partial stub — missing `area_registry` — leaked in, so loading `frigate.py` raised `ImportError`. The stub installer is now additive and idempotent: it tops up whatever is registered, never overwrites existing attributes, and no-ops entirely when a real Home Assistant is installed. `test_calendar_llm.py` also now clears its `homeassistant` stubs after import, matching `test_websocket_device_name.py`. Test-only; no production or behavior change.
