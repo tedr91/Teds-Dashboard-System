@@ -269,6 +269,8 @@ SETTINGS_DEFAULTS = {
     "launcher_options": {},
     # Highlight the launcher button for the currently-open view (or its group).
     "launcher_highlight_active": True,
+    # Active-view highlight style: "ring" (per-button ring) or "liquid" (morphing blob).
+    "launcher_highlight_style": "ring",
     # Tint/icon color of every launcher button.
     "launcher_button_color": "white",
     # Ring color marking the current view's button.

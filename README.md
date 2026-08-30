@@ -52,6 +52,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.217
+
+- **Bundles Ted's Cards v0.9.182** — adds a "Liquid morph" active-view navbar indicator (Settings → Navbar → Highlight style: Ring or Liquid morph): a single gooey blob that flows from the previous view's launcher button to the current one as you navigate. Uses your Highlight color.
+
 ### v0.9.216
 
 - **Bundles Ted's Cards v0.9.181** — fixes navbar launcher icons briefly disappearing when switching views: the persistent navbar's active-view highlight now restyles the current button in place instead of recreating it.
