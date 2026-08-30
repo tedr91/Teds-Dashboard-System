@@ -52,6 +52,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.220
+
+- **Bundles Ted's Cards v0.9.185** — the navbar liquid indicator now matches the ring highlight's size at rest (exact button footprint + shared corner radius).
+
 ### v0.9.219
 
 - **Bundles Ted's Cards v0.9.184** — fixes the navbar liquid indicator lagging behind navigation: it now leads from the URL and tracks your taps immediately, and the bar is no longer torn down/rebuilt during a view swap.
