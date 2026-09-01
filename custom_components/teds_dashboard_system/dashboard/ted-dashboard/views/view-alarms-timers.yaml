@@ -16,6 +16,7 @@ cards:
       grid-area: content
     dashboard_integration: true
     state_key: alarms-timers
+    close_button: true
     fill: true
     card:
       type: custom:ted-tab-card

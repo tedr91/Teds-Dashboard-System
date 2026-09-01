@@ -14,6 +14,7 @@ cards:
       grid-area: content
     dashboard_integration: true
     state_key: assist_response
+    close_button: true
     fill: true
     card:
       type: custom:ted-assist-response-card

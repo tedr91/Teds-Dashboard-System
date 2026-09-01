@@ -52,6 +52,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.223
+
+- **Every full-screen view now has a close button.** All bundled dashboard views that use the Fullscreen card (Music, Cameras, Weather, Photos, Calendars, Alarms & Timers, Announce, Assist, Notifications, Settings) now show a close button beside the maximize/restore toggle that returns to the previous view (or Home). Requires the bundled Ted's Cards v0.9.187.
+
 ### v0.9.222
 
 - **Bundles Ted's Cards v0.9.187** — the Fullscreen card gains an optional `close_button` (with `dashboard_integration: true`) that returns to the previous view (or Home), and the maximize/restore/close icons were refreshed to a matching circled set.

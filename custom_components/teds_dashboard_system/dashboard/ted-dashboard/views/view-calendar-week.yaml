@@ -22,6 +22,7 @@ cards:
       grid-area: content
     dashboard_integration: true
     state_key: calendar-week
+    close_button: true
     fill: true
     card:
       type: custom:ted-calendar-card

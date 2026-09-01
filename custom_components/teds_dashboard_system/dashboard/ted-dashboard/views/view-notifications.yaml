@@ -12,6 +12,7 @@ cards:
       grid-area: content
     dashboard_integration: true
     state_key: notifications
+    close_button: true
     fill: true
     card:
       type: custom:ted-notification-card

@@ -28,6 +28,7 @@ cards:
           type: custom:ted-fullscreen-card
           dashboard_integration: true
           state_key: cameras
+          close_button: true
           fill: true
           card:
             type: custom:ted-camera-card
@@ -42,6 +43,7 @@ cards:
           type: custom:ted-fullscreen-card
           dashboard_integration: true
           state_key: vision
+          close_button: true
           fill: true
           card:
             type: custom:ted-vision-card
