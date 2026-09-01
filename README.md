@@ -52,6 +52,10 @@ frontend:
 
 ## Changelog
 
+### v0.9.222
+
+- **Bundles Ted's Cards v0.9.187** — the Fullscreen card gains an optional `close_button` (with `dashboard_integration: true`) that returns to the previous view (or Home), and the maximize/restore/close icons were refreshed to a matching circled set.
+
 ### v0.9.221
 
 - **Bundles Ted's Cards v0.9.186** — the navbar now adds a temporary launcher button (with the view's icon) when you navigate to a view that has no launcher button of its own, so the active-view highlight has a home and you can tap back to it.
