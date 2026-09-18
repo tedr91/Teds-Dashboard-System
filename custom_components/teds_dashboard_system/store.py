@@ -953,6 +953,7 @@ class TedsManager:
         self, device_id, area=None, name=None, media_player=None,
         client_width=None, client_height=None,
         client_orientation=None, client_form_factor=None,
+        client_runtime=None, client_runtime_version=None, client_os=None,
     ) -> None:
         """Record/refresh a device so server-side playback can target its area."""
         if not device_id:
@@ -975,6 +976,16 @@ class TedsManager:
             entry["client_orientation"] = client_orientation
         if client_form_factor is not None:
             entry["client_form_factor"] = client_form_factor
+        if client_runtime is not None:
+            entry["client_runtime"] = client_runtime
+            if client_runtime_version is not None:
+                entry["client_runtime_version"] = client_runtime_version
+            else:
+                entry.pop("client_runtime_version", None)
+            if client_os is not None:
+                entry["client_os"] = client_os
+            else:
+                entry.pop("client_os", None)
         entry["last_seen"] = dt_util.utcnow().isoformat()
         await self._save()
         self._fire_settings()

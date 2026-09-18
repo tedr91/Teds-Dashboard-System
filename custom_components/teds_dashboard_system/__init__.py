@@ -37,6 +37,7 @@ from .const import (
     DEFAULT_DASHBOARD_BRANCH,
     DEFAULT_DASHBOARD_REPO,
     DOMAIN,
+    EVENT_DASHBOARD_UPDATED,
     EVENT_NAVIGATE,
     EVENT_SETTINGS,
     MEDIA_FOLDER_NAME,
@@ -192,6 +193,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             client_height=call.data.get("client_height"),
             client_orientation=call.data.get("client_orientation"),
             client_form_factor=call.data.get("client_form_factor"),
+            client_runtime=call.data.get("client_runtime"),
+            client_runtime_version=call.data.get("client_runtime_version"),
+            client_os=call.data.get("client_os"),
         )
 
     async def _require_admin(call: ServiceCall) -> None:
@@ -334,7 +338,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         vol.Optional("client_width"): vol.Any(None, int),
         vol.Optional("client_height"): vol.Any(None, int),
         vol.Optional("client_orientation"): vol.Any(None, cv.string),
-        vol.Optional("client_form_factor"): vol.Any(None, cv.string)}))
+        vol.Optional("client_form_factor"): vol.Any(None, cv.string),
+        vol.Optional("client_runtime"): vol.Any(None, cv.string),
+        vol.Optional("client_runtime_version"): vol.Any(None, cv.string),
+        vol.Optional("client_os"): vol.Any(None, cv.string)}))
     hass.services.async_register(
         DOMAIN, "list_stale_devices", list_stale_devices, schema=vol.Schema({}),
         supports_response=SupportsResponse.ONLY,
@@ -395,6 +402,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         async def _reload_clients(_now) -> None:
             if hass.services.has_service("browser_mod", "refresh"):
                 await hass.services.async_call("browser_mod", "refresh", {}, blocking=False)
+            # Kiosk Satellite owns its WebView and exposes no server-side refresh
+            # service. Its TDS client receives this targeted signal and reloads itself.
+            hass.bus.async_fire(
+                EVENT_DASHBOARD_UPDATED, {"client_runtime": "kiosk_satellite"}
+            )
 
         entry.async_on_unload(
             async_call_later(hass, CLIENT_RELOAD_ON_STARTUP_DELAY, _reload_clients)

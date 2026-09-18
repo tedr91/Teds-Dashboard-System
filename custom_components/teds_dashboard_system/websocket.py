@@ -321,6 +321,9 @@ def handle_subscribe_dashboard_updated(
         vol.Optional("client_height"): vol.Any(None, int),
         vol.Optional("client_orientation"): vol.Any(None, str),
         vol.Optional("client_form_factor"): vol.Any(None, str),
+        vol.Optional("client_runtime"): vol.Any(None, str),
+        vol.Optional("client_runtime_version"): vol.Any(None, str),
+        vol.Optional("client_os"): vol.Any(None, str),
     }
 )
 @websocket_api.async_response
@@ -336,6 +339,9 @@ async def handle_register_device(
             client_height=msg.get("client_height"),
             client_orientation=msg.get("client_orientation"),
             client_form_factor=msg.get("client_form_factor"),
+            client_runtime=msg.get("client_runtime"),
+            client_runtime_version=msg.get("client_runtime_version"),
+            client_os=msg.get("client_os"),
         )
     connection.send_result(msg["id"])
 

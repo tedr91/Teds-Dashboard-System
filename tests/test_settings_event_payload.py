@@ -304,6 +304,39 @@ def test_stashed_snapshot_is_the_full_payload_and_revision_advances() -> None:
         store_module.async_call_later = original
 
 
+def test_register_device_persists_client_runtime_metadata() -> None:
+    manager, _bus, scheduled, original = _manager()
+    try:
+        asyncio.run(
+            manager.register_device(
+                "bm:maxskiosk",
+                area="maxs_room",
+                client_width=412,
+                client_height=915,
+                client_orientation="portrait",
+                client_form_factor="portrait-small",
+                client_runtime="kiosk_satellite",
+                client_runtime_version="2026.9.59",
+                client_os="android",
+            )
+        )
+
+        entry = manager.device_registry["bm:maxskiosk"]
+        assert entry["client_runtime"] == "kiosk_satellite"
+        assert entry["client_runtime_version"] == "2026.9.59"
+        assert entry["client_os"] == "android"
+        assert entry["client_form_factor"] == "portrait-small"
+        assert entry["last_seen"]
+        assert scheduled
+
+        asyncio.run(manager.register_device("bm:maxskiosk", client_runtime="browser"))
+        assert entry["client_runtime"] == "browser"
+        assert "client_runtime_version" not in entry
+        assert "client_os" not in entry
+    finally:
+        store_module.async_call_later = original
+
+
 def test_subscribers_still_receive_the_full_snapshot() -> None:
     """The client wire format must be unchanged despite the slim bus event."""
     manager, _bus, scheduled, original = _manager()

@@ -28,6 +28,13 @@ The integration serves the cards + themes itself, but the shipped **Ted's Dashbo
 - **card-mod** (`thomasloven/lovelace-card-mod`) — styling on a few views.
 - **Custom Icons** — an icon pack so Ted's icons can render as Streamline / Fluent / Pepicons (they fall back to built-in MDI when absent).
 - **Daylight Calendar Card** (`superdingo101/daylight-calendar-card`) — the Calendar views.
+
+TDS detects [Kiosk Satellite](https://github.com/jxlarrea/kiosk-satellite) through its
+documented browser API. Browser Mod remains the stable identity, area, and fallback-player
+layer; when Kiosk Satellite is the client runtime, TDS uses its native page refresh and
+screen-brightness controls and records the app version and operating system in the device
+registry. Kiosk Satellite also owns kiosk presentation in its WebView, so TDS does not
+apply or offer its separate Home Assistant kiosk-mode setting there.
 - Per-view extras: **Music Assistant** (+ `mass_queue`) for the Music view; **weather-forecast-card** (`troinine/ha-weather-forecast-card`) and **windy-card** (`timmaurice/lovelace-windy-card`) for the Weather view.
 
 Kiosk mode uses Home Assistant's **built-in** kiosk (2026.1+), driven per-device from Ted's Settings — no third-party kiosk plugin is required.
@@ -51,6 +58,10 @@ frontend:
 - Plus `announce`, `assist_response`, `notify`, and settings services.
 
 ## Changelog
+
+### v0.9.224
+
+- **Bundles Ted's Cards v0.9.188 with native Kiosk Satellite support.** TDS records each client's runtime, app version, and operating system; targets Kiosk Satellite clients with a local startup refresh signal; and delegates refresh, brightness, and kiosk presentation to the app while retaining Browser Mod for stable identity, area, and media fallback. The bundled dashboard compatibility floor is now Cards v0.9.188.
 
 ### v0.9.223
 
